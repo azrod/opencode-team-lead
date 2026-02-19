@@ -7,27 +7,20 @@ An [opencode](https://opencode.ai) plugin that installs a **team-lead orchestrat
 - **Injects the `team-lead` agent** via the `config` hook — with a locked-down permission set (no file I/O, no bash except git), `temperature: 0.3`, variant `max`
 - **Preserves the scratchpad across compactions** via the `experimental.session.compacting` hook — the team-lead's working memory (`.opencode/scratchpad.md`) is injected into the compaction prompt so mission state survives context resets
 
-## Install
+## Installation
 
-Add the plugin to your `opencode.json`:
+Add to your OpenCode config:
 
-```json
+```jsonc
+// opencode.json
 {
-  "plugin": [
-    "./plugin/opencode-team-lead"
-  ]
+  "plugin": ["opencode-team-lead@latest"]
 }
 ```
 
-If published to npm, use the package name directly:
+Using `@latest` ensures you always get the newest version automatically when OpenCode starts.
 
-```json
-{
-  "plugin": [
-    "opencode-team-lead"
-  ]
-}
-```
+Restart OpenCode. The plugin will automatically install and register the team-lead agent.
 
 ## The team-lead agent
 
