@@ -4,6 +4,12 @@
   "description": "Team-lead orchestrator agent for opencode — delegates work, reviews quality, manages context",
   "type": "module",
   "main": "index.js",
+  "files": ["index.js", "prompt.md", "README.md"],
   "keywords": ["opencode", "opencode-plugin", "agent", "team-lead"],
-  "license": "MIT"
+  "author": "azrod",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/azrod/opencode-team-lead"
+  }
 }
