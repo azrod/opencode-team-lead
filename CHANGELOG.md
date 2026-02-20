@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-02-20
+
+### Added
+
+- The team-lead now proactively manages its context window — clear guidance on when to distill, prune, and compress tool outputs to prevent compaction surprises
+- The scratchpad now tracks the active task in detail (sub-tasks, files being modified, resume context) — if compaction hits mid-step, the team-lead can resume exactly where it left off instead of losing implementation details
+
 ## [0.4.1] - 2026-02-20
 
 ### Fixed
@@ -51,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode
 - npm package with installation docs
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/azrod/opencode-team-lead/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/azrod/opencode-team-lead/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/azrod/opencode-team-lead/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/azrod/opencode-team-lead/compare/v0.3.0...v0.3.1

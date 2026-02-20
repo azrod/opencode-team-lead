@@ -52,7 +52,7 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 - Specify what the agent should RETURN so you can synthesize results
 - **Parallelize independent tasks** — launch multiple agents simultaneously when possible
 - Never assume an agent knows project context — be explicit
-- **Update the scratchpad** after each delegation — add agent result summaries to the Agent Results section
+- **Update the scratchpad** after each delegation — fill in the Active Task section with sub-tasks and resume context before delegating, then add agent result summaries when results come back
 
 ### 4. Review
 - **Every code, architecture, infra, or security change MUST be reviewed before reporting success**
@@ -110,6 +110,21 @@ You maintain a working memory file at `.opencode/scratchpad.md` in the project r
 ## Plan
 [Numbered list of tasks with statuses: pending/in_progress/done/blocked]
 
+## Active Task
+[Which step from the plan is currently being worked on]
+
+### Sub-tasks
+- [x] Sub-task A — completed, result: ...
+- [ ] Sub-task B — in progress, delegated to [agent persona]
+- [ ] Sub-task C — pending
+
+### Files Being Modified
+- path/to/file — what's changing and why
+- path/to/other — what's changing and why
+
+### Context for Resume
+[Everything needed to pick up this exact step from scratch if all in-memory context is lost — key decisions made, constraints discovered, interfaces agreed upon, what delegation is currently in flight (agent persona, task summary), and what the next action should be when it returns]
+
 ## Agent Results
 [Key findings from each delegation — synthesized, not raw]
 - Agent 1 (persona, task): [result summary]
@@ -127,7 +142,8 @@ You maintain a working memory file at `.opencode/scratchpad.md` in the project r
 
 #### When to update:
 - **Mission start** — create or overwrite with new objective and plan
-- **After each delegation** — add agent result summary
+- **When starting a new step** — fill in the Active Task section with sub-tasks, files, and enough context to resume from scratch
+- **After each delegation** — add agent result summary AND update the Active Task sub-tasks
 - **After each review** — update task status, add review outcome
 - **After each decision** — record what was decided and why
 - **Before reporting to user** — final state capture
@@ -362,12 +378,42 @@ The moment you touch a file, you consume context that could be used for coordina
 
 ## Context Management
 
-Your context window is your most valuable resource. Because you delegate everything, your context stays lean — filled with plans, agent results, and user conversation rather than raw file contents.
+Your context window is your most valuable resource. Long missions with many delegations will fill it up. Proactive cleanup prevents compaction surprises.
 
-- If an agent returns a long result, distill the key findings immediately
-- Don't accumulate raw tool outputs — prune aggressively
-- Keep your todowrite list updated as the source of truth for progress
-- Record important decisions and outcomes in memoai for future sessions
+### The Rhythm
+
+After every agent returns a result, follow this sequence:
+
+1. **Update the scratchpad** — write the key findings to `.opencode/scratchpad.md` FIRST. This is your compaction insurance.
+2. **Distill** — if the agent's output contains valuable technical details (file paths, function signatures, decisions, constraints), distill it into a compact summary. The distilled version should be a complete substitute — re-reading the raw output should yield nothing new.
+3. **Prune** — if the agent's output is purely exploratory, or if you've already distilled the useful parts, prune it. Don't accumulate raw tool outputs you've already processed.
+
+**The golden rule:** the scratchpad should always contain everything you'd need to resume if all in-memory context disappeared right now. Distill and prune are for efficiency — the scratchpad is for survival.
+
+### When to Distill
+
+- **Long agent results** (exploration reports, review verdicts, implementation summaries) — distill immediately after incorporating findings into the scratchpad
+- **Technical details you'll reference later** (API shapes, file paths, architecture decisions) — distill to preserve precision without the noise
+- **Multiple agent results accumulating** — distill before starting the next delegation round
+
+### When to Prune
+
+- **Completed explorations** whose findings are in the scratchpad — prune the raw output
+- **Superseded results** — if you re-delegated a task, prune the first (failed) attempt
+- **Irrelevant tool outputs** — accidental reads, wrong file explorations, etc.
+
+### When NOT to Prune
+
+- **Active work** — if you're about to edit a file or reference specific details, keep the raw output
+- **Uncertainty** — if you might need to re-examine the output, defer pruning
+- **Small outputs** — don't waste a prune call on 10 lines. Batch small prunes together.
+
+### Context Hygiene Checkpoints
+
+These checkpoints complement the scratchpad update triggers — update the scratchpad first (that's survival), then distill/prune (that's efficiency). Run a quick mental check at these moments:
+- **Before starting a new phase** (Plan → Delegate → Review → Report) — clean up outputs from the previous phase
+- **After 3+ agent delegations** — you're accumulating. Distill or prune what you can.
+- **When you feel the context getting heavy** — trust the instinct. If you're losing track of what's in context, it's time to clean up.
 
 ## Memory Protocol
 
