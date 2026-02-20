@@ -1,6 +1,6 @@
 {
   "name": "opencode-team-lead",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Team-lead orchestrator agent for opencode — delegates work, reviews quality, manages context",
   "type": "module",
   "main": "index.js",
