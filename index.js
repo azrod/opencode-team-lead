@@ -21,6 +21,20 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     return {};
   }
 
+  // Load the review-manager prompt from the bundled review-manager.md
+  const reviewManagerPromptPath = join(__dirname, "review-manager.md");
+  let reviewManagerPrompt;
+  try {
+    reviewManagerPrompt = await readFile(reviewManagerPromptPath, "utf-8");
+  } catch (err) {
+    console.error(
+      `[opencode-team-lead] Failed to load review-manager.md at ${reviewManagerPromptPath}:`,
+      err.message,
+    );
+    // Don't return early — team-lead can still work without review-manager
+    reviewManagerPrompt = null;
+  }
+
   const projectRoot = worktree || directory;
 
   return {
@@ -79,6 +93,36 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           ...userConfig.permission,
         },
       };
+
+      // ── Review-manager agent ──────────────────────────────────────
+      if (reviewManagerPrompt) {
+        const reviewManagerUserConfig =
+          input.agent["review-manager"] ?? {};
+
+        const reviewManagerPermission = {
+          "*": "deny",
+          task: "allow",
+          question: "allow",
+          "sequential-thinking_*": "allow",
+        };
+
+        input.agent["review-manager"] = {
+          description:
+            "Review orchestrator — spawns specialized reviewer agents in parallel, " +
+            "synthesizes their verdicts, and arbitrates disagreements. " +
+            "Never reviews code directly.",
+          temperature: 0.2,
+          variant: "max",
+          mode: "subagent",
+          color: "warning",
+          ...reviewManagerUserConfig,
+          prompt: reviewManagerPrompt,
+          permission: {
+            ...reviewManagerPermission,
+            ...reviewManagerUserConfig.permission,
+          },
+        };
+      }
     },
 
     // ── Compaction hook: preserve scratchpad across compactions ───────

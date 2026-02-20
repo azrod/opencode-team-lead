@@ -4,7 +4,7 @@
 
 `opencode-team-lead` is an OpenCode plugin that injects a "team-lead" orchestrator agent. The agent plans work, delegates everything to sub-agents, reviews results, and reports back. It never touches code directly.
 
-This is a tiny project — 4 meaningful files, zero dependencies, pure ESM, no build step, no tests.
+This is a tiny project — 5 meaningful files, zero dependencies, pure ESM, no build step, no tests.
 
 ## Architecture
 
@@ -13,15 +13,18 @@ This is a tiny project — 4 meaningful files, zero dependencies, pure ESM, no b
 | File | Role |
 |------|------|
 | `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers the agent) and `experimental.session.compacting` (preserves scratchpad across context resets). |
-| `prompt.md` | **The core product.** 450+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
-| `package.json` | Standard npm config. Ships `index.js`, `prompt.md`, `README.md`. |
+| `prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
+| `review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
+| `package.json` | Standard npm config. Ships `index.js`, `prompt.md`, `review-manager.md`, `README.md`. |
 | `.github/workflows/publish.yml` | CI: OIDC trusted publishing to npm on `v*` tags, plus GitHub release creation. |
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
 | `README.md` | User-facing docs — installation, usage, permissions. |
 
 ### How the plugin works
 
-1. **`config` hook** — Injects the `team-lead` agent definition into OpenCode's config. Sets permissions (deny-all except `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `read`/`edit` restricted to `.opencode/scratchpad.md`, `memoai_*`, `sequential-thinking_*`, and git-only bash), temperature 0.3, variant `max`, mode `all`.
+1. **`config` hook** — Injects two agent definitions into OpenCode's config:
+   - **`team-lead`** — The orchestrator. Permissions: deny-all except `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `read`/`edit` restricted to `.opencode/scratchpad.md`, `memoai_*`, `sequential-thinking_*`, and git-only bash. Temperature 0.3, variant `max`, mode `all`.
+   - **`review-manager`** — Review orchestrator, runs as a sub-agent only (`mode: "subagent"`). Permissions: `task`, `question`, `sequential-thinking_*` only. Temperature 0.2, variant `max`. Registered only if `review-manager.md` loads successfully — the team-lead still works without it.
 
 2. **`experimental.session.compacting` hook** — Reads `.opencode/scratchpad.md` from the project root and injects it into the compaction context, so the team-lead's working memory survives context resets.
 
@@ -30,6 +33,7 @@ This is a tiny project — 4 meaningful files, zero dependencies, pure ESM, no b
 - The permission set is intentionally restrictive — the agent can only delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), think (`sequential-thinking`), remember (`memoai`), and run basic git commands.
 - `prompt.md` is loaded at plugin init time via `readFile`, not inlined in `index.js`. This keeps the prompt editable and diffable.
 - The plugin merges user config from `opencode.json` instead of overwriting it. Users can override `temperature`, `color`, `variant`, `mode` and add/override permissions; the merge applies plugin defaults first, then user overrides on top via spread order. The `prompt` is always provided by the plugin and cannot be overridden.
+- The review-manager uses nested sub-agent delegation (team-lead → review-manager → reviewer agents). OpenCode supports unlimited nesting depth as long as each level has `task: "allow"`. The review-manager runs with `mode: "subagent"` so it only appears as a sub-agent, never in the main agent list.
 
 ## Development
 

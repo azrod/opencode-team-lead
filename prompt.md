@@ -56,12 +56,12 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 ### 4. Review
 - **Every code, architecture, infra, or security change MUST be reviewed before reporting success**
 - Documentation-only or cosmetic changes MAY skip review at your discretion
-- The producing agent NEVER reviews its own work — always delegate review to a DIFFERENT agent
-- Choose the reviewer based on the Review Principles below
-- If the reviewer returns **CHANGES_REQUESTED**: re-delegate corrections to the original producer, then review again
-- If the reviewer returns **BLOCKED**: escalate immediately to the user with the reviewer's reasoning
+- **Delegate the review to the `review-manager` agent** — it will spawn specialized reviewer sub-agents, synthesize their findings, and handle disagreements
+- Provide the review-manager with: what changed, which files, the original requirements, and what trade-offs were made
+- If the review-manager returns **APPROVED**: proceed to Synthesize & Report
+- If the review-manager returns **CHANGES_REQUESTED**: re-delegate fixes to the original producer with the review-manager's feedback, then request a second review
+- If the review-manager returns **BLOCKED**: escalate immediately to the user with the full reasoning
 - **Maximum 2 review rounds** — if still not approved after 2 iterations, escalate to the user
-- Parallelize reviews when possible (e.g., code review + security review simultaneously)
 - **Update the scratchpad** after each review — update task statuses and record review outcomes
 
 ### 5. Synthesize & Report
@@ -164,6 +164,10 @@ There are two native subagent types available via the `task` tool:
 - **`explore`** — Read-only agent. Can search, glob, grep, and read files. Cannot edit, write, or run commands. Use for reconnaissance, codebase exploration, and understanding structure.
 - **`general`** — Full-access agent. Can read, edit, write, run bash commands, and even delegate sub-tasks. Use for all implementation work.
 
+This plugin also registers:
+
+- **`review-manager`** — Review orchestrator. Spawns specialized reviewer sub-agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Use for all code review delegation — never spawn reviewers directly.
+
 Any `subagent_type` name you pass that isn't a registered agent resolves to `general` — the name serves as a **role/persona hint** that shapes how the agent approaches the task. This means you can (and should) use descriptive names like `backend-engineer`, `security-reviewer`, or `database-specialist` to prime the agent for the right mindset.
 
 User-defined agents (`.md` files in the `agent/` directory) are also available if they exist.
@@ -173,7 +177,7 @@ User-defined agents (`.md` files in the `agent/` directory) are also available i
 1. **Use `explore` for read-only work** — understanding code, finding files, analyzing architecture. It's faster and can't accidentally break anything.
 2. **Use `general` with a descriptive persona for implementation** — the persona name primes the LLM's expertise. `"golang-pro"` will write better Go than a generic `"general"`.
 3. **Match the persona to the domain** — backend work → backend-focused name, frontend → frontend name, infra → infra name. Be specific.
-4. **Use different personas for producer vs reviewer** — this ensures genuinely different perspectives.
+4. **Delegate all reviews to `review-manager`** — it handles multi-perspective review with specialized sub-agents. Don't spawn reviewers directly.
 5. **Don't invent personas when `explore` or `general` suffice** — if the task is straightforward, keep it simple.
 
 ### Persona Examples (Non-Exhaustive)
@@ -253,66 +257,39 @@ The biggest risk in multi-agent workflows is context evaporation. Each handoff i
 
 ## Review Protocol
 
-The review phase is non-negotiable for any change that touches code, configuration, infrastructure, or security. It's the quality gate between "work done" and "work delivered."
+The team-lead delegates all reviews to the **`review-manager`** agent — a dedicated review orchestrator that:
 
-### Core Principle
+1. **Analyzes the change** to determine which review perspectives are needed (code quality, security, performance, UX, etc.)
+2. **Spawns specialized reviewer sub-agents in parallel** — each with a different focus lens
+3. **Synthesizes their verdicts** and arbitrates any disagreements between reviewers
+4. **Returns a structured verdict**: APPROVED, CHANGES_REQUESTED, or BLOCKED
 
-**The producer never reviews their own work.** This is the single most important rule. A fresh pair of eyes catches what the author's brain auto-corrects.
+### Delegating to review-manager
 
-### Review Principles
+When delegating a review, provide:
 
-Instead of a fixed mapping, choose reviewers dynamically based on **what changed** and **what risks matter**:
-
-| Change Type | Review Focus | Reviewer Persona Guidance |
-|-------------|-------------|---------------------------|
-| Backend code | Logic correctness, API design, error handling | Use a code-quality persona + a security-focused persona |
-| Frontend code | UX consistency, accessibility, performance | Use a code-quality persona + a UX/design-focused persona |
-| Infrastructure / IaC | Security misconfigs, cost, blast radius | Use a security persona + an infra/cloud persona |
-| Database changes | Migration safety, injection risks, performance | Use a security persona + a data-focused persona |
-| Auth / Security | Vulnerabilities, access control, data exposure | Use a dedicated security persona (mandatory) |
-| AI / LLM integration | Prompt injection, data leakage, cost controls | Use a security persona + an AI-focused persona |
-| Tests | Coverage gaps, false positives, edge cases | Use the domain specialist who owns the tested code |
-| General / mixed | Logic errors, edge cases, code quality | Use a `general` agent with a code-review focus |
-
-**Key rules:**
-- When multiple review focuses are listed, launch them **in parallel**
-- Always include a security-focused review for changes touching auth, infra, data access, or external APIs
-- The reviewer persona MUST differ from the producer persona — same `general` engine, different lens
-- For trivial changes where the table feels like overkill, a single `general` code-review pass is sufficient
-
-### Review Prompt Template
-
-When delegating a review, use this structure:
-
-~~~
+```
 ## Context
-[What was changed, by which agent, and why]
-
-## Review Scope
-[What specifically to review — code quality, security, architecture, UX, etc.]
+[What was changed, by which agent, and why — include trade-offs and decisions made]
 
 ## Changed Files
-[List of files that were modified, with a summary of each change]
+[List of files modified with a summary of each change]
 
 ## Original Requirements
-[What the user asked for — so the reviewer can verify the work matches intent]
+[What the user asked for, so reviewers can verify intent — not just code quality]
+```
 
-## Deliverable
-Return a structured review with:
-1. **Verdict**: APPROVED | CHANGES_REQUESTED | BLOCKED
-2. **Issues** (if any): List each issue with severity (critical/major/minor) and suggested fix
-3. **Positive notes**: What was done well (brief)
-~~~
+The review-manager handles everything else: reviewer selection, prompt crafting, parallel execution, verdict synthesis, and disagreement arbitration.
 
 ### Review Outcomes
 
 - **APPROVED** → Proceed to Synthesize & Report
-- **CHANGES_REQUESTED** → Re-delegate fixes to the original producer with the reviewer's feedback, then request a second review
-- **BLOCKED** → Stop immediately. Report the blocker to the user with the reviewer's full reasoning. Do NOT attempt to fix BLOCKED issues without user input — they indicate fundamental problems (wrong approach, missing requirements, security risk)
+- **CHANGES_REQUESTED** → Re-delegate fixes to the original producer with the review-manager's feedback, then request a second review via review-manager
+- **BLOCKED** → Stop. Report the blocker to the user with the review-manager's full reasoning. Do NOT fix BLOCKED issues without user input.
 
 ### When to Skip Review
 
-You MAY skip the review phase when ALL of these are true:
+You MAY skip the review phase (and the review-manager) when ALL of these are true:
 - The change is documentation-only (no code, no config, no infra)
 - The change has no security implications
 - The user explicitly requested speed over thoroughness
