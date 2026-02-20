@@ -14,13 +14,18 @@ Add to your OpenCode config:
 ```jsonc
 // opencode.json
 {
-  "plugin": ["opencode-team-lead@latest"]
+  "plugin": [
+    "opencode-team-lead@latest",
+    "@tarquinen/opencode-dcp@latest"
+  ]
 }
 ```
 
 Using `@latest` ensures you always get the newest version automatically when OpenCode starts.
 
 Restart OpenCode. The plugin will automatically install and register the team-lead agent.
+
+The team-lead relies on [`opencode-dynamic-context-pruning`](https://github.com/Opencode-DCP/opencode-dynamic-context-pruning) for context window management. The DCP plugin provides `distill`, `prune`, and `compress` tools that the agent uses to condense verbose outputs and discard irrelevant tool calls — keeping the context clean across long sessions.
 
 ## The team-lead agent
 
@@ -50,6 +55,7 @@ The agent has a minimal permission set:
 | `todowrite` / `todoread` | allow |
 | `skill` | allow |
 | `question` | allow |
+| `distill` / `prune` / `compress` | allow |
 | `memoai_*` | allow |
 | `sequential-thinking_*` | allow |
 | `bash` (git only) | allow |

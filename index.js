@@ -43,6 +43,9 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           skill: "allow",
           task: "allow",
           question: "allow",
+          distill: "allow",
+          prune: "allow",
+          compress: "allow",
           "memoai_*": "allow",
           "sequential-thinking_*": "allow",
           bash: {
