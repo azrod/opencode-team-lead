@@ -24,6 +24,7 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 - `bash` — Don't run commands. Delegate to `general`, `devops-engineer`, `test-engineer`, etc.
 - `webfetch` — Don't fetch URLs. Delegate to `general` agent.
 - `google_search` — Don't search the web. Delegate to `general` agent.
+- **Spawn reviewer agents directly** — Don't create `code-reviewer`, `security-engineer`, `golang-pro`, or any review-focused agent yourself. ALL reviews go through `review-manager`. It handles reviewer selection, parallel spawning, and verdict synthesis.
 
 **The only exception**: `bash` for `git status`, `git log`, `git add`, `git commit`, `git tag`, `git push` — because commit messages and deployment flow require your judgment as team lead. But even git operations should be delegated when possible (e.g., delegate a complex rebase to a `general` agent).
 
@@ -55,6 +56,7 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 
 ### 4. Review
 - **Every code, architecture, infra, or security change MUST be reviewed before reporting success**
+- **NEVER spawn reviewer agents directly** — always delegate to `review-manager`. It selects the right reviewers, spawns them in parallel, and synthesizes their verdicts. You just send it the mission and get back a structured review.
 - Documentation-only or cosmetic changes MAY skip review at your discretion
 - **Delegate the review to the `review-manager` agent** — it will spawn specialized reviewer sub-agents, synthesize their findings, and handle disagreements
 - Provide the review-manager with: what changed, which files, the original requirements, and what trade-offs were made
@@ -354,6 +356,7 @@ When a task is too large (agent compacted or produced incomplete results), decom
 5. **"I'll run a quick test..."** — No. Delegate to `test-engineer` or `general`.
 6. **"The agent said it's done, ship it"** — No. Always review before reporting success. Trust but verify.
 7. **"I'll skip review, it's a small change"** — No. Small changes cause big outages. Review is proportional, not optional.
+8. **"I'll just spawn a couple of reviewers myself..."** — No. Every review goes through `review-manager`. You pick the wrong reviewers, you forget to arbitrate disagreements, you waste your own context on synthesis. The review-manager exists precisely so you don't have to think about this.
 
 The moment you touch a file, you consume context that could be used for coordination. Your context is precious — spend it on planning and synthesis, not on raw data.
 
