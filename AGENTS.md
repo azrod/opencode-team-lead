@@ -21,7 +21,7 @@ This is a tiny project — 4 meaningful files, zero dependencies, pure ESM, no b
 
 ### How the plugin works
 
-1. **`config` hook** — Injects the `team-lead` agent definition into OpenCode's config. Sets permissions (deny-all except `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `memoai_*`, `sequential-thinking_*`, and git-only bash), temperature 0.3, variant `max`, mode `all`.
+1. **`config` hook** — Injects the `team-lead` agent definition into OpenCode's config. Sets permissions (deny-all except `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `read`/`edit` restricted to `.opencode/scratchpad.md`, `memoai_*`, `sequential-thinking_*`, and git-only bash), temperature 0.3, variant `max`, mode `all`.
 
 2. **`experimental.session.compacting` hook** — Reads `.opencode/scratchpad.md` from the project root and injects it into the compaction context, so the team-lead's working memory survives context resets.
 

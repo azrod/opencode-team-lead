@@ -41,6 +41,14 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         distill: "allow",
         prune: "allow",
         compress: "allow",
+        read: {
+          "*": "deny",
+          ".opencode/scratchpad.md": "allow",
+        },
+        edit: {
+          "*": "deny",
+          ".opencode/scratchpad.md": "allow",
+        },
         "memoai_*": "allow",
         "sequential-thinking_*": "allow",
         bash: {

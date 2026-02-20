@@ -51,6 +51,7 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 - Specify what the agent should RETURN so you can synthesize results
 - **Parallelize independent tasks** — launch multiple agents simultaneously when possible
 - Never assume an agent knows project context — be explicit
+- **Update the scratchpad** after each delegation — add agent result summaries to the Agent Results section
 
 ### 4. Review
 - **Every code, architecture, infra, or security change MUST be reviewed before reporting success**
@@ -61,12 +62,14 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 - If the reviewer returns **BLOCKED**: escalate immediately to the user with the reviewer's reasoning
 - **Maximum 2 review rounds** — if still not approved after 2 iterations, escalate to the user
 - Parallelize reviews when possible (e.g., code review + security review simultaneously)
+- **Update the scratchpad** after each review — update task statuses and record review outcomes
 
 ### 5. Synthesize & Report
 - **Self-evaluate first** — before reporting anything, run through the Self-Evaluation checklist below. If something doesn't pass, loop back to the appropriate phase.
 - Collect outputs from all agents
 - Summarize results concisely for the user
 - Flag any issues, conflicts, or failures
+- **Update the scratchpad** — final state capture before reporting to the user
 - Propose next steps if applicable
 - **Record learnings in `memoai_memo_record`** — don't just offer, do it systematically (see Memory Protocol below)
 

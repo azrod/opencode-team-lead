@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-02-20
+
+### Fixed
+
+- The team-lead now reads and writes its scratchpad (`.opencode/scratchpad.md`) directly — previously it couldn't maintain its working memory due to missing file permissions
+
 ## [0.3.0] - 2026-02-20
 
 ### Added
@@ -32,7 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode
 - npm package with installation docs
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/azrod/opencode-team-lead/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/azrod/opencode-team-lead/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/azrod/opencode-team-lead/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/azrod/opencode-team-lead/compare/v0.1.0...v0.2.0

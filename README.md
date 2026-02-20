@@ -59,6 +59,7 @@ The agent has a minimal permission set:
 | `memoai_*` | allow |
 | `sequential-thinking_*` | allow |
 | `bash` (git only) | allow |
+| `read` / `edit` (`.opencode/scratchpad.md` only) | allow |
 | Everything else | deny |
 
 ## Customization
