@@ -61,6 +61,30 @@ The agent has a minimal permission set:
 | `bash` (git only) | allow |
 | Everything else | deny |
 
+## Customization
+
+You can override agent properties in your `opencode.json` — `temperature`, `color`, `variant`, `mode`, and additional permissions are all fair game:
+
+```jsonc
+// opencode.json
+{
+  "agent": {
+    "team-lead": {
+      "temperature": 0.5,
+      "color": "#FF5733",
+      "permission": {
+        "webfetch": "allow",
+        "my_custom_tool": "allow"
+      }
+    }
+  }
+}
+```
+
+Your overrides are merged on top of the plugin defaults — anything you don't specify keeps its default value. Permissions work the same way: the plugin's built-in permissions stay intact, and yours are added (or override specific entries).
+
+The system prompt is always provided by the plugin and cannot be overridden.
+
 ## License
 
 MIT

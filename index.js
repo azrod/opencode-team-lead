@@ -27,6 +27,34 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     // ── Config hook: inject the team-lead agent ──────────────────────
     config: async (input) => {
       input.agent = input.agent ?? {};
+
+      // Capture any existing user config (e.g. from opencode.json)
+      const userConfig = input.agent["team-lead"] ?? {};
+
+      const defaultPermission = {
+        "*": "deny",
+        todowrite: "allow",
+        todoread: "allow",
+        skill: "allow",
+        task: "allow",
+        question: "allow",
+        distill: "allow",
+        prune: "allow",
+        compress: "allow",
+        "memoai_*": "allow",
+        "sequential-thinking_*": "allow",
+        bash: {
+          "*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow",
+          "git tag*": "allow",
+        },
+      };
+
       input.agent["team-lead"] = {
         description:
           "Strict delegation-only team lead. Understands requests, breaks them into tasks, " +
@@ -35,29 +63,12 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         temperature: 0.3,
         variant: "max",
         mode: "all",
+        color: "error",
+        ...userConfig,
         prompt,
         permission: {
-          "*": "deny",
-          todowrite: "allow",
-          todoread: "allow",
-          skill: "allow",
-          task: "allow",
-          question: "allow",
-          distill: "allow",
-          prune: "allow",
-          compress: "allow",
-          "memoai_*": "allow",
-          "sequential-thinking_*": "allow",
-          bash: {
-            "*": "deny",
-            "git status*": "allow",
-            "git diff*": "allow",
-            "git log*": "allow",
-            "git add*": "allow",
-            "git commit*": "allow",
-            "git push*": "allow",
-            "git tag*": "allow",
-          },
+          ...defaultPermission,
+          ...userConfig.permission,
         },
       };
     },

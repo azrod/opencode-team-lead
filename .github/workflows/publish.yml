@@ -22,11 +22,21 @@ jobs:
         run: echo "registry=https://registry.npmjs.org/" > ~/.npmrc
 
       - name: Set version from tag
-        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+        id: version
+        run: |
+          npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+          echo "number=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - run: npm publish --access public
 
+      - name: Read changelog
+        id: changelog
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.version.outputs.number }}
+
       - name: Create GitHub Release
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "$NOTES"
         env:
           GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ steps.changelog.outputs.changes }}
