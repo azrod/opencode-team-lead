@@ -42,10 +42,6 @@ The team-lead never touches code directly. It:
 
 The team-lead maintains a working memory file at `.opencode/scratchpad.md` in the project root. This survives context compaction — when the agent loses in-memory context, it reads the scratchpad to resume where it left off.
 
-### Memory
-
-Uses `memoai` for cross-session memory — architecture decisions, pitfalls, patterns. Searches before planning, records after completing significant tasks.
-
 ### The review-manager agent
 
 The review-manager is a sub-agent — it's never visible in the main agent list. The team-lead delegates reviews to it automatically.
@@ -68,7 +64,6 @@ The agent has a minimal permission set:
 | `skill` | allow |
 | `question` | allow |
 | `distill` / `prune` / `compress` | allow |
-| `memoai_*` | allow |
 | `sequential-thinking_*` | allow |
 | `bash` (git only) | allow |
 | `read` / `edit` (`.opencode/scratchpad.md` only) | allow |

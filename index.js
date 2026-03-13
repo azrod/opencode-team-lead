@@ -63,7 +63,6 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
         },
-        "memoai_*": "allow",
         "sequential-thinking_*": "allow",
         bash: {
           "*": "deny",
