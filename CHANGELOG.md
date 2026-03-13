@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-13
+
+### Removed
+
+- Removed the memoai memory integration — the team-lead no longer uses `memoai_memo_search` and `memoai_memo_record` to record decisions or search past context across sessions
+
 ## [0.5.0] - 2026-02-20
 
 ### Added
@@ -58,7 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode
 - npm package with installation docs
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/azrod/opencode-team-lead/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/azrod/opencode-team-lead/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/azrod/opencode-team-lead/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/azrod/opencode-team-lead/compare/v0.3.1...v0.4.0
