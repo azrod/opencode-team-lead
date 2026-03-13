@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The team-lead now critically evaluates agent results before acting on them — questioning problem framing, source quality, and unexplored alternatives instead of accepting plausible-sounding output at face value
+- Analysis depth is bounded — the team-lead challenges a result at most once, then either accepts the best available answer or surfaces the uncertainty to the user rather than looping
+
 ## [0.6.1] - 2026-03-13
 
 ### Removed
