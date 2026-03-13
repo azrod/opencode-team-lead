@@ -34,7 +34,7 @@ The team-lead never touches code directly. It:
 
 1. **Understands** the user's request (asks clarifying questions if needed)
 2. **Plans** the work using `sequential-thinking` and `todowrite`
-3. **Delegates** everything to specialized sub-agents (`explore`, `general`, or custom personas like `backend-engineer`, `security-auditor`, etc.)
+3. **Delegates** everything to specialized sub-agents (`explore`, `general`, or custom personas like `backend-engineer`, `security-auditor`, etc.) — and critically evaluates their results before acting on them: questioning problem framing, source quality, and unexplored alternatives
 4. **Reviews** every code change by delegating to the `review-manager`, which spawns specialized reviewers in parallel and arbitrates their verdicts
 5. **Synthesizes** results and reports back
 

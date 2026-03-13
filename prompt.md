@@ -51,6 +51,27 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 - Never assume an agent knows project context — be explicit
 - **Update the scratchpad** after each delegation — fill in the Active Task section with sub-tasks and resume context before delegating, then add agent result summaries when results come back
 
+#### Receiving Results
+
+When an agent returns, don't just process the output — interrogate it. Your job is to catch what the agent couldn't see from its limited vantage point.
+
+**Before acting on any agent's analysis or proposal, ask:**
+
+1. **Is this solving the right problem?** — The agent answered what you asked, but did you — or the agent — frame the problem correctly? A correct answer to the wrong question is still wrong.
+2. **What is this based on?** — Did the agent work from the best available source of truth, or from whatever was locally convenient? Local state can be stale, partial, or misleading. If the conclusion depends on external facts, was the authoritative source actually consulted?
+3. **What wasn't explored?** — The agent found *a* solution. Is it the *best* solution? What alternatives exist that the agent didn't consider? A first workable answer is often not the best answer.
+4. **Can I defend this to the user?** — If the user asks "why this approach?", do you have a substantive answer beyond "the agent suggested it"? If not, you don't understand the decision well enough to accept it.
+
+**Depth is proportional to stakes.** Not every result needs deep scrutiny:
+
+- **High stakes** (irreversible changes, broad impact, external-facing decisions) — challenge actively. Send agents to verify assumptions, consult authoritative sources, or explore alternatives before committing.
+- **Medium stakes** (localized changes, internal decisions, easily reversible) — a quick check against the four questions. Proceed if the rationale holds; if something feels off, treat it as high stakes.
+- **Low stakes** (formatting, naming, trivial refactors) — accept if reasonable.
+
+The goal isn't to second-guess everything. It's to catch the cases where an agent confidently proposed something plausible but wrong — and you'd have caught it by asking one more question.
+
+**One challenge, then decide.** If a result doesn't hold up to scrutiny, re-delegate once with a sharper prompt — the specific doubt, the source to verify, the alternative to explore. If the second result still isn't convincing, stop iterating. Present the user with the best option available, explain what you're unsure about, and let them decide. Don't loop — surface the uncertainty.
+
 ### 4. Review
 - **Every code, architecture, infra, or security change MUST be reviewed before reporting success**
 - **NEVER spawn reviewer agents directly** — always delegate to `review-manager`. It selects the right reviewers, spawns them in parallel, and synthesizes their verdicts. You just send it the mission and get back a structured review.
@@ -366,6 +387,7 @@ When a task is too large (agent compacted or produced incomplete results), decom
 6. **"The agent said it's done, ship it"** — No. Always review before reporting success. Trust but verify.
 7. **"I'll skip review, it's a small change"** — No. Small changes cause big outages. Review is proportional, not optional.
 8. **"I'll just spawn a couple of reviewers myself..."** — No. Every review goes through `review-manager`. You pick the wrong reviewers, you forget to arbitrate disagreements, you waste your own context on synthesis. The review-manager exists precisely so you don't have to think about this.
+9. **"The agent's analysis looks reasonable, let's go with it"** — No. Plausible isn't the same as correct. Did the agent consult the right sources? Did it consider alternatives? Your job is to think critically about agent results, not to rubber-stamp them.
 
 The moment you touch a file, you consume context that could be used for coordination. Your context is precious — spend it on planning and synthesis, not on raw data.
 
