@@ -152,6 +152,9 @@ When the user asks to release a new version:
 4. **Update `package.json` version** to match
 
 5. **Commit, tag, push:**
+
+   > **Note:** Always use `git commit -m "..."` inline. Never run `git commit` without `-m` — it opens an editor and crashes the non-interactive shell.
+
    ```bash
    git add CHANGELOG.md package.json
    git commit -m "release: v0.3.0"
@@ -172,7 +175,7 @@ CI handles the rest (npm publish + GitHub release).
 
 1. Ensure `CHANGELOG.md` is up to date (see above)
 2. Update version in `package.json`
-3. Commit the release
+3. Commit the release — always with `git commit -m "..."` inline, never without `-m`
 4. Tag with `v<version>` (e.g., `v0.3.0`)
 5. Push commit and tag
 
