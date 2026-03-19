@@ -1,12 +1,12 @@
 # opencode-team-lead
 
-An [opencode](https://opencode.ai) plugin that installs a **team-lead orchestrator agent** — a pure delegation layer that plans work, dispatches it to specialized sub-agents, reviews results, and reports back.
+An [opencode](https://opencode.ai) plugin that installs **Orion**, a team-lead orchestrator agent — a pure delegation layer that plans work, dispatches it to specialized sub-agents, reviews results, and reports back.
 
 ## What it does
 
 - **Injects the `team-lead` agent** via the `config` hook — with a locked-down permission set (no file I/O, no bash except git), `temperature: 0.3`, variant `max`
-- **Preserves the scratchpad across compactions** via the `experimental.session.compacting` hook — the team-lead's working memory (`.opencode/scratchpad.md`) is injected into the compaction prompt so mission state survives context resets
-- **Registers the `review-manager` sub-agent** — a review orchestrator that spawns specialized reviewer agents in parallel, synthesizes their verdicts, and arbitrates disagreements. The team-lead delegates all code reviews to it automatically.
+- **Preserves the scratchpad across compactions** via the `experimental.session.compacting` hook — Orion's working memory (`.opencode/scratchpad.md`) is injected into the compaction prompt so mission state survives context resets
+- **Registers the `review-manager` sub-agent** — a review orchestrator that spawns specialized reviewer agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Orion delegates all code reviews to it automatically.
 
 ## Installation
 
@@ -26,11 +26,11 @@ Using `@latest` ensures you always get the newest version automatically when Ope
 
 Restart OpenCode. The plugin will automatically install and register the team-lead agent.
 
-The team-lead relies on [`opencode-dynamic-context-pruning`](https://github.com/Opencode-DCP/opencode-dynamic-context-pruning) for context window management. The DCP plugin provides `distill`, `prune`, and `compress` tools that the agent uses to condense verbose outputs and discard irrelevant tool calls — keeping the context clean across long sessions.
+Orion relies on [`opencode-dynamic-context-pruning`](https://github.com/Opencode-DCP/opencode-dynamic-context-pruning) for context window management. The DCP plugin provides `distill`, `prune`, and `compress` tools that the agent uses to condense verbose outputs and discard irrelevant tool calls — keeping the context clean across long sessions.
 
-## The team-lead agent
+## Orion (team-lead agent)
 
-The team-lead never touches code directly. It:
+Orion never touches code directly. It:
 
 1. **Understands** the user's request (asks clarifying questions if needed)
 2. **Plans** the work using `sequential-thinking` and `todowrite`
@@ -40,18 +40,18 @@ The team-lead never touches code directly. It:
 
 ### Scratchpad
 
-The team-lead maintains a working memory file at `.opencode/scratchpad.md` in the project root. This survives context compaction — when the agent loses in-memory context, it reads the scratchpad to resume where it left off.
+Orion maintains a working memory file at `.opencode/scratchpad.md` in the project root. This survives context compaction — when the agent loses in-memory context, it reads the scratchpad to resume where it left off.
 
 ### The review-manager agent
 
-The review-manager is a sub-agent — it's never visible in the main agent list. The team-lead delegates reviews to it automatically.
+The review-manager is a sub-agent — it's never visible in the main agent list. Orion delegates reviews to it automatically.
 
 It works in 3 steps:
 1. **Selects reviewers** based on what changed (code quality, security, UX, infrastructure, etc.)
 2. **Spawns them in parallel** — each reviewer gets a focused brief and works independently
 3. **Synthesizes the verdict** — resolves disagreements, groups issues by severity, and returns a single structured review
 
-The review-manager never reviews code itself. It orchestrates reviewers, just like the team-lead orchestrates workers.
+The review-manager never reviews code itself. It orchestrates reviewers, just like Orion orchestrates workers.
 
 ## Permissions
 
