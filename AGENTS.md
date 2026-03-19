@@ -155,10 +155,12 @@ When the user asks to release a new version:
 
    > **Note:** Always use `git commit -m "..."` inline. Never run `git commit` without `-m` — it opens an editor and crashes the non-interactive shell.
 
+   > **Note:** Same for tags — always use `git tag -a v0.x.y -m "v0.x.y"`. Plain `git tag` without `-m` also opens an editor.
+
    ```bash
    git add CHANGELOG.md package.json
    git commit -m "release: v0.3.0"
-   git tag v0.3.0
+   git tag -a v0.3.0 -m "v0.3.0"
    git push && git push --tags
    ```
 
@@ -176,7 +178,7 @@ CI handles the rest (npm publish + GitHub release).
 1. Ensure `CHANGELOG.md` is up to date (see above)
 2. Update version in `package.json`
 3. Commit the release — always with `git commit -m "..."` inline, never without `-m`
-4. Tag with `v<version>` (e.g., `v0.3.0`)
+4. Tag with `v<version>` — always use `git tag -a v<version> -m "v<version>"`, never plain `git tag` without `-m`
 5. Push commit and tag
 
 CI (`.github/workflows/publish.yml`) triggers on `v*` tags and:
