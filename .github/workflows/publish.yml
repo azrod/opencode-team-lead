@@ -50,20 +50,12 @@ jobs:
         with:
           version: ${{ steps.version.outputs.number }}
 
-      - name: Generate beta release notes
-        id: beta_notes
+      - name: Read changelog (Unreleased)
+        id: changelog_beta
         if: env.IS_PRERELEASE == 'true'
-        run: |
-          PREV_STABLE=$(git tag --list 'v*' --sort=-version:refname | grep -v -- '-' | head -1)
-          if [[ -z "$PREV_STABLE" ]]; then
-            NOTES=$(git log --oneline --no-decorate)
-          else
-            NOTES=$(git log "${PREV_STABLE}..HEAD" --oneline --no-decorate)
-          fi
-          DELIMITER="EOF_$(openssl rand -hex 8)"
-          echo "notes<<${DELIMITER}" >> "$GITHUB_OUTPUT"
-          echo "$NOTES" >> "$GITHUB_OUTPUT"
-          echo "${DELIMITER}" >> "$GITHUB_OUTPUT"
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: "Unreleased"
 
       - name: Create stable GitHub Release
         if: env.IS_PRERELEASE == 'false'
@@ -81,4 +73,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --prerelease --notes-file /tmp/release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
-          NOTES: ${{ steps.beta_notes.outputs.notes }}
+          NOTES: ${{ steps.changelog_beta.outputs.changes }}
