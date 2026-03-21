@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Three specialized reviewer agents are now included: `requirements-reviewer`, `code-reviewer`, and `security-reviewer` — the review-manager spawns them automatically based on change type and risk level (size × risk axes), and always runs `requirements-reviewer` on non-trivial reviews; high-risk patterns (auth, SQL, crypto, secrets) force `security-reviewer` regardless of change size
+
+### Fixed
+
+- Overriding a permission key in `opencode.json` no longer silently drops the plugin defaults for that key — your custom permissions are now merged on top instead of replacing the entire group
+- In-flight delegations are now tracked in the scratchpad with their `task_id` — if compaction hits while a delegation is running, Orion can resume without losing track of what was dispatched
+
 ## [0.6.2] - 2026-03-19
 
 ### Changed
