@@ -7,6 +7,47 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * One-level-deep permission merge.
+ * For each key in `overrides`, if both sides are plain objects, shallow-merge
+ * them so nested tool maps (bash, read, edit, write, …) are combined rather
+ * than replaced. For any other value type the override wins outright.
+ *
+ * @param {Record<string, unknown>} defaults
+ * @param {Record<string, unknown> | null | undefined} overrides
+ * @returns {Record<string, unknown>}
+ */
+function mergePermissions(defaults, overrides) {
+  if (!overrides || typeof overrides !== "object") return { ...defaults };
+  const result = { ...defaults };
+  for (const [key, override] of Object.entries(overrides)) {
+    const base = result[key];
+    if (
+      base !== null &&
+      typeof base === "object" &&
+      !Array.isArray(base) &&
+      override !== null &&
+      typeof override === "object" &&
+      !Array.isArray(override)
+    ) {
+      result[key] = { ...base, ...override };
+    } else {
+      if (
+        Array.isArray(override) &&
+        base !== null &&
+        typeof base === "object" &&
+        !Array.isArray(base)
+      ) {
+        console.warn(
+          `[opencode-team-lead] permission key "${key}" received an array override — expected an object. Plugin defaults for this key have been dropped.`
+        );
+      }
+      result[key] = override;
+    }
+  }
+  return result;
+}
+
 export const TeamLeadPlugin = async ({ directory, worktree }) => {
   // Load the system prompt from the bundled prompt.md
   const promptPath = join(__dirname, "prompt.md");
@@ -87,10 +128,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         color: "error",
         ...userConfig,
         prompt,
-        permission: {
-          ...defaultPermission,
-          ...userConfig.permission,
-        },
+        permission: mergePermissions(defaultPermission, userConfig.permission),
       };
 
       // ── Review-manager agent ──────────────────────────────────────
@@ -116,10 +154,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           color: "warning",
           ...reviewManagerUserConfig,
           prompt: reviewManagerPrompt,
-          permission: {
-            ...reviewManagerPermission,
-            ...reviewManagerUserConfig.permission,
-          },
+          permission: mergePermissions(reviewManagerPermission, reviewManagerUserConfig.permission),
         };
       }
     },

@@ -97,6 +97,15 @@ The system prompt is always provided by the plugin and cannot be overridden.
 
 The `review-manager` agent can be customized the same way — override `temperature`, `color`, or add permissions under `"review-manager"` in the `agent` block.
 
+To always start sessions with the team-lead agent, set it as the default in your `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "team-lead"
+}
+```
+
 ## License
 
 MIT

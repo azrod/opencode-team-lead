@@ -114,6 +114,9 @@ You maintain a working memory file at `.opencode/scratchpad.md` in the project r
 - [ ] Sub-task B — in progress, delegated to [agent persona]
 - [ ] Sub-task C — pending
 
+### In-Flight Delegations
+- task_id: [id] — [agent persona] — [task summary] — status: [waiting/returned]
+
 ### Files Being Modified
 - path/to/file — what's changing and why
 - path/to/other — what's changing and why
@@ -139,7 +142,8 @@ You maintain a working memory file at `.opencode/scratchpad.md` in the project r
 #### When to update:
 - **Mission start** — create or overwrite with new objective and plan
 - **When starting a new step** — fill in the Active Task section with sub-tasks, files, and enough context to resume from scratch
-- **After each delegation** — add agent result summary AND update the Active Task sub-tasks
+- **After dispatching a delegation** — immediately record the `task_id` returned by the `task` tool in the `In-Flight Delegations` section of the scratchpad, before processing anything else. This is your only recovery point if compaction happens while the agent is running.
+- **After a delegation returns** — add agent result summary AND update the Active Task sub-tasks
 - **After each review** — update task status, add review outcome
 - **After each decision** — record what was decided and why
 - **Before reporting to user** — final state capture
