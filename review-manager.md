@@ -39,11 +39,11 @@ Choose reviewers based on what changed. This isn't a rigid mapping — use judgm
 | AI / LLM integration | `security-reviewer` (prompt injection, data leakage) + `ai-reviewer` (cost, accuracy, guardrails) |
 | Tests only | `code-reviewer` (coverage gaps, missing assertions, false positives, edge cases) |
 | General / mixed | `code-reviewer` + `security-reviewer` |
-| Trivial / docs-only | `requirements-reviewer` + `code-reviewer` (quick pass; skip `requirements-reviewer` for formatting or typo-only fixes with no associated functional requirement) |
+| Trivial / docs-only | `code-reviewer` (quick pass; skip `requirements-reviewer` for formatting or typo-only fixes with no associated functional requirement) |
 
 **Proportionality rules:**
 
-`requirements-reviewer` is mandatory (except pure formatting/typo-only fixes) — it counts as one of the reviewer slots.
+`requirements-reviewer` is mandatory (except pure formatting/typo-only fixes) — it does **not** count toward the reviewer cap. The cap applies to technical reviewers only.
 
 Risk overrides size. Classify changes on two axes:
 
@@ -56,20 +56,20 @@ Risk overrides size. Classify changes on two axes:
 - External API calls transmitting user data
 - Prompt injection vectors (LLM integration)
 
-| Size | Risk | Reviewers |
-|---|---|---|
-| Trivial (1-2 files, < 50 lines) | Low | `requirements-reviewer` + 1 technical reviewer |
-| Trivial (1-2 files, < 50 lines) | **High** | `requirements-reviewer` + `security-reviewer` |
-| Normal (3-10 files) | Low | `requirements-reviewer` + 1-2 technical reviewers |
-| Normal (3-10 files) | **High** | `requirements-reviewer` + `security-reviewer` + 1 technical reviewer |
-| Large (10+ files) | Low | `requirements-reviewer` + 2 technical reviewers |
-| Large (10+ files) | **High** | `requirements-reviewer` + `security-reviewer` + 1 technical reviewer |
+| Size | Risk | Technical reviewers | Total (incl. requirements-reviewer) |
+|---|---|---|---|
+| Trivial (1-2 files, < 50 lines) | Low | `code-reviewer` | 2 |
+| Trivial (1-2 files, < 50 lines) | **High** | `security-reviewer` + `code-reviewer` | 3 |
+| Normal (3-10 files) | Low | `code-reviewer` + 1 domain reviewer | 3 |
+| Normal (3-10 files) | **High** | `security-reviewer` + `code-reviewer` + 1 domain reviewer | 4 |
+| Large (10+ files) | Low | `code-reviewer` + 2 domain reviewers | 4 |
+| Large (10+ files) | **High** | `security-reviewer` + `code-reviewer` + 1 domain reviewer | 4 |
 
-Never spawn more than 3 reviewers total. Diminishing returns hit fast.
-
-**Known gap — Performance:** No reviewer in the default set has an explicit mandate for performance concerns (N+1 queries, algorithmic complexity, memory leaks, blocking I/O). For performance-sensitive changes, add an explicit performance focus to the `code-reviewer` prompt.
+Never spawn more than 3 technical reviewers. Diminishing returns hit fast.
 
 **If the review mission doesn't include the original requirements**, use `question` to request them from the team-lead before spawning any reviewers.
+
+> **Known gap — Performance:** No reviewer in the default set has an explicit mandate for performance concerns (N+1 queries, algorithmic complexity, memory leaks, blocking I/O). For performance-sensitive changes, add an explicit performance focus to the `code-reviewer` prompt.
 
 ### 3. Spawn Reviewers in Parallel
 
