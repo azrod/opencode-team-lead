@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Overriding a permission key in `opencode.json` no longer silently drops the plugin defaults for that key — your custom permissions are now merged on top instead of replacing the entire group
 - In-flight delegations are now tracked in the scratchpad with their `task_id` — if compaction hits while a delegation is running, Orion can resume without losing track of what was dispatched
+- Adding the `requirements-reviewer` no longer reduces technical review coverage — functional and technical reviews now run in full, independently
 
 ## [0.6.2] - 2026-03-19
 
