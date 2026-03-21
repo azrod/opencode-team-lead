@@ -13,6 +13,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -21,22 +23,62 @@ jobs:
       - name: Configure npm registry
         run: echo "registry=https://registry.npmjs.org/" > ~/.npmrc
 
-      - name: Set version from tag
+      - name: Set version and detect prerelease
         id: version
         run: |
-          npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
-          echo "number=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          VERSION="${GITHUB_REF_NAME#v}"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          echo "number=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "IS_PRERELEASE=true" >> "$GITHUB_ENV"
+          else
+            echo "IS_PRERELEASE=false" >> "$GITHUB_ENV"
+          fi
 
-      - run: npm publish --access public
+      - name: Publish stable
+        if: env.IS_PRERELEASE == 'false'
+        run: npm publish --access public
+
+      - name: Publish beta
+        if: env.IS_PRERELEASE == 'true'
+        run: npm publish --access public --tag beta
 
       - name: Read changelog
         id: changelog
+        if: env.IS_PRERELEASE == 'false'
         uses: mindsers/changelog-reader-action@v2
         with:
           version: ${{ steps.version.outputs.number }}
 
-      - name: Create GitHub Release
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes "$NOTES"
+      - name: Generate beta release notes
+        id: beta_notes
+        if: env.IS_PRERELEASE == 'true'
+        run: |
+          PREV_STABLE=$(git tag --list 'v*' --sort=-version:refname | grep -v -- '-' | head -1)
+          if [[ -z "$PREV_STABLE" ]]; then
+            NOTES=$(git log --oneline --no-decorate)
+          else
+            NOTES=$(git log "${PREV_STABLE}..HEAD" --oneline --no-decorate)
+          fi
+          DELIMITER="EOF_$(openssl rand -hex 8)"
+          echo "notes<<${DELIMITER}" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "${DELIMITER}" >> "$GITHUB_OUTPUT"
+
+      - name: Create stable GitHub Release
+        if: env.IS_PRERELEASE == 'false'
+        run: |
+          echo "$NOTES" > /tmp/release-notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file /tmp/release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
           NOTES: ${{ steps.changelog.outputs.changes }}
+
+      - name: Create prerelease GitHub Release
+        if: env.IS_PRERELEASE == 'true'
+        run: |
+          echo "$NOTES" > /tmp/release-notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --prerelease --notes-file /tmp/release-notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ steps.beta_notes.outputs.notes }}

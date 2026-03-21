@@ -175,6 +175,28 @@ CI handles the rest (npm publish + GitHub release).
 
 ## Release Process
 
+### Beta releases
+
+Use beta releases to ship work-in-progress features for testing before a stable release.
+
+**Tag format:** `v<major>.<minor>.<patch>-beta.<n>` — e.g. `v0.7.0-beta.1`, `v0.7.0-beta.2`
+
+```bash
+git tag -a v0.7.0-beta.1 -m "v0.7.0-beta.1"
+git push --tags
+```
+
+CI detects the pre-release suffix and automatically:
+- Publishes to npm under the `beta` dist-tag (`npm install opencode-team-lead@beta`)
+- Creates a GitHub pre-release with notes from git log since the last stable tag
+
+**Rules:**
+- Do **not** update `package.json` version or `CHANGELOG.md` manually for beta releases — CI sets the version automatically from the tag. `[Unreleased]` keeps accumulating.
+- Increment `beta.<n>` for each new beta on the same version (`beta.1` → `beta.2`)
+- When ready to go stable, follow the normal stable release process below — the accumulated `[Unreleased]` entries become the version section
+
+### Stable releases
+
 1. Ensure `CHANGELOG.md` is up to date (see above)
 2. Update version in `package.json`
 3. Commit the release — always with `git commit -m "..."` inline, never without `-m`
