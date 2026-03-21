@@ -76,6 +76,48 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     reviewManagerPrompt = null;
   }
 
+  // Load the requirements-reviewer prompt from the bundled requirements-reviewer.md
+  const requirementsReviewerPromptPath = join(__dirname, "requirements-reviewer.md");
+  let requirementsReviewerPrompt;
+  try {
+    requirementsReviewerPrompt = await readFile(requirementsReviewerPromptPath, "utf-8");
+  } catch (err) {
+    console.error(
+      `[opencode-team-lead] Failed to load requirements-reviewer.md at ${requirementsReviewerPromptPath}:`,
+      err.message,
+    );
+    // Don't return early — team-lead can still work without requirements-reviewer
+    requirementsReviewerPrompt = null;
+  }
+
+  // Load the code-reviewer prompt from the bundled code-reviewer.md
+  const codeReviewerPromptPath = join(__dirname, "code-reviewer.md");
+  let codeReviewerPrompt;
+  try {
+    codeReviewerPrompt = await readFile(codeReviewerPromptPath, "utf-8");
+  } catch (err) {
+    console.error(
+      `[opencode-team-lead] Failed to load code-reviewer.md at ${codeReviewerPromptPath}:`,
+      err.message,
+    );
+    // Don't return early — team-lead can still work without code-reviewer
+    codeReviewerPrompt = null;
+  }
+
+  // Load the security-reviewer prompt from the bundled security-reviewer.md
+  const securityReviewerPromptPath = join(__dirname, "security-reviewer.md");
+  let securityReviewerPrompt;
+  try {
+    securityReviewerPrompt = await readFile(securityReviewerPromptPath, "utf-8");
+  } catch (err) {
+    console.error(
+      `[opencode-team-lead] Failed to load security-reviewer.md at ${securityReviewerPromptPath}:`,
+      err.message,
+    );
+    // Don't return early — team-lead can still work without security-reviewer
+    securityReviewerPrompt = null;
+  }
+
   const projectRoot = worktree || directory;
 
   return {
@@ -155,6 +197,78 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           ...reviewManagerUserConfig,
           prompt: reviewManagerPrompt,
           permission: mergePermissions(reviewManagerPermission, reviewManagerUserConfig.permission),
+        };
+      }
+
+      // ── Requirements-reviewer agent ───────────────────────────────
+      if (requirementsReviewerPrompt) {
+        const requirementsReviewerUserConfig =
+          input.agent["requirements-reviewer"] ?? {};
+
+        const requirementsReviewerPermission = {
+          "*": "deny",
+          task: "allow",
+        };
+
+        input.agent["requirements-reviewer"] = {
+          description:
+            "Functional compliance reviewer — verifies implementation matches original requirements. " +
+            "Does not evaluate code quality, security, or style.",
+          temperature: 0.1,
+          variant: "max",
+          mode: "subagent",
+          color: "info",
+          ...requirementsReviewerUserConfig,
+          prompt: requirementsReviewerPrompt,
+          permission: mergePermissions(requirementsReviewerPermission, requirementsReviewerUserConfig.permission),
+        };
+      }
+
+      // ── Code-reviewer agent ───────────────────────────────────────
+      if (codeReviewerPrompt) {
+        const codeReviewerUserConfig =
+          input.agent["code-reviewer"] ?? {};
+
+        const codeReviewerPermission = {
+          "*": "deny",
+          task: "allow",
+        };
+
+        input.agent["code-reviewer"] = {
+          description:
+            "Technical quality reviewer — evaluates correctness, logic, error handling, API design, " +
+            "and maintainability. Does not cover security or functional compliance.",
+          temperature: 0.2,
+          variant: "max",
+          mode: "subagent",
+          color: "info",
+          ...codeReviewerUserConfig,
+          prompt: codeReviewerPrompt,
+          permission: mergePermissions(codeReviewerPermission, codeReviewerUserConfig.permission),
+        };
+      }
+
+      // ── Security-reviewer agent ───────────────────────────────────
+      if (securityReviewerPrompt) {
+        const securityReviewerUserConfig =
+          input.agent["security-reviewer"] ?? {};
+
+        const securityReviewerPermission = {
+          "*": "deny",
+          task: "allow",
+        };
+
+        input.agent["security-reviewer"] = {
+          description:
+            "Security reviewer — identifies vulnerabilities, misconfigurations, and data exposure risks. " +
+            "Does not cover code quality, style, or functional compliance.",
+          temperature: 0.1,
+          variant: "max",
+          mode: "subagent",
+          color: "error",
+          ...securityReviewerUserConfig,
+          prompt: securityReviewerPrompt,
+          permission: mergePermissions(securityReviewerPermission, securityReviewerUserConfig.permission),
         };
       }
     },

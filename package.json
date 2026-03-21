@@ -8,6 +8,9 @@
     "index.js",
     "prompt.md",
     "review-manager.md",
+    "requirements-reviewer.md",
+    "code-reviewer.md",
+    "security-reviewer.md",
     "README.md"
   ],
   "keywords": [

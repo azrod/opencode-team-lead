@@ -25,6 +25,10 @@ If the mission prompt is vague, delegate to an `explore` agent via `task` to gat
 
 Choose reviewers based on what changed. This isn't a rigid mapping — use judgment. The table below is guidance, not gospel.
 
+**`requirements-reviewer` is mandatory for every review — include it regardless of change type or size (exception: pure formatting or typo-only fixes with no associated functional requirement).**
+
+*(Rows below list technical reviewers only — `requirements-reviewer` is added on top of every row, except pure formatting/typo-only changes.)*
+
 | Change Type | Reviewers |
 |---|---|
 | Backend code | `code-reviewer` (logic, API design, error handling) + `security-reviewer` (injection, auth, data exposure) |
@@ -33,20 +37,45 @@ Choose reviewers based on what changed. This isn't a rigid mapping — use judgm
 | Database changes | `security-reviewer` (injection, access control) + `data-reviewer` (migration safety, performance) |
 | Auth / Security | `security-reviewer` (mandatory, always) + `code-reviewer` (logic correctness) |
 | AI / LLM integration | `security-reviewer` (prompt injection, data leakage) + `ai-reviewer` (cost, accuracy, guardrails) |
-| Tests only | `test-reviewer` (coverage gaps, false positives, edge cases) |
+| Tests only | `code-reviewer` (coverage gaps, missing assertions, false positives, edge cases) |
 | General / mixed | `code-reviewer` + `security-reviewer` |
-| Trivial / docs-only | Single `code-reviewer` (quick pass) |
+| Trivial / docs-only | `requirements-reviewer` + `code-reviewer` (quick pass; skip `requirements-reviewer` for formatting or typo-only fixes with no associated functional requirement) |
 
 **Proportionality rules:**
-- **Trivial** (1-2 files, < 50 lines changed) → single reviewer, quick pass
-- **Normal** (3-10 files) → 2 reviewers in parallel
-- **Large** (10+ files or security-sensitive) → 2-3 reviewers in parallel
 
-Never spawn more than 3 reviewers. Diminishing returns hit fast.
+`requirements-reviewer` is mandatory (except pure formatting/typo-only fixes) — it counts as one of the reviewer slots.
+
+Risk overrides size. Classify changes on two axes:
+
+**High-risk patterns (mandatory `security-reviewer` regardless of size):**
+- Auth, session, or token handling
+- SQL queries or ORM calls
+- Cryptographic operations
+- Permission or access control checks
+- Secret, credential, or API key handling
+- External API calls transmitting user data
+- Prompt injection vectors (LLM integration)
+
+| Size | Risk | Reviewers |
+|---|---|---|
+| Trivial (1-2 files, < 50 lines) | Low | `requirements-reviewer` + 1 technical reviewer |
+| Trivial (1-2 files, < 50 lines) | **High** | `requirements-reviewer` + `security-reviewer` |
+| Normal (3-10 files) | Low | `requirements-reviewer` + 1-2 technical reviewers |
+| Normal (3-10 files) | **High** | `requirements-reviewer` + `security-reviewer` + 1 technical reviewer |
+| Large (10+ files) | Low | `requirements-reviewer` + 2 technical reviewers |
+| Large (10+ files) | **High** | `requirements-reviewer` + `security-reviewer` + 1 technical reviewer |
+
+Never spawn more than 3 reviewers total. Diminishing returns hit fast.
+
+**Known gap — Performance:** No reviewer in the default set has an explicit mandate for performance concerns (N+1 queries, algorithmic complexity, memory leaks, blocking I/O). For performance-sensitive changes, add an explicit performance focus to the `code-reviewer` prompt.
+
+**If the review mission doesn't include the original requirements**, use `question` to request them from the team-lead before spawning any reviewers.
 
 ### 3. Spawn Reviewers in Parallel
 
 Launch all selected reviewers simultaneously using the `task` tool. Each reviewer gets a self-contained prompt — they don't know about each other and don't share context.
+
+> **Note on `requirements-reviewer`:** its prompt must include the original user request verbatim (or as complete a description as possible). Without this, the functional review is meaningless. If the mission is missing requirements, use `question` to request them before spawning.
 
 Use this prompt structure for every reviewer:
 
@@ -90,10 +119,13 @@ This is where you earn your keep. Don't just merge — arbitrate.
 4. Document your reasoning transparently — the team-lead and user should see why you sided with one reviewer over another
 
 Heuristics for arbitration:
+- **Requirements failures block.** If `requirements-reviewer` flags that the implementation doesn't match the original request, treat it as a blocker regardless of other reviewers' verdicts — unless the concern is clearly a misinterpretation of the requirements (document your reasoning in the Disagreements section).
+  - Exception: if `requirements-reviewer` returns BLOCKED with the explicit reason that requirements were not provided, this is a **process failure**, not a code failure. Do not propagate this BLOCKED to the team-lead. Instead, re-request the requirements via `question` and re-spawn only `requirements-reviewer` with the now-available requirements.
 - **Security concerns win ties.** If the security reviewer flags something and the code reviewer says it's fine, default to addressing the security concern unless it's clearly a false positive.
 - **Critical severity always wins.** If any reviewer flags a critical issue, it doesn't matter that another reviewer approved — the critical issue must be addressed.
 - **Minor issues don't block.** If the only disagreement is over minor style or preference, side with the approver. Mention the minor feedback as optional improvements.
 - **When genuinely uncertain**, present both sides and let the team-lead decide. Don't force a verdict you're not confident about.
+- **Duplicate findings across reviewers.** If `code-reviewer` and `security-reviewer` both flag the same input validation issue, use `security-reviewer`'s framing and severity in the final output.
 
 ### 5. Return Structured Output
 
