@@ -24,6 +24,8 @@ Add to your OpenCode config:
 
 Using `@latest` ensures you always get the newest version automatically when OpenCode starts.
 
+To install the latest beta, use `"opencode-team-lead@beta"` instead of `@latest` in your config.
+
 Restart OpenCode. The plugin will automatically install and register the team-lead agent.
 
 Orion relies on [`opencode-dynamic-context-pruning`](https://github.com/Opencode-DCP/opencode-dynamic-context-pruning) for context window management. The DCP plugin provides `distill`, `prune`, and `compress` tools that the agent uses to condense verbose outputs and discard irrelevant tool calls — keeping the context clean across long sessions.
