@@ -19,3 +19,9 @@ This prevents the producer from going down a multi-file rabbit hole based on a f
 ## 3. Enhancing the Bug-Finder Routing
 The `bug-finder` agent was added with `mode: "all"`, meaning users can invoke it directly. However, in OpenCode's default behavior, Orion (`team-lead`) intercepts open-ended user prompts like "I have a bug."
 We need to verify if Orion's prompt (specifically Anti-Pattern #9 and the Bug-Finder Protocol section) is strong enough to reliably route these requests to `bug-finder` first, or if we need to explore explicit routing directives/tools in future OpenCode plugin APIs.
+
+## 4. Agnostic QA Runtime Loop (Dynamic Evaluation)
+The Anthropic article highlights the value of *active testing* over passive reading — their evaluator used Playwright to interact with the running application. Currently, `review-manager` only performs static code review.
+To make this agnostic (working for CLI, backend, or libraries, not just web frontend), we could introduce a `test-engineer` agent. Instead of reading code, this agent's mandate would be to write and execute a test (unit test, bash script, curl command) against the running code to prove it works.
+**Caveats:** This would be extremely token-intensive and slow, as it requires environment setup, test authoring, and execution loops. It's likely too heavy for the default review path and should probably remain an explicit opt-in workflow for critical features.
+
