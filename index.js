@@ -173,7 +173,7 @@ function mergePermissions(defaults, overrides) {
 
 export const TeamLeadPlugin = async ({ directory, worktree }) => {
   // Load the system prompt from the bundled prompt.md
-  const promptPath = join(__dirname, "prompt.md");
+  const promptPath = join(__dirname, "agents", "prompt.md");
   let prompt;
   try {
     prompt = await readFile(promptPath, "utf-8");
@@ -186,7 +186,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
   }
 
   // Load the review-manager prompt from the bundled review-manager.md
-  const reviewManagerPromptPath = join(__dirname, "review-manager.md");
+  const reviewManagerPromptPath = join(__dirname, "agents", "review-manager.md");
   let reviewManagerPrompt;
   try {
     reviewManagerPrompt = await readFile(reviewManagerPromptPath, "utf-8");
@@ -200,7 +200,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
   }
 
   // Load the requirements-reviewer prompt from the bundled requirements-reviewer.md
-  const requirementsReviewerPromptPath = join(__dirname, "requirements-reviewer.md");
+  const requirementsReviewerPromptPath = join(__dirname, "agents", "requirements-reviewer.md");
   let requirementsReviewerPrompt;
   try {
     requirementsReviewerPrompt = await readFile(requirementsReviewerPromptPath, "utf-8");
@@ -214,7 +214,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
   }
 
   // Load the code-reviewer prompt from the bundled code-reviewer.md
-  const codeReviewerPromptPath = join(__dirname, "code-reviewer.md");
+  const codeReviewerPromptPath = join(__dirname, "agents", "code-reviewer.md");
   let codeReviewerPrompt;
   try {
     codeReviewerPrompt = await readFile(codeReviewerPromptPath, "utf-8");
@@ -228,7 +228,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
   }
 
   // Load the security-reviewer prompt from the bundled security-reviewer.md
-  const securityReviewerPromptPath = join(__dirname, "security-reviewer.md");
+  const securityReviewerPromptPath = join(__dirname, "agents", "security-reviewer.md");
   let securityReviewerPrompt;
   try {
     securityReviewerPrompt = await readFile(securityReviewerPromptPath, "utf-8");
@@ -242,7 +242,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
   }
 
   // Load the bug-finder prompt from the bundled bug-finder.md
-  const bugFinderPromptPath = join(__dirname, "bug-finder.md");
+  const bugFinderPromptPath = join(__dirname, "agents", "bug-finder.md");
   let bugFinderPrompt;
   try {
     bugFinderPrompt = await readFile(bugFinderPromptPath, "utf-8");

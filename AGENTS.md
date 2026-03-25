@@ -13,13 +13,13 @@ This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no 
 | File | Role |
 |------|------|
 | `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers the agent) and `experimental.session.compacting` (preserves scratchpad across context resets). |
-| `prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
-| `review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
-| `requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
-| `code-reviewer.md` | System prompt for the code-reviewer agent — evaluates correctness, logic, error handling, and maintainability. |
-| `security-reviewer.md` | System prompt for the security-reviewer agent — identifies vulnerabilities, misconfigurations, and data exposure risks. |
-| `bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
-| `package.json` | Standard npm config. Ships all `.md` agent prompts, `index.js`, and `README.md`. |
+| `agents/prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
+| `agents/review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
+| `agents/requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
+| `agents/code-reviewer.md` | System prompt for the code-reviewer agent — evaluates correctness, logic, error handling, and maintainability. |
+| `agents/security-reviewer.md` | System prompt for the security-reviewer agent — identifies vulnerabilities, misconfigurations, and data exposure risks. |
+| `agents/bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
+| `package.json` | Standard npm config. Ships `index.js`, the `agents/` directory (all agent prompts), and `README.md`. |
 | `.github/workflows/publish.yml` | CI: OIDC trusted publishing to npm on `v*` tags, plus GitHub release creation. |
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
 | `README.md` | User-facing docs — installation, usage, permissions. |
@@ -39,7 +39,7 @@ This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no 
 ### Key design decisions
 
 - The permission set is intentionally restrictive — the agent can only delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), and run basic git commands.
-- `prompt.md` is loaded at plugin init time via `readFile`, not inlined in `index.js`. This keeps the prompt editable and diffable.
+- `agents/prompt.md` is loaded at plugin init time via `readFile`, not inlined in `index.js`. This keeps the prompt editable and diffable.
 - The plugin merges user config from `opencode.json` instead of overwriting it. Users can override `temperature`, `color`, `variant`, `mode` and add/override permissions; the merge applies plugin defaults first, then user overrides on top via spread order. The `prompt` is always provided by the plugin and cannot be overridden.
 - The review-manager uses nested sub-agent delegation (team-lead → review-manager → reviewer agents). OpenCode supports unlimited nesting depth as long as each level has `task: "allow"`. The review-manager runs with `mode: "subagent"` so it only appears as a sub-agent, never in the main agent list.
 
