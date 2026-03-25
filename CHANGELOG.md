@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-25
+
 ### Added
 
 - Three specialized reviewer agents are now included: `requirements-reviewer`, `code-reviewer`, and `security-reviewer` — the review-manager spawns them automatically based on change type and risk level (size × risk axes), and always runs `requirements-reviewer` on non-trivial reviews; high-risk patterns (auth, SQL, crypto, secrets) force `security-reviewer` regardless of change size
+- Orion can now embody a personality — embed your tone and communication directives in the plugin and Orion applies them automatically in every session. Disable with `soul: false` in your `opencode.json` agent config if you prefer a neutral voice.
 
 ### Fixed
 
@@ -79,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode
 - npm package with installation docs
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/azrod/opencode-team-lead/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/azrod/opencode-team-lead/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/azrod/opencode-team-lead/compare/v0.5.0...v0.6.1
 [0.5.0]: https://github.com/azrod/opencode-team-lead/compare/v0.4.1...v0.5.0
