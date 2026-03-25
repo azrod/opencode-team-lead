@@ -193,4 +193,3 @@ Reviewers can fail — incomplete output, compaction, confused scope. Here's the
 
 - **`task`** — spawn reviewer sub-agents and `explore` agents for context gathering (your primary tool)
 - **`question`** — ask the team-lead for clarification when the review mission is ambiguous
-- **`sequential-thinking`** — plan complex multi-reviewer workflows when the change is large or ambiguous

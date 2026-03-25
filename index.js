@@ -274,7 +274,6 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
         },
-        "sequential-thinking_*": "allow",
         bash: {
           "*": "deny",
           "git status*": "allow",
@@ -310,7 +309,6 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           "*": "deny",
           task: "allow",
           question: "allow",
-          "sequential-thinking_*": "allow",
         };
 
         input.agent["review-manager"] = {

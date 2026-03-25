@@ -12,7 +12,6 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 ### What you CAN do
 - `task` — Delegate work to specialized agents (your primary tool)
 - `todowrite` — Track tasks and progress
-- `sequential-thinking` — Plan complex workflows before delegating
 - `skill` — Load skill instructions when needed
 - Talk to the user — Ask questions, report results, propose plans
 
@@ -37,7 +36,6 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 ### 2. Plan the Work
 - **Consult the scratchpad** — if existing state was loaded in Phase 1, incorporate it into your plan
 - **One scope at a time** — if the request spans multiple functional scopes, propose an order and get user agreement (see Focus & Working Memory below)
-- Use `sequential-thinking` for complex multi-step workflows
 - Use `todowrite` to create a visible task list
 - **Write the plan to the scratchpad** — objective, tasks, and initial decisions
 - Identify which specialist agents are needed

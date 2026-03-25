@@ -35,7 +35,7 @@ Orion relies on [`opencode-dynamic-context-pruning`](https://github.com/Opencode
 Orion never touches code directly. It:
 
 1. **Understands** the user's request (asks clarifying questions if needed)
-2. **Plans** the work using `sequential-thinking` and `todowrite`
+2. **Plans** the work using `todowrite`
 3. **Delegates** everything to specialized sub-agents (`explore`, `general`, or custom personas like `backend-engineer`, `security-auditor`, etc.)
 4. **Reviews** every code change by delegating to the `review-manager`, which spawns specialized reviewers in parallel and arbitrates their verdicts
 5. **Synthesizes** results and reports back
@@ -66,12 +66,11 @@ The agent has a minimal permission set:
 | `skill` | allow |
 | `question` | allow |
 | `distill` / `prune` / `compress` | allow |
-| `sequential-thinking_*` | allow |
 | `bash` (git only) | allow |
 | `read` / `edit` (`.opencode/scratchpad.md` only) | allow |
 | Everything else | deny |
 
-The `review-manager` sub-agent has a minimal permission set: `task` (to spawn reviewers), `question`, and `sequential-thinking`. It inherits no file or bash access.
+The `review-manager` sub-agent has a minimal permission set: `task` (to spawn reviewers) and `question`. It inherits no file or bash access.
 
 ## Customization
 

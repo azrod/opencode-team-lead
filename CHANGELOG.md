@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- `sequential-thinking` has been removed — modern models decompose complex workflows natively, making the explicit planning tool unnecessary friction
+
 ## [0.7.0] - 2026-03-25
 
 ### Added
