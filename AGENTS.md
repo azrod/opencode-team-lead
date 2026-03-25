@@ -4,7 +4,7 @@
 
 `opencode-team-lead` is an OpenCode plugin that injects a "team-lead" orchestrator agent. The agent plans work, delegates everything to sub-agents, reviews results, and reports back. It never touches code directly.
 
-This is a tiny project — 5 meaningful files, zero dependencies, pure ESM, no build step, no tests.
+This is a tiny project — 10 meaningful files, zero dependencies, pure ESM, no build step, no tests.
 
 ## Architecture
 
@@ -15,6 +15,9 @@ This is a tiny project — 5 meaningful files, zero dependencies, pure ESM, no b
 | `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers the agent) and `experimental.session.compacting` (preserves scratchpad across context resets). |
 | `prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
 | `review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
+| `requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
+| `code-reviewer.md` | System prompt for the code-reviewer agent — evaluates correctness, logic, error handling, and maintainability. |
+| `security-reviewer.md` | System prompt for the security-reviewer agent — identifies vulnerabilities, misconfigurations, and data exposure risks. |
 | `package.json` | Standard npm config. Ships `index.js`, `prompt.md`, `review-manager.md`, `README.md`. |
 | `.github/workflows/publish.yml` | CI: OIDC trusted publishing to npm on `v*` tags, plus GitHub release creation. |
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
