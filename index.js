@@ -241,6 +241,20 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     securityReviewerPrompt = null;
   }
 
+  // Load the bug-finder prompt from the bundled bug-finder.md
+  const bugFinderPromptPath = join(__dirname, "bug-finder.md");
+  let bugFinderPrompt;
+  try {
+    bugFinderPrompt = await readFile(bugFinderPromptPath, "utf-8");
+  } catch (err) {
+    console.error(
+      `[opencode-team-lead] Failed to load bug-finder.md at ${bugFinderPromptPath}:`,
+      err.message,
+    );
+    // Don't return early — team-lead can still work without bug-finder
+    bugFinderPrompt = null;
+  }
+
   const projectRoot = worktree || directory;
 
   return {
@@ -397,6 +411,30 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           ...securityReviewerUserConfig,
           prompt: securityReviewerPrompt,
           permission: mergePermissions(securityReviewerPermission, securityReviewerUserConfig.permission),
+        };
+      }
+
+      // ── Bug-finder agent ──────────────────────────────────────────────
+      if (bugFinderPrompt) {
+        const bugFinderUserConfig = input.agent["bug-finder"] ?? {};
+
+        const bugFinderPermission = {
+          "*": "deny",
+          task: "allow",
+          question: "allow",
+        };
+
+        input.agent["bug-finder"] = {
+          description:
+            "Structured bug investigation agent — diagnoses root cause before applying any fix. " +
+            "Prevents workarounds and code divergence by forcing rigorous analysis first.",
+          temperature: 0.2,
+          variant: "max",
+          mode: "all",
+          color: "warning",
+          ...bugFinderUserConfig,
+          prompt: bugFinderPrompt,
+          permission: mergePermissions(bugFinderPermission, bugFinderUserConfig.permission),
         };
       }
     },

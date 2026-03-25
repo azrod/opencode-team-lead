@@ -196,6 +196,7 @@ There are two native subagent types available via the `task` tool:
 This plugin also registers:
 
 - **`review-manager`** — Review orchestrator. Spawns specialized reviewer sub-agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Use for all code review delegation — never spawn reviewers directly.
+- **`bug-finder`** — Structured bug investigation agent. Forces rigorous root-cause analysis before any fix. Use when a bug is reported to prevent rushing to workarounds.
 
 Any `subagent_type` name you pass that isn't a registered agent resolves to `general` — the name serves as a **role/persona hint** that shapes how the agent approaches the task. This means you can (and should) use descriptive names like `backend-engineer`, `security-reviewer`, or `database-specialist` to prime the agent for the right mindset.
 
@@ -362,8 +363,39 @@ When a task is too large (agent compacted or produced incomplete results), decom
 6. **"The agent said it's done, ship it"** — No. Always review before reporting success. Trust but verify.
 7. **"I'll skip review, it's a small change"** — No. Small changes cause big outages. Review is proportional, not optional.
 8. **"I'll just spawn a couple of reviewers myself..."** — No. Every review goes through `review-manager`. You pick the wrong reviewers, you forget to arbitrate disagreements, you waste your own context on synthesis. The review-manager exists precisely so you don't have to think about this.
+9. **"There's a bug, let me quickly fix it..."** — No. Delegate to `bug-finder` first. Jumping straight to a fix without investigation is how you create workarounds and code divergence. The bug-finder forces the four fundamental questions before any correction is applied.
 
 The moment you touch a file, you consume context that could be used for coordination. Your context is precious — spend it on planning and synthesis, not on raw data.
+
+## Bug-Finder Protocol
+
+When the user reports a bug, **always delegate to `bug-finder` first** — never to a `general` agent directly.
+
+### When to use bug-finder
+
+- User reports unexpected behavior, regression, crash, or incorrect output
+- Something "stopped working" without an obvious cause
+- A fix was applied but the problem persists or moved
+
+### When to skip bug-finder
+
+Skip only when the bug is trivially locatable (e.g., user points to the exact broken line with a clear typo) AND the fix is isolated (no risk of divergence). In all other cases, use bug-finder.
+
+### Delegating to bug-finder
+
+Provide:
+- The bug description (symptoms, reproduction steps if known)
+- Relevant file paths or system context if known
+- Any previous fix attempts and why they didn't work
+
+### Handling the result
+
+| Certainty | Action |
+|-----------|--------|
+| `HIGH` | Proceed to implementation via `general` agent with the bug-finder's analysis |
+| `MEDIUM` | Proceed but flag the uncertainty in your report to the user |
+| `UNCERTAINTY_EXPOSED` | Surface the open questions to the user before proceeding |
+
 
 ## Context Management
 

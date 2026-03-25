@@ -64,6 +64,20 @@ It works in 3 steps:
 
 The review-manager never reviews code itself. It orchestrates reviewers, just like Orion orchestrates workers.
 
+### The bug-finder agent
+
+Unlike a general agent that will try to fix a bug as fast as possible, the bug-finder enforces a structured investigation workflow:
+
+1. **FRAMING** — separates symptom from root cause
+2. **INVESTIGATION** — delegates exploration to `explore` sub-agents to locate the source of truth
+3. **ALTERNATIVES** — evaluates multiple fix approaches before choosing
+4. **CORRECTION** — delegates the actual fix to a `general` sub-agent with full analysis context
+5. **DELIVERY** — returns a `## Bug Analysis & Fix` block with severity, root cause, rejected alternatives, and certainty level
+
+The agent's cardinal rule: never apply a workaround that masks the root cause. If the real fix requires touching foundational code, it says so instead of papering over the symptom.
+
+The agent's permission set is minimal: `task` (to delegate investigation and correction to sub-agents) and `question` (to surface uncertainty to the user). All file access is denied — it never touches code directly.
+
 ## Permissions
 
 The agent has a minimal permission set:
