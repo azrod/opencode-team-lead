@@ -6,6 +6,7 @@ An [opencode](https://opencode.ai) plugin that installs **Orion**, a team-lead o
 
 - **Injects the `team-lead` agent** via the `config` hook — with a locked-down permission set (no file I/O, no bash except git), `temperature: 0.3`, variant `max`
 - **Preserves the scratchpad across compactions** via the `experimental.session.compacting` hook — Orion's working memory (`.opencode/scratchpad.md`) is injected into the compaction prompt so mission state survives context resets
+- **Injects persistent memory into every session** via the `experimental.chat.system.transform` hook — project-level knowledge Orion accumulates in `.opencode/memory.md` (architecture decisions, conventions, user preferences) is automatically available from the first message of every session
 - **Registers the `review-manager` sub-agent** — a review orchestrator that spawns specialized reviewer agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Orion delegates all code reviews to it automatically.
 
 ## Installation
@@ -44,6 +45,14 @@ Orion never touches code directly. It:
 
 Orion maintains a working memory file at `.opencode/scratchpad.md` in the project root. This survives context compaction — when the agent loses in-memory context, it reads the scratchpad to resume where it left off.
 
+### Persistent Memory
+
+Orion also maintains `.opencode/memory.md` — a project-level knowledge base that persists across all sessions. Unlike the scratchpad (which is mission-scoped and overwritten each mission), memory accumulates indefinitely.
+
+Orion writes to it at the end of missions when it discovers something worth preserving: build commands, architecture patterns, user preferences, recurring conventions. The plugin injects it automatically — no action needed on your part.
+
+Commit `.opencode/memory.md` to your repository to share it with your team.
+
 ### The review-manager agent
 
 The review-manager is a sub-agent — it's never visible in the main agent list. Orion delegates reviews to it automatically.
@@ -67,7 +76,7 @@ The agent has a minimal permission set:
 | `question` | allow |
 | `distill` / `prune` / `compress` | allow |
 | `bash` (git only) | allow |
-| `read` / `edit` (`.opencode/scratchpad.md` only) | allow |
+| `read` / `edit` (`.opencode/scratchpad.md`, `.opencode/memory.md`) | allow |
 | Everything else | deny |
 
 The `review-manager` sub-agent has a minimal permission set: `task` (to spawn reviewers) and `question`. It inherits no file or bash access.
