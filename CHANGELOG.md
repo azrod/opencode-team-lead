@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Persistent memory across sessions — Orion now maintains `.opencode/memory.md`, a project-level knowledge base that accumulates architecture decisions, conventions, and user preferences. The plugin injects it automatically into every session via `experimental.chat.system.transform`, so it's available from the first message without any tool call.
 - The default soul directives are now in English — previously the built-in personality guidelines were in French, which was unexpected for non-French speakers. Disable with `soul: false` if you prefer a neutral voice.
 
+### Changed
+
+- The `review-manager` is now significantly faster for trivial changes — it instantly approves docs-only or formatting updates without spawning sub-agents, and only spins up a single `code-reviewer` for low-risk tweaks.
+- The reviewer delegation prompt has been drastically slimmed down — the `review-manager` no longer wastes tokens re-explaining focus, stance, or formatting to specialized reviewers that already know their job.
+
+### Fixed
+
+- Reviewer agents (requirements, code, security) now have a hardcoded skeptical stance in their system prompts — this counteracts the default LLM approval bias where agents would spot real issues but rationalize them away instead of flagging them.
+
 ### Removed
 
 - `sequential-thinking` has been removed — modern models decompose complex workflows natively, making the explicit planning tool unnecessary friction
