@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - `sequential-thinking` has been removed — modern models decompose complex workflows natively, making the explicit planning tool unnecessary friction
+- The "What you MUST NOT do" tool list has been removed — the Cardinal Rule and Anti-Patterns section already cover this constraint more effectively
+- The delegation prompt template (the 5-section ## Context / ## Task / ## Files / ## Constraints / ## Deliverable scaffold) has been removed — modern models structure delegations well without an explicit template, and the surrounding prose conveys the substance
+- In-Flight Delegations tracking from the scratchpad template has been removed — the compaction hook already preserves the full scratchpad, making the urgent task_id recording instruction redundant
 
 ## [0.7.0] - 2026-03-25
 
