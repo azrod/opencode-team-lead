@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `bug-fix` agent — structured bug-fix orchestrator that frames the problem, investigates root cause, evaluates solution alternatives, and coordinates the correction. Answers four fundamental questions: problem framing, source of truth, unexplored alternatives, and solution justification. Analysis depth is proportional to severity (High/Medium/Low). Includes a single contestation cycle with hard cap — exposes uncertainty to the user instead of looping.
 - Three specialized reviewer agents are now included: `requirements-reviewer`, `code-reviewer`, and `security-reviewer` — the review-manager spawns them automatically based on change type and risk level (size × risk axes), and always runs `requirements-reviewer` on non-trivial reviews; high-risk patterns (auth, SQL, crypto, secrets) force `security-reviewer` regardless of change size
 
 ### Fixed

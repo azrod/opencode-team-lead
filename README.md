@@ -55,6 +55,22 @@ It works in 3 steps:
 
 The review-manager never reviews code itself. It orchestrates reviewers, just like Orion orchestrates workers.
 
+### The bug-fix agent
+
+The bug-fix agent is a structured bug-fix orchestrator available both as a direct user-facing agent and as a team-lead sub-agent (`mode: all`).
+
+When given a bug report, it works in four investigation phases plus a structured delivery step:
+
+1. **Frames the problem** — applies four fundamental questions: what the problem actually is, what the source of truth says, what alternatives haven't been explored, and why the proposed solution is justified
+2. **Investigates root cause** — delegates to an `explore` sub-agent to gather evidence and map the call path to the failure
+3. **Generates alternatives** — produces solution options proportional to the severity level (High / Medium / Low); security keywords automatically escalate severity to High
+4. **Coordinates the correction** — delegates the fix to a `general` sub-agent with a stack-appropriate persona
+5. **Delivers the result** — declares a certainty level (`HIGH`, `MEDIUM`, or `UNCERTAINTY_EXPOSED`) and surfaces a structured summary to the user
+
+It runs a contestation cycle (max 1 retry) before exposing uncertainty to the user rather than looping. The final output always declares a certainty level: `HIGH`, `MEDIUM`, or `UNCERTAINTY_EXPOSED`.
+
+The bug-fix agent never applies fixes directly. It delegates investigation and correction, just like Orion delegates all other work.
+
 ## Permissions
 
 The agent has a minimal permission set:
@@ -72,6 +88,15 @@ The agent has a minimal permission set:
 | Everything else | deny |
 
 The `review-manager` sub-agent has a minimal permission set: `task` (to spawn reviewers), `question`, and `sequential-thinking`. It inherits no file or bash access.
+
+The `bug-fix` agent has a focused permission set:
+
+| Tool | Access |
+|------|--------|
+| `task` | allow |
+| `question` | allow |
+| `sequential-thinking_*` | allow |
+| Everything else | deny |
 
 ## Customization
 

@@ -118,6 +118,20 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     securityReviewerPrompt = null;
   }
 
+  // Load the bug-fix prompt from the bundled bug-fix.md
+  const bugFixPromptPath = join(__dirname, "bug-fix.md");
+  let bugFixPrompt;
+  try {
+    bugFixPrompt = await readFile(bugFixPromptPath, "utf-8");
+  } catch (err) {
+    console.error(
+      `[opencode-team-lead] Failed to load bug-fix.md at ${bugFixPromptPath}:`,
+      err.message,
+    );
+    // Don't return early — team-lead can still work without bug-fix
+    bugFixPrompt = null;
+  }
+
   const projectRoot = worktree || directory;
 
   return {
@@ -269,6 +283,32 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           ...securityReviewerUserConfig,
           prompt: securityReviewerPrompt,
           permission: mergePermissions(securityReviewerPermission, securityReviewerUserConfig.permission),
+        };
+      }
+
+      // ── Bug-fix agent ─────────────────────────────────────────────
+      if (bugFixPrompt) {
+        const bugFixUserConfig =
+          input.agent["bug-fix"] ?? {};
+
+        const bugFixPermission = {
+          "*": "deny",
+          task: "allow",
+          question: "allow",
+          "sequential-thinking_*": "allow",
+        };
+
+        input.agent["bug-fix"] = {
+          description:
+            "Bug-fix orchestrator — frames the problem, investigates root cause, generates solution alternatives, " +
+            "and coordinates the correction. Use when the user reports a bug.",
+          temperature: 0.3,
+          variant: "max",
+          mode: "all",
+          color: "warning",
+          ...bugFixUserConfig,
+          prompt: bugFixPrompt,
+          permission: mergePermissions(bugFixPermission, bugFixUserConfig.permission),
         };
       }
     },

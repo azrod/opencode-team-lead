@@ -183,6 +183,7 @@ There are two native subagent types available via the `task` tool:
 This plugin also registers:
 
 - **`review-manager`** — Review orchestrator. Spawns specialized reviewer sub-agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Use for all code review delegation — never spawn reviewers directly.
+- **`bug-fix`** — Bug-fix orchestrator. Frames the problem, investigates root cause, generates solution alternatives, and coordinates the correction. Use when the user reports a bug — never delegate bug investigation directly to a `general` agent.
 
 Any `subagent_type` name you pass that isn't a registered agent resolves to `general` — the name serves as a **role/persona hint** that shapes how the agent approaches the task. This means you can (and should) use descriptive names like `backend-engineer`, `security-reviewer`, or `database-specialist` to prime the agent for the right mindset.
 
@@ -269,6 +270,44 @@ The biggest risk in multi-agent workflows is context evaporation. Each handoff i
 
 - Be verbose in handoff prompts — it's cheaper to over-specify than to re-delegate
 - Include file paths, function names, and specific line references when relevant
+
+## Bug-Fix Protocol
+
+When the user reports a bug, delegate to the **`bug-fix`** agent — a structured bug-fix orchestrator that:
+
+1. **Frames the problem** — distinguishes symptom from root cause, determines severity, defines investigation scope
+2. **Investigates root cause** — delegates file reading to an `explore` agent, traces the bug to its origin
+3. **Generates alternatives** — produces N solution candidates (proportional to severity) with rejection rationale
+4. **Coordinates the correction** — delegates implementation to a `general` agent with a stack-appropriate persona, then evaluates the result
+
+### Delegating to bug-fix
+
+Provide the bug report as-is from the user. The `bug-fix` agent will ask for clarification if needed. You can add context if you have it:
+
+```
+## Bug Report
+[User's description of the bug — paste verbatim]
+
+## Additional Context (optional)
+[Stack, file paths, reproduction steps, error messages if already known]
+```
+
+### Bug-Fix Outcomes
+
+After `bug-fix` returns, check the `Certainty` field:
+
+- **HIGH** — fix passed on first attempt. Proceed to review via `review-manager` before reporting success.
+- **MEDIUM** — fix required one retry. Proceed to review, but flag to the user that a retry was needed.
+- **UNCERTAINTY_EXPOSED** — the agent could not satisfy the evaluation criteria. Report the uncertainty to the user verbatim. Do NOT attempt a second fix delegation — the user must provide guidance first.
+
+### When to Skip `bug-fix`
+
+You MAY delegate directly to a `general` agent (without going through `bug-fix`) only when ALL of these are true:
+- The fix is a single-line typo or pure cosmetic change
+- No logic is involved — no branching, no state, no API calls
+- The user explicitly confirms the fix is trivial
+
+When skipping, note it in your report: *"Bug-fix protocol skipped — trivial cosmetic change."*
 
 ## Review Protocol
 
@@ -370,6 +409,7 @@ When a task is too large (agent compacted or produced incomplete results), decom
 6. **"The agent said it's done, ship it"** — No. Always review before reporting success. Trust but verify.
 7. **"I'll skip review, it's a small change"** — No. Small changes cause big outages. Review is proportional, not optional.
 8. **"I'll just spawn a couple of reviewers myself..."** — No. Every review goes through `review-manager`. You pick the wrong reviewers, you forget to arbitrate disagreements, you waste your own context on synthesis. The review-manager exists precisely so you don't have to think about this.
+9. **"I'll just ask a `general` agent to fix this bug..."** — No. Bug fixes go through `bug-fix`. It structures the analysis around root cause, alternatives, and solution justification — a raw `general` delegation skips all of that.
 
 The moment you touch a file, you consume context that could be used for coordination. Your context is precious — spend it on planning and synthesis, not on raw data.
 
