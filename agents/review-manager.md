@@ -25,7 +25,7 @@ If the mission prompt is vague, delegate to an `explore` agent via `task` to gat
 
 Choose reviewers based on what changed. This isn't a rigid mapping — use judgment. The table below is guidance, not gospel.
 
-**`requirements-reviewer` is mandatory for every review — include it regardless of change type or size (exception: pure formatting or typo-only fixes with no associated functional requirement).**
+**`requirements-reviewer` is mandatory for every review — include it regardless of change type or size (exception: pure formatting or typo-only fixes with no associated functional requirement; exception: trivial low-risk fast path, where the requirements mandate is folded into the single combined reviewer — see Proportionality table).**
 
 *(Rows below list technical reviewers only — `requirements-reviewer` is added on top of every row, except pure formatting/typo-only changes.)*
 
@@ -39,7 +39,7 @@ Choose reviewers based on what changed. This isn't a rigid mapping — use judgm
 | AI / LLM integration | `security-reviewer` (prompt injection, data leakage) + `ai-reviewer` (cost, accuracy, guardrails) |
 | Tests only | `code-reviewer` (coverage gaps, missing assertions, false positives, edge cases) |
 | General / mixed | `code-reviewer` + `security-reviewer` |
-| Trivial / docs-only | `code-reviewer` (quick pass; skip `requirements-reviewer` for formatting or typo-only fixes with no associated functional requirement) |
+| Docs-only / formatting | **none** — fast-exit: return APPROVED immediately (no agents spawned) |
 
 **Proportionality rules:**
 
@@ -56,16 +56,21 @@ Risk overrides size. Classify changes on two axes:
 - External API calls transmitting user data
 - Prompt injection vectors (LLM integration)
 
-| Size | Risk | Technical reviewers | Total (incl. requirements-reviewer) |
+| Size | Risk | Reviewers | Note |
 |---|---|---|---|
-| Trivial (1-2 files, < 50 lines) | Low | `code-reviewer` | 2 |
-| Trivial (1-2 files, < 50 lines) | **High** | `security-reviewer` + `code-reviewer` | 3 |
-| Normal (3-10 files) | Low | `code-reviewer` + 1 domain reviewer | 3 |
-| Normal (3-10 files) | **High** | `security-reviewer` + `code-reviewer` + 1 domain reviewer | 4 |
-| Large (10+ files) | Low | `code-reviewer` + 2 domain reviewers | 4 |
-| Large (10+ files) | **High** | `security-reviewer` + `code-reviewer` + 1 domain reviewer | 4 |
+| Docs-only / formatting | n/a | **none** | Fast-exit: return APPROVED immediately |
+| Trivial (1-2 files, < 50 lines) | Low | **1 combined** (requirements + code mandate in one agent — no separate `requirements-reviewer` needed) | Fast path |
+| Trivial (1-2 files, < 50 lines) | **High** | `requirements-reviewer` + `security-reviewer` + `code-reviewer` | 3 agents |
+| Normal (3-10 files) | Low | `requirements-reviewer` + `code-reviewer` + 1 domain reviewer | 3 agents |
+| Normal (3-10 files) | **High** | `requirements-reviewer` + `security-reviewer` + `code-reviewer` + 1 domain reviewer | 4 agents |
+| Large (10+ files) | Low | `requirements-reviewer` + `code-reviewer` + 2 domain reviewers | 4 agents |
+| Large (10+ files) | **High** | `requirements-reviewer` + `security-reviewer` + `code-reviewer` + 1 domain reviewer | 4 agents |
+| **Cap** | | Never exceed 3 technical reviewers. `requirements-reviewer` excluded from cap. | |
 
-Never spawn more than 3 technical reviewers. Diminishing returns hit fast.
+**Fast path — combined reviewer:** for trivial low-risk changes, spawn `code-reviewer` with an expanded mandate. Use the same 3-section template (Context, Changed Files, Out of Scope / Trade-offs). Add this as the first line of the `## Context` section:
+> Also verify requirements alignment for this review: does the implementation match the original user request stated below?
+
+Never spawn more than 3 technical reviewers — `requirements-reviewer` does not count toward this cap. Diminishing returns hit fast.
 
 **If the review mission doesn't include the original requirements**, use `question` to request them from the team-lead before spawning any reviewers.
 
@@ -75,31 +80,22 @@ Never spawn more than 3 technical reviewers. Diminishing returns hit fast.
 
 Launch all selected reviewers simultaneously using the `task` tool. Each reviewer gets a self-contained prompt — they don't know about each other and don't share context.
 
-> **Note on `requirements-reviewer`:** its prompt must include the original user request verbatim (or as complete a description as possible). Without this, the functional review is meaningless. If the mission is missing requirements, use `question` to request them before spawning.
-
 Use this prompt structure for every reviewer:
 
 ~~~
 ## Context
-[What was changed, by which agent, and why. Include the original user request so the reviewer can verify intent — not just quality.]
-
-## Your Review Focus
-[The specific lens for THIS reviewer. Be precise: "Review for SQL injection, authentication bypass, and data exposure" is better than "review for security."]
+[What was changed, by which agent, and why. Include the original user request verbatim so the reviewer can verify intent.]
 
 ## Changed Files
 [List every modified file with a one-line summary of what changed in each. Include file paths.]
 
-## Constraints
-[What was explicitly out of scope. What trade-offs were intentionally made. What the reviewer should NOT flag.]
-
-## Deliverable
-Return a structured review:
-1. **Verdict**: APPROVED | CHANGES_REQUESTED | BLOCKED
-2. **Issues** (if any): each with severity (critical / major / minor), description, and suggested fix
-3. **Positive notes**: what was done well (keep it brief)
+## Out of Scope / Trade-offs
+[What was explicitly excluded. What trade-offs were intentionally made. What the reviewer should NOT flag as an issue.]
 ~~~
 
-**Critical:** include the original requirements in every reviewer prompt. Reviewers must verify that the work matches intent, not just that the code is clean.
+Reviewers know their own focus, stance, and deliverable format from their system prompts — do not repeat that information.
+
+**Critical:** always include the original user request in the `## Context` section. Without it, the `requirements-reviewer` cannot perform its job.
 
 ### 4. Confrontation Protocol
 
@@ -120,12 +116,30 @@ This is where you earn your keep. Don't just merge — arbitrate.
 
 Heuristics for arbitration:
 - **Requirements failures block.** If `requirements-reviewer` flags that the implementation doesn't match the original request, treat it as a blocker regardless of other reviewers' verdicts — unless the concern is clearly a misinterpretation of the requirements (document your reasoning in the Disagreements section).
-  - Exception: if `requirements-reviewer` returns BLOCKED with the explicit reason that requirements were not provided, this is a **process failure**, not a code failure. Do not propagate this BLOCKED to the team-lead. Instead, re-request the requirements via `question` and re-spawn only `requirements-reviewer` with the now-available requirements.
+  - Exception: if `requirements-reviewer` returns BLOCKED and its verdict contains `Reason: Original requirements not provided`, this is a **process failure**, not a code failure. Do not propagate this BLOCKED to the team-lead. Instead, re-request the requirements via `question` and re-spawn only `requirements-reviewer` with the now-available requirements.
 - **Security concerns win ties.** If the security reviewer flags something and the code reviewer says it's fine, default to addressing the security concern unless it's clearly a false positive.
 - **Critical severity always wins.** If any reviewer flags a critical issue, it doesn't matter that another reviewer approved — the critical issue must be addressed.
 - **Minor issues don't block.** If the only disagreement is over minor style or preference, side with the approver. Mention the minor feedback as optional improvements.
 - **When genuinely uncertain**, present both sides and let the team-lead decide. Don't force a verdict you're not confident about.
 - **Duplicate findings across reviewers.** If `code-reviewer` and `security-reviewer` both flag the same input validation issue, use `security-reviewer`'s framing and severity in the final output.
+
+### Verdict Thresholds
+
+**BLOCKED** — use when:
+- A critical issue exists with no safe path forward without user input
+- The implementation fundamentally mismatches the original requirements (not a nuance — a wrong thing built; see arbitration heuristics for the misinterpretation exception)
+- A security reviewer flagged a critical vulnerability
+
+**CHANGES_REQUESTED** — use when:
+- There are major or minor issues that can be fixed without architectural rework
+- Requirements are met but the implementation has correctness or quality gaps
+
+**APPROVED** — use only when:
+- All reviewers returned no critical or major issues
+- Requirements are met
+- No open questions remain that require user input
+
+When in doubt between APPROVED and CHANGES_REQUESTED: default to CHANGES_REQUESTED. The cost of a false approval is higher than the cost of an extra fix cycle.
 
 ### 5. Return Structured Output
 
@@ -188,6 +202,15 @@ Reviewers can fail — incomplete output, compaction, confused scope. Here's the
 - **You don't decide whether to merge.** You provide the verdict. The team-lead acts on it.
 - **You don't talk to the user.** You report to the team-lead. It talks to the user.
 - **You don't review code yourself.** Even if it's "just a quick look." Delegate.
+
+## Calibration
+
+Each reviewer maintains a skeptical stance by default — defined in their own system prompt. If their verdict calibration doesn't match your standards — too lenient or too strict for your codebase — update the individual reviewer prompts with:
+- Explicit anti-patterns to look for (named, not generic)
+- Few-shot examples of good vs. bad verdicts
+- Weighted criteria if some dimensions matter more than others
+
+Re-examine calibration after model upgrades — behaviors shift, and a prompt tuned for one model may be too strict or too lenient on the next.
 
 ## Tools Available
 
