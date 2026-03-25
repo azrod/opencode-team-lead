@@ -4,7 +4,7 @@
 
 `opencode-team-lead` is an OpenCode plugin that injects a "team-lead" orchestrator agent. The agent plans work, delegates everything to sub-agents, reviews results, and reports back. It never touches code directly.
 
-This is a tiny project — 10 meaningful files, zero dependencies, pure ESM, no build step, no tests.
+This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no build step, no tests.
 
 ## Architecture
 
@@ -18,18 +18,23 @@ This is a tiny project — 10 meaningful files, zero dependencies, pure ESM, no 
 | `requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
 | `code-reviewer.md` | System prompt for the code-reviewer agent — evaluates correctness, logic, error handling, and maintainability. |
 | `security-reviewer.md` | System prompt for the security-reviewer agent — identifies vulnerabilities, misconfigurations, and data exposure risks. |
-| `package.json` | Standard npm config. Ships `index.js`, `prompt.md`, `review-manager.md`, `README.md`. |
+| `bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
+| `package.json` | Standard npm config. Ships all `.md` agent prompts, `index.js`, and `README.md`. |
 | `.github/workflows/publish.yml` | CI: OIDC trusted publishing to npm on `v*` tags, plus GitHub release creation. |
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
 | `README.md` | User-facing docs — installation, usage, permissions. |
 
 ### How the plugin works
 
-1. **`config` hook** — Injects two agent definitions into OpenCode's config:
-   - **`team-lead`** — The orchestrator. Permissions: deny-all except `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `read`/`edit` restricted to `.opencode/scratchpad.md`, and git-only bash. Temperature 0.3, variant `max`, mode `all`.
+1. **`config` hook** — Injects agent definitions into OpenCode's config:
+   - **`team-lead`** — The orchestrator. Permissions: deny-all except `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `read`/`edit` restricted to `.opencode/scratchpad.md` and `.opencode/memory.md`, and git-only bash. Temperature 0.3, variant `max`, mode `all`.
    - **`review-manager`** — Review orchestrator, runs as a sub-agent only (`mode: "subagent"`). Permissions: `task`, `question` only. Temperature 0.2, variant `max`. Registered only if `review-manager.md` loads successfully — the team-lead still works without it.
+   - **`requirements-reviewer`**, **`code-reviewer`**, **`security-reviewer`** — Specialized reviewers, sub-agent only. Each has `task: "allow"` only. Registered gracefully — missing files are skipped silently.
+   - **`bug-finder`** — Bug investigation orchestrator, visible to user (`mode: "all"`). Permissions: `task`, `question` only. Temperature 0.2. Registered gracefully.
 
-2. **`experimental.session.compacting` hook** — Reads `.opencode/scratchpad.md` from the project root and injects it into the compaction context, so the team-lead's working memory survives context resets.
+2. **`experimental.session.compacting` hook** — Reads both `.opencode/scratchpad.md` and `.opencode/memory.md` and injects them into the compaction context, so working memory and persistent project knowledge survive context resets.
+
+3. **`experimental.chat.system.transform` hook** — Fires before every LLM call. Reads `.opencode/memory.md` from the project root and injects it into `output.system` (handles both array and string forms). Truncates at 50 KB. Silent on ENOENT — no error if the file doesn't exist yet.
 
 ### Key design decisions
 
@@ -212,3 +217,8 @@ CI (`.github/workflows/publish.yml`) triggers on `v*` tags and:
 - Creates a GitHub release with notes extracted from the CHANGELOG
 
 No manual npm publish. No tokens to manage. Tag it and forget it.
+
+## References
+
+- [Building effective agents](https://www.anthropic.com/research/building-effective-agents) — Anthropic's foundational post on multi-agent system design. The orchestrator/subagent pattern and delegation-only architecture of this plugin are grounded in its principles.
+- [Harness design for long-running application development](https://www.anthropic.com/engineering/harness-design-long-running-apps) — Covers the generator/evaluator multi-agent pattern for autonomous long-running builds. Useful reference for understanding why the review-manager is a separate agent rather than inline logic in Orion, and why evaluator prompts require iterative calibration.
