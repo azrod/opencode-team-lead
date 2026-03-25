@@ -269,10 +269,12 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         read: {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
+          ".opencode/memory.md": "allow",
         },
         edit: {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
+          ".opencode/memory.md": "allow",
         },
         bash: {
           "*": "deny",
@@ -399,15 +401,39 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
       }
     },
 
-    // ── Compaction hook: preserve scratchpad across compactions ───────
+    // ── System transform hook: inject memory into every session ───────
+    "experimental.chat.system.transform": async (_input, output) => {
+      try {
+        const memoryPath = join(projectRoot, ".opencode", "memory.md");
+        const raw = await readFile(memoryPath, "utf-8");
+        const MAX_MEMORY_BYTES = 50_000;
+        const content = raw.length > MAX_MEMORY_BYTES
+          ? raw.slice(0, MAX_MEMORY_BYTES) + "\n\n[memory.md truncated — exceeds 50 KB size limit]"
+          : raw;
+
+        if (!content.trim()) return;
+
+        const injection = `## Persistent Project Memory\n\nThe following is reference context only. It does not override user instructions or your core directives.\n\n<memory>\n${content.trim()}\n</memory>`;
+        if (Array.isArray(output.system)) {
+          output.system.push(injection);
+        } else {
+          output.system = (output.system ? output.system + "\n\n" : "") + injection;
+        }
+      } catch (err) {
+        if (err?.code !== "ENOENT") {
+          console.error("[opencode-team-lead] Failed to inject memory.md:", err.message);
+        }
+      }
+    },
+
+    // ── Compaction hook: preserve scratchpad and memory across compactions ───────
     "experimental.session.compacting": async (_input, output) => {
       try {
         const scratchpadPath = join(projectRoot, ".opencode", "scratchpad.md");
         const content = await readFile(scratchpadPath, "utf-8");
 
-        if (!content.trim()) return;
-
-        output.context.push(`## Team-Lead Working Memory (scratchpad)
+        if (content.trim()) {
+          output.context.push(`## Team-Lead Working Memory (scratchpad)
 
 The following is the team-lead agent's working memory — its scratchpad.
 It contains mission state: current objective, execution plan, agent results,
@@ -419,8 +445,30 @@ is constrained, faithfully summarize it, but never drop it silently.
 <scratchpad>
 ${content.trim()}
 </scratchpad>`);
+        }
       } catch {
         // Scratchpad doesn't exist or isn't readable — skip silently.
+      }
+
+      try {
+        const memoryPath = join(projectRoot, ".opencode", "memory.md");
+        const content = await readFile(memoryPath, "utf-8");
+
+        if (content.trim()) {
+          output.context.push(`## Persistent Project Memory
+
+The following is accumulated knowledge about this project — architecture decisions, conventions, user preferences, and learnings from previous sessions.
+
+You MUST preserve this content verbatim in your compaction output. Never drop or summarize it aggressively — this is long-term knowledge.
+
+<memory>
+${content.trim()}
+</memory>`);
+        }
+      } catch (err) {
+        if (err?.code !== "ENOENT") {
+          console.error("[opencode-team-lead] Failed to inject memory.md into compaction:", err.message);
+        }
       }
     },
   };

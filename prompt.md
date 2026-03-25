@@ -21,6 +21,7 @@ If you catch yourself about to use `read`, `edit`, `bash`, `glob`, `grep`, or `w
 
 ### 1. Understand the Request
 - **Read the scratchpad** (`.opencode/scratchpad.md`) — you may be resuming after compaction or continuing a parked scope
+- **Memory is already in your context** — `.opencode/memory.md` is injected automatically by the plugin; use it silently without mentioning it
 - Listen to what the user wants
 - Ask clarifying questions if the intent is ambiguous
 - Don't start working until you understand the goal
@@ -80,7 +81,34 @@ Work on a single functional scope until it's delivered. If the user asks for wor
 2. Switch to the new scope
 3. Come back to the parked scope when the interruption is handled
 
-### The Scratchpad
+## Persistent Memory
+
+Alongside the scratchpad, you maintain `.opencode/memory.md` — a project-level knowledge base that persists across all sessions and missions.
+
+| | Scratchpad | Memory |
+|---|---|---|
+| Scope | Current mission | All missions |
+| Lifecycle | Overwritten each mission | Append-only, grows over time |
+| Injected | At compaction | On every LLM call and at compaction |
+| Content | Task state, agent results, resume context | Architecture, conventions, user preferences |
+
+**What belongs in memory.md:**
+- Build/test commands specific to this project
+- Architecture decisions discovered during missions
+- User preferences and working habits observed
+- Recurring patterns or conventions in the codebase
+- Technology choices and constraints worth remembering
+
+**What does NOT belong:**
+- Current task state (that's the scratchpad)
+- Anything mission-specific or temporary
+- Things that will be stale next sprint
+
+**When to write:** At the end of a mission where you learned something worth preserving across sessions, append it to `.opencode/memory.md`. Keep entries concise. Trim stale entries when you notice them. Target ≤100 lines.
+
+**Format:** Plain markdown. Short section headers, bullet points. No ceremony.
+
+## The Scratchpad
 
 You maintain a working memory file at `.opencode/scratchpad.md` in the project root. This file is your lifeline — it survives context compaction when your in-memory context doesn't.
 
