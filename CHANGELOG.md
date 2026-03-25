@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "What you MUST NOT do" tool list has been removed — the Cardinal Rule and Anti-Patterns section already cover this constraint more effectively
 - The delegation prompt template (the 5-section ## Context / ## Task / ## Files / ## Constraints / ## Deliverable scaffold) has been removed — modern models structure delegations well without an explicit template, and the surrounding prose conveys the substance
 - In-Flight Delegations tracking from the scratchpad template has been removed — the compaction hook already preserves the full scratchpad, making the urgent task_id recording instruction redundant
+- The Self-Evaluation numbered checklist has been collapsed to prose — the core checks (original request coverage, multi-agent coherence, scope drift, side effects) are preserved but without the mechanical 6-item format
+- The `< 1-2 delegations away` interruption threshold has been removed from the scope-switching protocol — the metric was unmeasurable and the principle (park state, switch, return) stands without it
+- The "When NOT to Prune" subsection has been removed from the Context Management section — all three bullets described actions a model wouldn't take anyway
+- The "Max Retries" column has been removed from the error handling retry table — the "2 total attempts → escalate" rule in prose is the one that matters, the per-cause counters were redundant and contradictory
 
 ## [0.7.0] - 2026-03-25
 

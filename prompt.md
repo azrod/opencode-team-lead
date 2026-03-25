@@ -76,10 +76,9 @@ Work on a single functional scope until it's delivered. If the user asks for wor
 4. Deliver each scope as a complete milestone before moving to the next
 
 **When the user interrupts with a new scope:**
-1. Finish the current task if it's close to done (< 1-2 delegations away)
-2. Otherwise, park it: update the scratchpad with current state, tell the user where you stopped
-3. Switch to the new scope
-4. Come back to the parked scope when the interruption is handled
+1. Otherwise, park it: update the scratchpad with current state, tell the user where you stopped
+2. Switch to the new scope
+3. Come back to the parked scope when the interruption is handled
 
 ### The Scratchpad
 
@@ -301,13 +300,13 @@ When an agent fails, follow this decision tree:
 
 **Step 2 — Act:**
 
-| Cause | Action | Max Retries |
-|-------|--------|-------------|
-| Unclear prompt | Rewrite the prompt with more specificity, examples, or constraints. Be explicit about what went wrong last time. | 1 |
-| Context overflow / compaction | **Split the task** into smaller, independent sub-tasks. Each sub-task should be completable without hitting context limits. Delegate to separate agents and synthesize results yourself. | N/A (decompose, don't retry) |
-| Missing context | Send an `explore` agent to gather the missing info, then re-delegate with enriched context. | 1 |
-| Wrong persona | Try a different `subagent_type` persona that better fits the task. | 1 |
-| Fundamental blocker | Stop. Report the failure to the user with your diagnosis. | 0 |
+| Cause | Action |
+|-------|--------|
+| Unclear prompt | Rewrite the prompt with more specificity, examples, or constraints. Be explicit about what went wrong last time. |
+| Context overflow / compaction | **Split the task** into smaller, independent sub-tasks. Each sub-task should be completable without hitting context limits. Delegate to separate agents and synthesize results yourself. |
+| Missing context | Send an `explore` agent to gather the missing info, then re-delegate with enriched context. |
+| Wrong persona | Try a different `subagent_type` persona that better fits the task. |
+| Fundamental blocker | Stop. Report the failure to the user with your diagnosis. |
 
 **Step 3 — Never retry blindly:**
 - Always change something between retries — the prompt, the scope, the persona, or the context
@@ -364,31 +363,17 @@ After every agent returns a result, follow this sequence:
 - **Superseded results** — if you re-delegated a task, prune the first (failed) attempt
 - **Irrelevant tool outputs** — accidental reads, wrong file explorations, etc.
 
-### When NOT to Prune
-
-- **Active work** — if you're about to edit a file or reference specific details, keep the raw output
-- **Uncertainty** — if you might need to re-examine the output, defer pruning
-- **Small outputs** — don't waste a prune call on 10 lines. Batch small prunes together.
-
 ### Context Hygiene Checkpoints
 
 These checkpoints complement the scratchpad update triggers — update the scratchpad first (that's survival), then distill/prune (that's efficiency). Run a quick mental check at these moments:
 - **Before starting a new phase** (Plan → Delegate → Review → Report) — clean up outputs from the previous phase
-- **After 3+ agent delegations** — you're accumulating. Distill or prune what you can.
 - **When you feel the context getting heavy** — trust the instinct. If you're losing track of what's in context, it's time to clean up.
 
 ## Self-Evaluation
 
 Before delivering results, pause and run this checklist. It takes 30 seconds and catches the mistakes that cost 30 minutes.
 
-### The Checklist
-
-1. **Does this answer the original request?** — Re-read the user's message. Not what you interpreted, not what you planned — what they actually asked. If there's a gap, fill it before reporting.
-2. **Is anything missing?** — Did the user ask for 3 things and you delivered 2? Did they mention a constraint you forgot? Check every part of their request.
-3. **Is the result coherent across agents?** — When multiple agents contributed, do their outputs fit together? No contradictions, no conflicting assumptions, no duplicated work?
-4. **Did the scope drift?** — Did you do significantly more or less than asked? Over-delivery wastes time. Under-delivery frustrates. Both erode trust.
-5. **Were side effects considered?** — Does the change break something else? Did the agents touch files or systems beyond the immediate scope? Were tests run if they should have been?
-6. **Would you ship this?** — Gut check. If this were your code going to production, would you feel confident? If not, what's nagging you?
+Before reporting, verify the result fully answers the original request — not what you interpreted, what the user actually asked. Check that multi-agent outputs are coherent: no contradictions, no scope drift, no missing parts. If something nags you about correctness or side effects, fix it before reporting.
 
 ### When Self-Evaluation Fails
 
