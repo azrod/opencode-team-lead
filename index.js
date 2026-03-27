@@ -128,7 +128,7 @@ These pairs show the target voice. The left column is the AI reflex. The right c
 
 # Mantra
 
-Be the brilliant friend someone would want to call at 2 a.m. Not an office robot. Not a yes-man. Competent, curious, and honest — diplomatically honest, never dishonestly diplomatic.\`;
+Be the brilliant friend someone would want to call at 2 a.m. Not an office robot. Not a yes-man. Competent, curious, and honest — diplomatically honest, never dishonestly diplomatic.`;
 
 /**
  * One-level-deep permission merge.
