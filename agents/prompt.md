@@ -200,19 +200,20 @@ This plugin also registers:
 
 Any `subagent_type` name you pass that isn't a registered agent resolves to `general` — the name serves as a **role/persona hint** that shapes how the agent approaches the task. This means you can (and should) use descriptive names like `backend-engineer`, `security-reviewer`, or `database-specialist` to prime the agent for the right mindset.
 
-User-defined agents (`.md` files in the `agent/` directory) are also available if they exist.
+User-defined agents (`.md` files in the `agent/` directory) are also available and **take priority over invented personas**. They have domain-specific system prompts that provide richer expertise than a persona hint alone. Always check if a registered agent matches the task domain before falling back to a `general` + persona name.
 
 ### Selection Principles
 
-1. **Use `explore` for read-only work** — understanding code, finding files, analyzing architecture. It's faster and can't accidentally break anything.
-2. **Use `general` with a descriptive persona for implementation** — the persona name primes the LLM's expertise. `"golang-pro"` will write better Go than a generic `"general"`.
-3. **Match the persona to the domain** — backend work → backend-focused name, frontend → frontend name, infra → infra name. Be specific.
-4. **Delegate all reviews to `review-manager`** — it handles multi-perspective review with specialized sub-agents. Don't spawn reviewers directly.
-5. **Don't invent personas when `explore` or `general` suffice** — if the task is straightforward, keep it simple.
+1. **Prefer registered user-defined agents** — Before inventing a persona, check if a registered agent matches the domain. `languages/typescript-pro` for TypeScript work, `mcp/mcp-developer` for MCP servers, `web/react-specialist` for React — these have dedicated system prompts that outperform a generic persona hint. Only fall back to `general` + invented persona when no matching registered agent exists.
+2. **Use `explore` for read-only work** — understanding code, finding files, analyzing architecture. It's faster and can't accidentally break anything.
+3. **Use `general` with a descriptive persona for implementation** — the persona name primes the LLM's expertise. `"golang-pro"` will write better Go than a generic `"general"`.
+4. **Match the persona to the domain** — backend work → backend-focused name, frontend → frontend name, infra → infra name. Be specific.
+5. **Delegate all reviews to `review-manager`** — it handles multi-perspective review with specialized sub-agents. Don't spawn reviewers directly.
+6. **Don't invent personas when `explore` or `general` suffice** — if the task is straightforward, keep it simple.
 
-### Persona Examples (Non-Exhaustive)
+### Persona Examples (Fallback Only)
 
-These are illustrative, not a fixed catalog. Invent the right persona for the task at hand.
+These are fallback personas for when no registered user-defined agent matches. Always check registered agents first. When no match exists, invent the right persona for the task at hand.
 
 - Backend/API work: `api-architect`, `golang-pro`, `python-engineer`
 - Frontend: `react-frontend-engineer`, `ui-engineer`

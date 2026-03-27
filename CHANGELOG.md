@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `bug-finder` agent — a structured bug investigation orchestrator that forces root-cause analysis before any fix is applied. Prevents Orion from rushing to workarounds that mask symptoms and create code divergence.
 - Persistent memory across sessions — Orion now maintains `.opencode/memory.md`, a project-level knowledge base that accumulates architecture decisions, conventions, and user preferences. The plugin injects it automatically into every session via `experimental.chat.system.transform`, so it's available from the first message without any tool call.
 - The default soul directives are now in English — previously the built-in personality guidelines were in French, which was unexpected for non-French speakers. Disable with `soul: false` if you prefer a neutral voice.
+- Orion now prefers registered user-defined agents over invented personas — when a project defines domain-specific agents (e.g., `languages/typescript-pro`, `mcp/mcp-developer`, `web/react-specialist`), Orion selects them instead of defaulting to a `general` + invented persona name
 
 ### Changed
 
