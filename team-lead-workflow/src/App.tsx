@@ -1213,6 +1213,16 @@ type Lang = "en" | "fr";
 interface AgentEntry { name: string; badge: string; badgeColor: string; badgeBg: string; desc: string; }
 interface UseCaseEntry { label: string; steps: string[]; color: string; }
 
+interface ConfigFieldEntry { field: string; type: string; default: string; description: string; }
+interface AgentDefaultEntry {
+  name: string;
+  temperature: string;
+  variant: string;
+  mode: string;
+  color: string;
+  permissions: string[];
+}
+
 interface Translations {
   plugin_label: string;
   hero_tagline: string;
@@ -1220,7 +1230,11 @@ interface Translations {
   pill_never: string;
   cta_workflow: string;
   cta_workflow_full: string;
+  cta_config: string;
   back: string;
+  back_to_intro: string;
+  nav_config: string;
+  nav_workflow: string;
   click_node_hint: string;
   flowchart_subtitle: string;
   section_concept: string;
@@ -1234,6 +1248,37 @@ interface Translations {
   agents: AgentEntry[];
   section_usecases: string;
   usecases: UseCaseEntry[];
+  // Config page
+  config_title: string;
+  config_subtitle: string;
+  config_intro_heading: string;
+  config_intro_body: string;
+  config_merge_heading: string;
+  config_merge_body: string;
+  config_merge_note: string;
+  config_fields_heading: string;
+  config_fields_caption: string;
+  config_fields: ConfigFieldEntry[];
+  config_soul_heading: string;
+  config_soul_fields: ConfigFieldEntry[];
+  config_defaults_heading: string;
+  config_defaults_expand: string;
+  config_defaults_collapse: string;
+  config_agent_defaults: AgentDefaultEntry[];
+  config_example_heading: string;
+  config_example_note: string;
+  config_limits_heading: string;
+  config_limits: string[];
+  col_field: string;
+  col_type: string;
+  col_default: string;
+  col_description: string;
+  col_agent: string;
+  col_temp: string;
+  col_variant: string;
+  col_mode: string;
+  col_color: string;
+  col_permissions: string;
 }
 
 const translations: Record<Lang, Translations> = {
@@ -1323,6 +1368,115 @@ const translations: Record<Lang, Translations> = {
         color: "#b45309",
       },
     ],
+    cta_config: "Configuration →",
+    back_to_intro: "← Back",
+    nav_config: "Configuration",
+    nav_workflow: "Workflow →",
+    config_title: "Configuration",
+    config_subtitle: "Per-agent overrides in opencode.json",
+    config_intro_heading: "How it works",
+    config_intro_body: "All agents can be configured per-agent in your opencode.json. The plugin applies its defaults first; your config overrides on top. The prompt field is always controlled by the plugin and cannot be overridden.",
+    config_merge_heading: "Merge strategy",
+    config_merge_body: "Top-level fields (temperature, variant, mode, color) are replaced by your value when present. Permission tool maps (bash, read, edit) are shallow-merged — your entries are additive, not a replacement.",
+    config_merge_note: "Example: adding npm run* to bash permissions extends the default git allowlist. Both sets of commands will be allowed.",
+    config_fields_heading: "Configurable fields — all agents",
+    config_fields_caption: "These fields apply to every agent registered by the plugin.",
+    config_fields: [
+      { field: "temperature", type: "number", default: "varies", description: "LLM sampling temperature. Lower = more deterministic." },
+      { field: "variant", type: "string", default: "\"max\"", description: "Model variant: \"max\" for best quality, \"fast\" for speed." },
+      { field: "mode", type: "string", default: "varies", description: "\"all\" = visible in agent list + usable as sub-agent. \"subagent\" = sub-agent only, invisible in main UI." },
+      { field: "color", type: "string", default: "varies", description: "UI accent color: \"error\", \"warning\", \"info\", \"success\"." },
+      { field: "description", type: "string", default: "hardcoded", description: "Agent description shown in the UI." },
+      { field: "permission", type: "object", default: "varies", description: "Tool access control map. Shallow-merged with plugin defaults for nested tools (bash, read, edit)." },
+    ],
+    config_soul_heading: "team-lead only",
+    config_soul_fields: [
+      { field: "soul", type: "boolean", default: "true", description: "Append the human-tone personality directives to Orion's prompt. Set false for raw behavior." },
+    ],
+    config_defaults_heading: "Agent defaults",
+    config_defaults_expand: "Show details",
+    config_defaults_collapse: "Hide",
+    config_agent_defaults: [
+      {
+        name: "team-lead",
+        temperature: "0.3",
+        variant: "max",
+        mode: "all",
+        color: "error",
+        permissions: [
+          "task: allow",
+          "todowrite: allow",
+          "todoread: allow",
+          "skill: allow",
+          "question: allow",
+          "distill: allow",
+          "prune: allow",
+          "compress: allow",
+          "read: allow (.opencode/scratchpad.md, .opencode/memory.md)",
+          "edit: allow (.opencode/scratchpad.md, .opencode/memory.md)",
+          "bash: allow (git status/diff/log/add/commit/push/tag only)",
+          "Everything else: deny",
+        ],
+      },
+      {
+        name: "review-manager",
+        temperature: "0.2",
+        variant: "max",
+        mode: "subagent",
+        color: "warning",
+        permissions: ["task: allow", "question: allow", "Everything else: deny"],
+      },
+      {
+        name: "requirements-reviewer",
+        temperature: "0.1",
+        variant: "max",
+        mode: "subagent",
+        color: "info",
+        permissions: ["task: allow", "Everything else: deny"],
+      },
+      {
+        name: "code-reviewer",
+        temperature: "0.2",
+        variant: "max",
+        mode: "subagent",
+        color: "info",
+        permissions: ["task: allow", "Everything else: deny"],
+      },
+      {
+        name: "security-reviewer",
+        temperature: "0.1",
+        variant: "max",
+        mode: "subagent",
+        color: "error",
+        permissions: ["task: allow", "Everything else: deny"],
+      },
+      {
+        name: "bug-finder",
+        temperature: "0.2",
+        variant: "max",
+        mode: "all",
+        color: "warning",
+        permissions: ["task: allow", "question: allow", "Everything else: deny"],
+      },
+    ],
+    config_example_heading: "Example opencode.json",
+    config_example_note: "The bash permission above extends the default git allowlist — both sets of commands are allowed.",
+    config_limits_heading: "Fixed behaviors",
+    config_limits: [
+      "Memory injection truncation: hardcoded at 50,000 characters",
+      "Memory file path: .opencode/memory.md (project root, not configurable)",
+      "Scratchpad file path: .opencode/scratchpad.md (project root, not configurable)",
+    ],
+    col_field: "Field",
+    col_type: "Type",
+    col_default: "Default",
+    col_description: "Description",
+    col_agent: "Agent",
+    col_temp: "Temp.",
+    col_variant: "Variant",
+    col_mode: "Mode",
+    col_color: "Color",
+    col_permissions: "Permissions",
   },
   fr: {
     plugin_label: "OpenCode Plugin",
@@ -1410,6 +1564,115 @@ const translations: Record<Lang, Translations> = {
         color: "#b45309",
       },
     ],
+    cta_config: "Configuration →",
+    back_to_intro: "← Retour",
+    nav_config: "Configuration",
+    nav_workflow: "Workflow →",
+    config_title: "Configuration",
+    config_subtitle: "Surcharges par agent dans opencode.json",
+    config_intro_heading: "Fonctionnement",
+    config_intro_body: "Chaque agent peut être configuré individuellement dans votre opencode.json. Le plugin applique ses valeurs par défaut en premier ; votre config vient en surcharge par-dessus. Le champ prompt est toujours contrôlé par le plugin et ne peut pas être surchargé.",
+    config_merge_heading: "Stratégie de fusion",
+    config_merge_body: "Les champs de premier niveau (temperature, variant, mode, color) sont remplacés par votre valeur si elle est présente. Les maps d'outils dans permission (bash, read, edit) sont fusionnées superficiellement — vos entrées s'ajoutent aux défauts, elles ne les remplacent pas.",
+    config_merge_note: "Exemple : ajouter npm run* aux permissions bash étend la liste git par défaut. Les deux ensembles de commandes seront autorisés.",
+    config_fields_heading: "Champs configurables — tous les agents",
+    config_fields_caption: "Ces champs s'appliquent à chaque agent enregistré par le plugin.",
+    config_fields: [
+      { field: "temperature", type: "number", default: "variable", description: "Température d'échantillonnage LLM. Plus bas = plus déterministe." },
+      { field: "variant", type: "string", default: "\"max\"", description: "Variante de modèle : \"max\" pour la meilleure qualité, \"fast\" pour la vitesse." },
+      { field: "mode", type: "string", default: "variable", description: "\"all\" = visible dans la liste + utilisable en sous-agent. \"subagent\" = sous-agent uniquement, invisible dans l'UI." },
+      { field: "color", type: "string", default: "variable", description: "Couleur d'accentuation UI : \"error\", \"warning\", \"info\", \"success\"." },
+      { field: "description", type: "string", default: "intégrée", description: "Description de l'agent affichée dans l'UI." },
+      { field: "permission", type: "object", default: "variable", description: "Map de contrôle d'accès aux outils. Fusionnée superficiellement avec les défauts du plugin pour les outils imbriqués (bash, read, edit)." },
+    ],
+    config_soul_heading: "team-lead uniquement",
+    config_soul_fields: [
+      { field: "soul", type: "boolean", default: "true", description: "Injecte les directives de personnalité human-tone dans le prompt d'Orion. Mettre false pour le comportement brut." },
+    ],
+    config_defaults_heading: "Défauts par agent",
+    config_defaults_expand: "Voir les détails",
+    config_defaults_collapse: "Masquer",
+    config_agent_defaults: [
+      {
+        name: "team-lead",
+        temperature: "0.3",
+        variant: "max",
+        mode: "all",
+        color: "error",
+        permissions: [
+          "task: allow",
+          "todowrite: allow",
+          "todoread: allow",
+          "skill: allow",
+          "question: allow",
+          "distill: allow",
+          "prune: allow",
+          "compress: allow",
+          "read: allow (.opencode/scratchpad.md, .opencode/memory.md)",
+          "edit: allow (.opencode/scratchpad.md, .opencode/memory.md)",
+          "bash: allow (git status/diff/log/add/commit/push/tag uniquement)",
+          "Tout le reste : deny",
+        ],
+      },
+      {
+        name: "review-manager",
+        temperature: "0.2",
+        variant: "max",
+        mode: "subagent",
+        color: "warning",
+        permissions: ["task: allow", "question: allow", "Tout le reste : deny"],
+      },
+      {
+        name: "requirements-reviewer",
+        temperature: "0.1",
+        variant: "max",
+        mode: "subagent",
+        color: "info",
+        permissions: ["task: allow", "Tout le reste : deny"],
+      },
+      {
+        name: "code-reviewer",
+        temperature: "0.2",
+        variant: "max",
+        mode: "subagent",
+        color: "info",
+        permissions: ["task: allow", "Tout le reste : deny"],
+      },
+      {
+        name: "security-reviewer",
+        temperature: "0.1",
+        variant: "max",
+        mode: "subagent",
+        color: "error",
+        permissions: ["task: allow", "Tout le reste : deny"],
+      },
+      {
+        name: "bug-finder",
+        temperature: "0.2",
+        variant: "max",
+        mode: "all",
+        color: "warning",
+        permissions: ["task: allow", "question: allow", "Tout le reste : deny"],
+      },
+    ],
+    config_example_heading: "Exemple opencode.json",
+    config_example_note: "La permission bash ci-dessus étend la liste git par défaut — les deux ensembles de commandes sont autorisés.",
+    config_limits_heading: "Comportements figés",
+    config_limits: [
+      "Troncature de l'injection mémoire : fixée à 50 000 caractères",
+      "Chemin du fichier mémoire : .opencode/memory.md (racine du projet, non configurable)",
+      "Chemin du scratchpad : .opencode/scratchpad.md (racine du projet, non configurable)",
+    ],
+    col_field: "Champ",
+    col_type: "Type",
+    col_default: "Défaut",
+    col_description: "Description",
+    col_agent: "Agent",
+    col_temp: "Temp.",
+    col_variant: "Variante",
+    col_mode: "Mode",
+    col_color: "Couleur",
+    col_permissions: "Permissions",
   },
 };
 
@@ -1452,7 +1715,7 @@ function LangToggle({ lang, setLang, dark = false }: { lang: Lang; setLang: (l: 
 
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
 
-function IntroScreen({ onEnter, lang, setLang }: { onEnter: () => void; lang: Lang; setLang: (l: Lang) => void }) {
+function IntroScreen({ onEnter, onConfig, lang, setLang }: { onEnter: () => void; onConfig: () => void; lang: Lang; setLang: (l: Lang) => void }) {
   const t = translations[lang];
   return (
     <div style={{
@@ -1526,6 +1789,7 @@ function IntroScreen({ onEnter, lang, setLang }: { onEnter: () => void; lang: La
             ))}
           </div>
 
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <button
             onClick={onEnter}
             style={{
@@ -1543,6 +1807,28 @@ function IntroScreen({ onEnter, lang, setLang }: { onEnter: () => void; lang: La
             {t.cta_workflow}
             <span style={{ fontSize: 16 }}>→</span>
           </button>
+          <button
+            onClick={onConfig}
+            style={{
+              background: "none", color: "#94a3b8",
+              border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8,
+              padding: "12px 22px", fontSize: 14, fontWeight: 600,
+              cursor: "pointer", letterSpacing: "-0.01em",
+              display: "inline-flex", alignItems: "center", gap: 8,
+              transition: "border-color 0.15s, color 0.15s",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.35)";
+              (e.currentTarget as HTMLButtonElement).style.color = "#e2e8f0";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.15)";
+              (e.currentTarget as HTMLButtonElement).style.color = "#94a3b8";
+            }}
+          >
+            {t.cta_config}
+          </button>
+          </div>
         </div>
       </div>
 
@@ -1668,7 +1954,7 @@ function IntroScreen({ onEnter, lang, setLang }: { onEnter: () => void; lang: La
         </section>
 
         {/* Bottom CTA */}
-        <div style={{ textAlign: "center", paddingTop: 8 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 12, paddingTop: 8, flexWrap: "wrap" }}>
           <button
             onClick={onEnter}
             style={{
@@ -1683,6 +1969,26 @@ function IntroScreen({ onEnter, lang, setLang }: { onEnter: () => void; lang: La
           >
             {t.cta_workflow_full}
             <span style={{ fontSize: 16 }}>→</span>
+          </button>
+          <button
+            onClick={onConfig}
+            style={{
+              background: "none", color: "#64748b",
+              border: "1px solid #e2e8f0", borderRadius: 8,
+              padding: "12px 24px", fontSize: 14, fontWeight: 600,
+              cursor: "pointer", letterSpacing: "-0.01em",
+              display: "inline-flex", alignItems: "center", gap: 8,
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = "#f8fafc";
+              (e.currentTarget as HTMLButtonElement).style.color = "#0f172a";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = "none";
+              (e.currentTarget as HTMLButtonElement).style.color = "#64748b";
+            }}
+          >
+            {t.cta_config}
           </button>
         </div>
 
@@ -1710,10 +2016,285 @@ function MemItem({ text, color }: { text: string; color: string }) {
   );
 }
 
+// ─── Config Screen ────────────────────────────────────────────────────────────
+
+const CONFIG_EXAMPLE = `{
+  "agent": {
+    "team-lead": {
+      "temperature": 0.5,
+      "variant": "fast",
+      "color": "info",
+      "soul": false,
+      "permission": {
+        "bash": {
+          "npm run*": "allow",
+          "npx*": "allow"
+        }
+      }
+    },
+    "bug-finder": {
+      "temperature": 0.1,
+      "mode": "subagent"
+    }
+  }
+}`;
+
+function JsonBlock({ code }: { code: string }) {
+  // Minimal JSON syntax colouring via regex splits
+  const lines = code.split("\n");
+  return (
+    <pre style={{
+      background: "#0f172a", color: "#e2e8f0",
+      borderRadius: 8, padding: "18px 20px",
+      fontSize: 13, lineHeight: 1.65,
+      fontFamily: "ui-monospace, 'Cascadia Code', monospace",
+      overflowX: "auto", margin: 0,
+    }}>
+      {lines.map((line, i) => {
+        // Colourise: keys in slate-blue, strings in green, numbers/booleans in amber
+        const coloured = line
+          .replace(/("(?:[^"\\]|\\.)*")(\s*:)/g, '<k>$1</k>$2')
+          .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <s>$1</s>')
+          .replace(/:\s*(true|false|null)/g, ': <b>$1</b>')
+          .replace(/:\s*(-?\d+(?:\.\d+)?)/g, ': <n>$1</n>');
+        const parts = coloured.split(/(<k>|<\/k>|<s>|<\/s>|<b>|<\/b>|<n>|<\/n>)/);
+        let currentTag = "";
+        const rendered: React.ReactNode[] = [];
+        parts.forEach((part, pi) => {
+          if (part === "<k>") { currentTag = "k"; return; }
+          if (part === "</k>") { currentTag = ""; return; }
+          if (part === "<s>") { currentTag = "s"; return; }
+          if (part === "</s>") { currentTag = ""; return; }
+          if (part === "<b>") { currentTag = "b"; return; }
+          if (part === "</b>") { currentTag = ""; return; }
+          if (part === "<n>") { currentTag = "n"; return; }
+          if (part === "</n>") { currentTag = ""; return; }
+          if (!part) return;
+          const color = currentTag === "k" ? "#93c5fd"
+            : currentTag === "s" ? "#86efac"
+            : currentTag === "b" || currentTag === "n" ? "#fcd34d"
+            : "#e2e8f0";
+          rendered.push(<span key={pi} style={{ color }}>{part}</span>);
+        });
+        return <div key={i}>{rendered}</div>;
+      })}
+    </pre>
+  );
+}
+
+function ConfigFieldTable({ fields, t }: { fields: { field: string; type: string; default: string; description: string }[]; t: Translations }) {
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, fontFamily: "system-ui, sans-serif" }}>
+        <thead>
+          <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+            {[t.col_field, t.col_type, t.col_default, t.col_description].map(h => (
+              <th key={h} style={{ textAlign: "left", padding: "8px 12px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {fields.map((row, i) => (
+            <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "white" : "#fafafa" }}>
+              <td style={{ padding: "9px 12px" }}>
+                <code style={{ background: "#f1f5f9", color: "#0f172a", padding: "2px 7px", borderRadius: 4, fontSize: 12, fontFamily: "ui-monospace, monospace" }}>{row.field}</code>
+              </td>
+              <td style={{ padding: "9px 12px", color: "#7c3aed", fontFamily: "ui-monospace, monospace", fontSize: 12 }}>{row.type}</td>
+              <td style={{ padding: "9px 12px", color: "#64748b", fontFamily: "ui-monospace, monospace", fontSize: 12 }}>{row.default}</td>
+              <td style={{ padding: "9px 12px", color: "#374151", lineHeight: 1.5 }}>{row.description}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function AgentDefaultCard({ agent, t }: { agent: { name: string; temperature: string; variant: string; mode: string; color: string; permissions: string[] }; t: Translations }) {
+  const [open, setOpen] = useState(false);
+  const colorMap: Record<string, string> = { error: "#dc2626", warning: "#d97706", info: "#0369a1", success: "#16a34a" };
+  const bgMap: Record<string, string> = { error: "#fef2f2", warning: "#fffbeb", info: "#eff6ff", success: "#f0fdf4" };
+  const c = colorMap[agent.color] ?? "#64748b";
+  const bg = bgMap[agent.color] ?? "#f8fafc";
+  return (
+    <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden", marginBottom: 10 }}>
+      {/* Card header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "white" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <code style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", fontFamily: "ui-monospace, monospace", background: "#f1f5f9", padding: "2px 8px", borderRadius: 4 }}>{agent.name}</code>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", color: c, background: bg, border: `1px solid ${c}30`, padding: "2px 7px", borderRadius: 3 }}>{agent.color.toUpperCase()}</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <div style={{ display: "flex", gap: 14 }}>
+            {[
+              { label: t.col_temp, value: agent.temperature },
+              { label: t.col_variant, value: agent.variant },
+              { label: t.col_mode, value: agent.mode },
+            ].map(f => (
+              <div key={f.label} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{f.label}</div>
+                <div style={{ fontSize: 12, color: "#0f172a", fontWeight: 700, fontFamily: "ui-monospace, monospace" }}>{f.value}</div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => setOpen(o => !o)}
+            style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 5, padding: "4px 10px", cursor: "pointer", fontSize: 12, color: "#64748b", fontWeight: 600, fontFamily: "system-ui, sans-serif" }}
+          >
+            {open ? t.config_defaults_collapse : t.config_defaults_expand}
+          </button>
+        </div>
+      </div>
+      {/* Expandable permissions */}
+      {open && (
+        <div style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0", padding: "12px 16px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#94a3b8", marginBottom: 8 }}>{t.col_permissions}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {agent.permissions.map((p, i) => {
+              const isDeny = p.toLowerCase().includes("deny") || p.toLowerCase().includes("tout le reste");
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                    background: isDeny ? "#dc262640" : "#16a34a40",
+                    border: `1.5px solid ${isDeny ? "#dc2626" : "#16a34a"}`,
+                  }} />
+                  <span style={{ fontSize: 12, color: isDeny ? "#991b1b" : "#374151", fontFamily: "ui-monospace, monospace" }}>{p}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConfigScreen({ onBack, onWorkflow, lang, setLang }: { onBack: () => void; onWorkflow: () => void; lang: Lang; setLang: (l: Lang) => void }) {
+  const t = translations[lang];
+
+  return (
+    <div style={{
+      height: "100vh", width: "100vw", overflowY: "auto",
+      fontFamily: "system-ui, 'Segoe UI', sans-serif",
+      background: "#f8f9fa",
+      animation: "fadeIn 0.25s ease-out",
+    }}>
+      {/* Header */}
+      <div style={{ background: "white", borderBottom: "1px solid #e2e8f0", padding: "10px 24px", position: "sticky", top: 0, zIndex: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            onClick={onBack}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#64748b", fontWeight: 600, padding: "4px 8px", borderRadius: 5, fontFamily: "system-ui, sans-serif" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+          >{t.back_to_intro}</button>
+          <div style={{ width: 1, height: 16, background: "#e2e8f0" }} />
+          <button
+            onClick={onWorkflow}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#64748b", fontWeight: 600, padding: "4px 8px", borderRadius: 5, fontFamily: "system-ui, sans-serif" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+          >{t.nav_workflow}</button>
+          <div style={{ width: 1, height: 16, background: "#e2e8f0" }} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>team-lead — {t.config_title}</span>
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>{t.config_subtitle}</span>
+        </div>
+        <LangToggle lang={lang} setLang={setLang} />
+      </div>
+
+      {/* Content */}
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "36px 48px 72px" }}>
+
+        {/* 1. How it works */}
+        <section style={{ marginBottom: 40 }}>
+          <SectionTitle>{t.config_intro_heading}</SectionTitle>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: "18px 22px" }}>
+            <p style={{ margin: 0, fontSize: 14, color: "#374151", lineHeight: 1.7 }}>
+              {t.config_intro_body.split("prompt").map((part, i, arr) =>
+                i < arr.length - 1 ? (
+                  <React.Fragment key={i}>
+                    {part}<code style={{ background: "#f1f5f9", color: "#0f172a", padding: "1px 5px", borderRadius: 3, fontSize: 13, fontFamily: "ui-monospace, monospace" }}>prompt</code>
+                  </React.Fragment>
+                ) : part
+              )}
+            </p>
+          </div>
+        </section>
+
+        {/* 2. Merge strategy */}
+        <section style={{ marginBottom: 40 }}>
+          <SectionTitle>{t.config_merge_heading}</SectionTitle>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: "18px 22px" }}>
+            <p style={{ margin: "0 0 14px", fontSize: 14, color: "#374151", lineHeight: 1.7 }}>{t.config_merge_body}</p>
+            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 7, padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>💡</span>
+              <span style={{ fontSize: 13, color: "#92400e", lineHeight: 1.6 }}>{t.config_merge_note}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. Configurable fields */}
+        <section style={{ marginBottom: 40 }}>
+          <SectionTitle>{t.config_fields_heading}</SectionTitle>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px 4px", borderBottom: "1px solid #f1f5f9" }}>
+              <span style={{ fontSize: 12, color: "#64748b" }}>{t.config_fields_caption}</span>
+            </div>
+            <ConfigFieldTable fields={t.config_fields} t={t} />
+          </div>
+        </section>
+
+        {/* team-lead only: soul */}
+        <section style={{ marginBottom: 40 }}>
+          <SectionTitle>{t.config_soul_heading}</SectionTitle>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+            <ConfigFieldTable fields={t.config_soul_fields} t={t} />
+          </div>
+        </section>
+
+        {/* 4. Agent defaults */}
+        <section style={{ marginBottom: 40 }}>
+          <SectionTitle>{t.config_defaults_heading}</SectionTitle>
+          {t.config_agent_defaults.map(agent => (
+            <AgentDefaultCard key={agent.name} agent={agent} t={t} />
+          ))}
+        </section>
+
+        {/* 5. Example */}
+        <section style={{ marginBottom: 40 }}>
+          <SectionTitle>{t.config_example_heading}</SectionTitle>
+          <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #1e293b" }}>
+            <JsonBlock code={CONFIG_EXAMPLE} />
+          </div>
+          <div style={{ marginTop: 10, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 7, padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>✓</span>
+            <span style={{ fontSize: 13, color: "#166534", lineHeight: 1.6 }}>{t.config_example_note}</span>
+          </div>
+        </section>
+
+        {/* 6. Fixed behaviors */}
+        <section style={{ marginBottom: 40 }}>
+          <SectionTitle>{t.config_limits_heading}</SectionTitle>
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 20px" }}>
+            {t.config_limits.map((item, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: i < t.config_limits.length - 1 ? 10 : 0 }}>
+                <span style={{ marginTop: 6, width: 6, height: 6, borderRadius: "50%", background: "#94a3b840", border: "1.5px solid #94a3b8", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: "#374151", lineHeight: 1.6 }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+      </div>
+    </div>
+  );
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [view, setView] = useState<"intro" | "flowchart">("intro");
+  const [view, setView] = useState<"intro" | "flowchart" | "config">("intro");
   const [lang, setLang] = useState<Lang>("en");
   const [selected, setSelected] = useState<string>("understand");
   const [zoom, setZoom] = useState<number>(1.0);
@@ -1738,7 +2319,16 @@ export default function App() {
     return (
       <>
         <style>{STYLE_TAG}</style>
-        <IntroScreen onEnter={() => setView("flowchart")} lang={lang} setLang={setLang} />
+        <IntroScreen onEnter={() => setView("flowchart")} onConfig={() => setView("config")} lang={lang} setLang={setLang} />
+      </>
+    );
+  }
+
+  if (view === "config") {
+    return (
+      <>
+        <style>{STYLE_TAG}</style>
+        <ConfigScreen onBack={() => setView("intro")} onWorkflow={() => setView("flowchart")} lang={lang} setLang={setLang} />
       </>
     );
   }
@@ -1755,7 +2345,7 @@ export default function App() {
 
         {/* Header */}
         <div style={{ background: "white", borderBottom: "1px solid #e2e8f0", padding: "10px 20px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <button
               onClick={() => setView("intro")}
               style={{
@@ -1768,7 +2358,21 @@ export default function App() {
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
             >
-              {t.back}
+              {t.back_to_intro}
+            </button>
+            <div style={{ width: 1, height: 16, background: "#e2e8f0" }} />
+            <button
+              onClick={() => setView("config")}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 12, color: "#64748b", fontWeight: 600,
+                padding: "4px 8px", borderRadius: 5,
+                fontFamily: "system-ui, sans-serif",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+            >
+              {t.nav_config}
             </button>
             <div style={{ width: 1, height: 16, background: "#e2e8f0" }} />
             <div>
