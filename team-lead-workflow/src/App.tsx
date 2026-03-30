@@ -1238,7 +1238,7 @@ interface Translations {
   click_node_hint: string;
   flowchart_subtitle: string;
   section_concept: string;
-  concept_items: { icon: string; text: string }[];
+  concept_items: { icon: string; text: string; code?: string }[];
   section_memory: string;
   scratchpad_label: string;
   scratchpad_items: string[];
@@ -1298,6 +1298,7 @@ const translations: Record<Lang, Translations> = {
       { icon: "◈", text: "Plan, delegate, review, synthesize — in that order, always" },
       { icon: "⟳", text: "Deliberate and methodical — temperature 0.3, variant max" },
       { icon: "✦", text: "Persistent memory via scratchpad + memory.md, survives context resets" },
+      { icon: "◉", text: "Tone shaped by human-tone directives — direct, opinionated, concise. Disable with %%code%% in your config for raw behavior.", code: "soul: false" },
     ],
     section_memory: "Memory Management",
     scratchpad_label: "Scratchpad",
@@ -1494,6 +1495,7 @@ const translations: Record<Lang, Translations> = {
       { icon: "◈", text: "Planifie, délègue, review, synthétise — dans cet ordre, toujours" },
       { icon: "⟳", text: "Délibéré et méthodique — temperature 0.3, variant max" },
       { icon: "✦", text: "Mémoire persistante via scratchpad + memory.md, survit aux resets de contexte" },
+      { icon: "◉", text: "Ton façonné par les directives human-tone — direct, tranché, concis. Désactivable via %%code%% dans la config.", code: "soul: false" },
     ],
     section_memory: "Gestion de la mémoire",
     scratchpad_label: "Scratchpad",
@@ -1843,12 +1845,19 @@ function IntroScreen({ onEnter, onConfig, lang, setLang }: { onEnter: () => void
             borderRadius: 10, padding: "24px 28px",
             display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16,
           }}>
-            {t.concept_items.map((item, i) => (
-              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <span style={{ fontSize: 18, color: "#6366f1", flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
-                <span style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{item.text}</span>
-              </div>
-            ))}
+            {t.concept_items.map((item, i) => {
+              const parts = item.code ? item.text.split("%%code%%") : null;
+              return (
+                <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <span style={{ fontSize: 18, color: "#6366f1", flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
+                  <span style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>
+                    {parts ? (
+                      <>{parts[0]}<code style={{ fontFamily: "monospace", fontSize: 12, background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: 4, padding: "1px 5px", color: "#0f172a" }}>{item.code}</code>{parts[1]}</>
+                    ) : item.text}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </section>
 
