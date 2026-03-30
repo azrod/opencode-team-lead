@@ -130,6 +130,73 @@ These pairs show the target voice. The left column is the AI reflex. The right c
 
 Be the brilliant friend someone would want to call at 2 a.m. Not an office robot. Not a yes-man. Competent, curious, and honest — diplomatically honest, never dishonestly diplomatic.`;
 
+const SUBAGENT_DEFS = [
+  {
+    id: "review-manager",
+    file: "review-manager.md",
+    description:
+      "Review orchestrator — spawns specialized reviewer agents in parallel, " +
+      "synthesizes their verdicts, and arbitrates disagreements. " +
+      "Never reviews code directly.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "subagent",
+    color: "warning",
+    permission: { "*": "deny", task: "allow", question: "allow" },
+  },
+  {
+    id: "requirements-reviewer",
+    file: "requirements-reviewer.md",
+    description:
+      "Functional compliance reviewer — verifies implementation matches original requirements. " +
+      "Does not evaluate code quality, security, or style.",
+    temperature: 0.1,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: true,
+    permission: { "*": "deny", task: "allow" },
+  },
+  {
+    id: "code-reviewer",
+    file: "code-reviewer.md",
+    description:
+      "Technical quality reviewer — evaluates correctness, logic, error handling, API design, " +
+      "and maintainability. Does not cover security or functional compliance.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: true,
+    permission: { "*": "deny", task: "allow" },
+  },
+  {
+    id: "security-reviewer",
+    file: "security-reviewer.md",
+    description:
+      "Security reviewer — identifies vulnerabilities, misconfigurations, and data exposure risks. " +
+      "Does not cover code quality, style, or functional compliance.",
+    temperature: 0.1,
+    variant: "max",
+    mode: "subagent",
+    color: "error",
+    silent: true,
+    permission: { "*": "deny", task: "allow" },
+  },
+  {
+    id: "bug-finder",
+    file: "bug-finder.md",
+    description:
+      "Structured bug investigation agent — diagnoses root cause before applying any fix. " +
+      "Prevents workarounds and code divergence by forcing rigorous analysis first.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "all",
+    color: "warning",
+    permission: { "*": "deny", task: "allow", question: "allow" },
+  },
+];
+
 /**
  * One-level-deep permission merge.
  * For each key in `overrides`, if both sides are plain objects, shallow-merge
@@ -171,8 +238,37 @@ function mergePermissions(defaults, overrides) {
   return result;
 }
 
+async function loadAgentPrompt(agentId, fileName, silent = false) {
+  const filePath = join(__dirname, "agents", fileName);
+  try {
+    return await readFile(filePath, "utf-8");
+  } catch (err) {
+    if (!silent) {
+      console.error(
+        `[opencode-team-lead] Failed to load agent "${agentId}" (${fileName}) at ${filePath}:`,
+        err.message,
+      );
+    }
+    return null;
+  }
+}
+
+function registerSubagent(input, def, prompt, userConfig) {
+  const { id, description, temperature, variant, mode, color, permission: defaultPermission } = def;
+  const { soul, ...agentUserConfig } = userConfig ?? {}; // soul is team-lead-only — silently ignored for sub-agents
+  input.agent[id] = {
+    description,
+    temperature,
+    variant,
+    mode,
+    color,
+    ...agentUserConfig,
+    prompt,
+    permission: mergePermissions(defaultPermission, agentUserConfig.permission),
+  };
+}
+
 export const TeamLeadPlugin = async ({ directory, worktree }) => {
-  // Load the system prompt from the bundled prompt.md
   const promptPath = join(__dirname, "agents", "prompt.md");
   let prompt;
   try {
@@ -185,84 +281,18 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     return {};
   }
 
-  // Load the review-manager prompt from the bundled review-manager.md
-  const reviewManagerPromptPath = join(__dirname, "agents", "review-manager.md");
-  let reviewManagerPrompt;
-  try {
-    reviewManagerPrompt = await readFile(reviewManagerPromptPath, "utf-8");
-  } catch (err) {
-    console.error(
-      `[opencode-team-lead] Failed to load review-manager.md at ${reviewManagerPromptPath}:`,
-      err.message,
-    );
-    // Don't return early — team-lead can still work without review-manager
-    reviewManagerPrompt = null;
-  }
+  // Prompts loaded once at init — not reloaded on each config hook call.
+  const subagentPrompts = await Promise.all(
+    SUBAGENT_DEFS.map((def) => loadAgentPrompt(def.id, def.file, def.silent ?? false)),
+  );
 
-  // Load the requirements-reviewer prompt from the bundled requirements-reviewer.md
-  const requirementsReviewerPromptPath = join(__dirname, "agents", "requirements-reviewer.md");
-  let requirementsReviewerPrompt;
-  try {
-    requirementsReviewerPrompt = await readFile(requirementsReviewerPromptPath, "utf-8");
-  } catch (err) {
-    console.error(
-      `[opencode-team-lead] Failed to load requirements-reviewer.md at ${requirementsReviewerPromptPath}:`,
-      err.message,
-    );
-    // Don't return early — team-lead can still work without requirements-reviewer
-    requirementsReviewerPrompt = null;
-  }
-
-  // Load the code-reviewer prompt from the bundled code-reviewer.md
-  const codeReviewerPromptPath = join(__dirname, "agents", "code-reviewer.md");
-  let codeReviewerPrompt;
-  try {
-    codeReviewerPrompt = await readFile(codeReviewerPromptPath, "utf-8");
-  } catch (err) {
-    console.error(
-      `[opencode-team-lead] Failed to load code-reviewer.md at ${codeReviewerPromptPath}:`,
-      err.message,
-    );
-    // Don't return early — team-lead can still work without code-reviewer
-    codeReviewerPrompt = null;
-  }
-
-  // Load the security-reviewer prompt from the bundled security-reviewer.md
-  const securityReviewerPromptPath = join(__dirname, "agents", "security-reviewer.md");
-  let securityReviewerPrompt;
-  try {
-    securityReviewerPrompt = await readFile(securityReviewerPromptPath, "utf-8");
-  } catch (err) {
-    console.error(
-      `[opencode-team-lead] Failed to load security-reviewer.md at ${securityReviewerPromptPath}:`,
-      err.message,
-    );
-    // Don't return early — team-lead can still work without security-reviewer
-    securityReviewerPrompt = null;
-  }
-
-  // Load the bug-finder prompt from the bundled bug-finder.md
-  const bugFinderPromptPath = join(__dirname, "agents", "bug-finder.md");
-  let bugFinderPrompt;
-  try {
-    bugFinderPrompt = await readFile(bugFinderPromptPath, "utf-8");
-  } catch (err) {
-    console.error(
-      `[opencode-team-lead] Failed to load bug-finder.md at ${bugFinderPromptPath}:`,
-      err.message,
-    );
-    // Don't return early — team-lead can still work without bug-finder
-    bugFinderPrompt = null;
-  }
-
-  const projectRoot = worktree || directory;
+  const projectRoot = worktree ?? directory ?? ".";
 
   return {
     // ── Config hook: inject the team-lead agent ──────────────────────
     config: async (input) => {
       input.agent = input.agent ?? {};
 
-      // Capture any existing user config (e.g. from opencode.json)
       const userConfig = input.agent["team-lead"] ?? {};
       const { soul, ...userConfigRest } = userConfig;
 
@@ -316,126 +346,11 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         permission: mergePermissions(defaultPermission, userConfigRest.permission),
       };
 
-      // ── Review-manager agent ──────────────────────────────────────
-      if (reviewManagerPrompt) {
-        const reviewManagerUserConfig =
-          input.agent["review-manager"] ?? {};
-
-        const reviewManagerPermission = {
-          "*": "deny",
-          task: "allow",
-          question: "allow",
-        };
-
-        input.agent["review-manager"] = {
-          description:
-            "Review orchestrator — spawns specialized reviewer agents in parallel, " +
-            "synthesizes their verdicts, and arbitrates disagreements. " +
-            "Never reviews code directly.",
-          temperature: 0.2,
-          variant: "max",
-          mode: "subagent",
-          color: "warning",
-          ...reviewManagerUserConfig,
-          prompt: reviewManagerPrompt,
-          permission: mergePermissions(reviewManagerPermission, reviewManagerUserConfig.permission),
-        };
-      }
-
-      // ── Requirements-reviewer agent ───────────────────────────────
-      if (requirementsReviewerPrompt) {
-        const requirementsReviewerUserConfig =
-          input.agent["requirements-reviewer"] ?? {};
-
-        const requirementsReviewerPermission = {
-          "*": "deny",
-          task: "allow",
-        };
-
-        input.agent["requirements-reviewer"] = {
-          description:
-            "Functional compliance reviewer — verifies implementation matches original requirements. " +
-            "Does not evaluate code quality, security, or style.",
-          temperature: 0.1,
-          variant: "max",
-          mode: "subagent",
-          color: "info",
-          ...requirementsReviewerUserConfig,
-          prompt: requirementsReviewerPrompt,
-          permission: mergePermissions(requirementsReviewerPermission, requirementsReviewerUserConfig.permission),
-        };
-      }
-
-      // ── Code-reviewer agent ───────────────────────────────────────
-      if (codeReviewerPrompt) {
-        const codeReviewerUserConfig =
-          input.agent["code-reviewer"] ?? {};
-
-        const codeReviewerPermission = {
-          "*": "deny",
-          task: "allow",
-        };
-
-        input.agent["code-reviewer"] = {
-          description:
-            "Technical quality reviewer — evaluates correctness, logic, error handling, API design, " +
-            "and maintainability. Does not cover security or functional compliance.",
-          temperature: 0.2,
-          variant: "max",
-          mode: "subagent",
-          color: "info",
-          ...codeReviewerUserConfig,
-          prompt: codeReviewerPrompt,
-          permission: mergePermissions(codeReviewerPermission, codeReviewerUserConfig.permission),
-        };
-      }
-
-      // ── Security-reviewer agent ───────────────────────────────────
-      if (securityReviewerPrompt) {
-        const securityReviewerUserConfig =
-          input.agent["security-reviewer"] ?? {};
-
-        const securityReviewerPermission = {
-          "*": "deny",
-          task: "allow",
-        };
-
-        input.agent["security-reviewer"] = {
-          description:
-            "Security reviewer — identifies vulnerabilities, misconfigurations, and data exposure risks. " +
-            "Does not cover code quality, style, or functional compliance.",
-          temperature: 0.1,
-          variant: "max",
-          mode: "subagent",
-          color: "error",
-          ...securityReviewerUserConfig,
-          prompt: securityReviewerPrompt,
-          permission: mergePermissions(securityReviewerPermission, securityReviewerUserConfig.permission),
-        };
-      }
-
-      // ── Bug-finder agent ──────────────────────────────────────────────
-      if (bugFinderPrompt) {
-        const bugFinderUserConfig = input.agent["bug-finder"] ?? {};
-
-        const bugFinderPermission = {
-          "*": "deny",
-          task: "allow",
-          question: "allow",
-        };
-
-        input.agent["bug-finder"] = {
-          description:
-            "Structured bug investigation agent — diagnoses root cause before applying any fix. " +
-            "Prevents workarounds and code divergence by forcing rigorous analysis first.",
-          temperature: 0.2,
-          variant: "max",
-          mode: "all",
-          color: "warning",
-          ...bugFinderUserConfig,
-          prompt: bugFinderPrompt,
-          permission: mergePermissions(bugFinderPermission, bugFinderUserConfig.permission),
-        };
+      const subagentUserConfigs = SUBAGENT_DEFS.map((def) => input.agent[def.id] ?? {});
+      for (let i = 0; i < SUBAGENT_DEFS.length; i++) {
+        if (subagentPrompts[i]) {
+          registerSubagent(input, SUBAGENT_DEFS[i], subagentPrompts[i], subagentUserConfigs[i]);
+        }
       }
     },
 
@@ -444,9 +359,9 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
       try {
         const memoryPath = join(projectRoot, ".opencode", "memory.md");
         const raw = await readFile(memoryPath, "utf-8");
-        const MAX_MEMORY_BYTES = 50_000;
-        const content = raw.length > MAX_MEMORY_BYTES
-          ? raw.slice(0, MAX_MEMORY_BYTES) + "\n\n[memory.md truncated — exceeds 50 KB size limit]"
+        const MAX_MEMORY_CHARS = 50_000; // limit in characters, not bytes
+        const content = raw.length > MAX_MEMORY_CHARS
+          ? raw.slice(0, MAX_MEMORY_CHARS) + "\n\n[memory.md truncated — exceeds 50 KB size limit]"
           : raw;
 
         if (!content.trim()) return;
