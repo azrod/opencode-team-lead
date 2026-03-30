@@ -864,63 +864,254 @@ function DetailPanel({ nodeId }: { nodeId: string }) {
   );
 }
 
+// ─── Translations ─────────────────────────────────────────────────────────────
+
+type Lang = "en" | "fr";
+
+interface AgentEntry { name: string; badge: string; badgeColor: string; badgeBg: string; desc: string; }
+interface UseCaseEntry { label: string; steps: string[]; color: string; }
+
+interface Translations {
+  plugin_label: string;
+  hero_tagline: string;
+  pill_direct_access: string;
+  pill_never: string;
+  cta_workflow: string;
+  cta_workflow_full: string;
+  back: string;
+  click_node_hint: string;
+  flowchart_subtitle: string;
+  section_concept: string;
+  concept_items: { icon: string; text: string }[];
+  section_memory: string;
+  scratchpad_label: string;
+  scratchpad_items: string[];
+  memory_label: string;
+  memory_items: string[];
+  section_agents: string;
+  agents: AgentEntry[];
+  section_usecases: string;
+  usecases: UseCaseEntry[];
+}
+
+const translations: Record<Lang, Translations> = {
+  en: {
+    plugin_label: "OpenCode Plugin",
+    hero_tagline: "A pure orchestrator. Plans the work, delegates everything to specialized sub-agents, reviews results, synthesizes and reports.",
+    pill_direct_access: "Direct code access",
+    pill_never: "never",
+    cta_workflow: "View workflow",
+    cta_workflow_full: "View full workflow",
+    back: "← Back",
+    click_node_hint: "Click a node →",
+    flowchart_subtitle: "Pure orchestrator · delegates everything · never touches code",
+    section_concept: "Concept & Philosophy",
+    concept_items: [
+      { icon: "⊘", text: "Never touches code directly — every technical action is delegated to a sub-agent" },
+      { icon: "◈", text: "Plan, delegate, review, synthesize — in that order, always" },
+      { icon: "⟳", text: "Deliberate and methodical — temperature 0.3, variant max" },
+      { icon: "✦", text: "Persistent memory via scratchpad + memory.md, survives context resets" },
+    ],
+    section_memory: "Memory Management",
+    scratchpad_label: "Scratchpad",
+    scratchpad_items: [
+      "Current mission state",
+      "Overwritten at each new mission",
+      "Survives context compaction",
+      "Read and written at 5 key moments in the workflow",
+    ],
+    memory_label: "Memory",
+    memory_items: [
+      "Cross-session project knowledge",
+      "Injected into every LLM call automatically",
+      "Append-only — never overwritten",
+      "Build commands, conventions, architecture decisions",
+    ],
+    section_agents: "Available Agents",
+    agents: [
+      {
+        name: "explore",
+        badge: "READ-ONLY",
+        badgeColor: "#0369a1",
+        badgeBg: "#e0f2fe",
+        desc: "Search, glob, grep, file reads. No write or command access. Use for reconnaissance and codebase mapping.",
+      },
+      {
+        name: "general",
+        badge: "FULL ACCESS",
+        badgeColor: "#166534",
+        badgeBg: "#dcfce7",
+        desc: "Read, edit, write, bash. All permissions. Use for any implementation, refactoring, or system command.",
+      },
+      {
+        name: "review-manager",
+        badge: "SUB-AGENT",
+        badgeColor: "#92400e",
+        badgeBg: "#fef3c7",
+        desc: "Review orchestrator. Spawns code-reviewer, security-reviewer and requirements-reviewer in parallel, then arbitrates verdicts.",
+      },
+      {
+        name: "bug-finder",
+        badge: "DIAGNOSTIC",
+        badgeColor: "#991b1b",
+        badgeBg: "#fee2e2",
+        desc: "Structured bug investigation. Forces full root-cause analysis before any fix — prevents workarounds and code divergence.",
+      },
+    ],
+    section_usecases: "Typical Use Cases",
+    usecases: [
+      {
+        label: "Implement a feature",
+        steps: ["explore maps the codebase", "general implements", "review-manager validates"],
+        color: "#2563eb",
+      },
+      {
+        label: "Fix a bug",
+        steps: ["bug-finder diagnoses the root-cause", "general applies the fix", "review-manager reviews"],
+        color: "#dc2626",
+      },
+      {
+        label: "Refactoring",
+        steps: ["explore maps dependencies", "general refactors", "review-manager approves"],
+        color: "#7c3aed",
+      },
+      {
+        label: "Security audit",
+        steps: ["review-manager spawns security-reviewer", "vulnerability report", "escalate if BLOCKED"],
+        color: "#b45309",
+      },
+    ],
+  },
+  fr: {
+    plugin_label: "OpenCode Plugin",
+    hero_tagline: "Orchestrateur pur. Planifie le travail, délègue tout à des sous-agents spécialisés, review les résultats, synthétise et reporte.",
+    pill_direct_access: "Accès code direct",
+    pill_never: "jamais",
+    cta_workflow: "Voir le workflow",
+    cta_workflow_full: "Voir le workflow complet",
+    back: "← Retour",
+    click_node_hint: "Cliquer sur un nœud →",
+    flowchart_subtitle: "Orchestrateur pur · délègue tout · ne touche jamais au code",
+    section_concept: "Concept & philosophie",
+    concept_items: [
+      { icon: "⊘", text: "Ne touche jamais au code directement — toute action technique est déléguée" },
+      { icon: "◈", text: "Planifie, délègue, review, synthétise — dans cet ordre, toujours" },
+      { icon: "⟳", text: "Délibéré et méthodique — temperature 0.3, variant max" },
+      { icon: "✦", text: "Mémoire persistante via scratchpad + memory.md, survit aux resets de contexte" },
+    ],
+    section_memory: "Gestion de la mémoire",
+    scratchpad_label: "Scratchpad",
+    scratchpad_items: [
+      "État de la mission courante",
+      "Écrasé à chaque nouvelle mission",
+      "Survit à la compaction de contexte",
+      "Lu et écrit à 5 moments clés du workflow",
+    ],
+    memory_label: "Memory",
+    memory_items: [
+      "Connaissances projet inter-sessions",
+      "Injecté dans chaque appel LLM automatiquement",
+      "Append-only — jamais écrasé",
+      "Commandes build, conventions, décisions archi",
+    ],
+    section_agents: "Les agents disponibles",
+    agents: [
+      {
+        name: "explore",
+        badge: "READ-ONLY",
+        badgeColor: "#0369a1",
+        badgeBg: "#e0f2fe",
+        desc: "Recherche, glob, grep, lecture de fichiers. Aucun droit d'écriture ni de commande. Usage : reconnaissance et cartographie du codebase.",
+      },
+      {
+        name: "general",
+        badge: "FULL ACCESS",
+        badgeColor: "#166534",
+        badgeBg: "#dcfce7",
+        desc: "Lecture, édition, écriture, bash. Toutes les permissions. Usage : toute implémentation, refactoring, ou commande système.",
+      },
+      {
+        name: "review-manager",
+        badge: "SUB-AGENT",
+        badgeColor: "#92400e",
+        badgeBg: "#fef3c7",
+        desc: "Orchestrateur de review. Spawne code-reviewer, security-reviewer et requirements-reviewer en parallèle, puis arbitre les verdicts.",
+      },
+      {
+        name: "bug-finder",
+        badge: "DIAGNOSTIC",
+        badgeColor: "#991b1b",
+        badgeBg: "#fee2e2",
+        desc: "Investigation structurée de bugs. Force l'analyse root-cause complète avant tout fix — empêche les workarounds et la divergence.",
+      },
+    ],
+    section_usecases: "Cas d'usage typiques",
+    usecases: [
+      {
+        label: "Implémenter une feature",
+        steps: ["explore cartographie le codebase", "general implémente", "review-manager valide"],
+        color: "#2563eb",
+      },
+      {
+        label: "Corriger un bug",
+        steps: ["bug-finder diagnostique la root-cause", "general applique le fix", "review-manager review"],
+        color: "#dc2626",
+      },
+      {
+        label: "Refactoring",
+        steps: ["explore mappe les dépendances", "general refactorise", "review-manager approuve"],
+        color: "#7c3aed",
+      },
+      {
+        label: "Audit de sécurité",
+        steps: ["review-manager spawne security-reviewer", "rapport de vulnérabilités", "escalade si BLOCKED"],
+        color: "#b45309",
+      },
+    ],
+  },
+};
+
+// ─── Lang Toggle ──────────────────────────────────────────────────────────────
+
+function LangToggle({ lang, setLang, dark = false }: { lang: Lang; setLang: (l: Lang) => void; dark?: boolean }) {
+  const base: React.CSSProperties = {
+    background: "none", border: "none", cursor: "pointer",
+    fontSize: 12, fontWeight: 700, letterSpacing: "0.08em",
+    fontFamily: "system-ui, sans-serif",
+    padding: "3px 7px", borderRadius: 4,
+    transition: "background 0.12s",
+  };
+  const activeColor = dark ? "white" : "#0f172a";
+  const inactiveColor = dark ? "#64748b" : "#94a3b8";
+  const activeBg = dark ? "rgba(255,255,255,0.12)" : "#f1f5f9";
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      {(["en", "fr"] as Lang[]).map((l, i) => (
+        <React.Fragment key={l}>
+          {i > 0 && <span style={{ color: dark ? "#334155" : "#e2e8f0", fontSize: 12 }}>|</span>}
+          <button
+            onClick={() => setLang(l)}
+            style={{
+              ...base,
+              color: lang === l ? activeColor : inactiveColor,
+              background: lang === l ? activeBg : "none",
+              textDecoration: lang === l ? "underline" : "none",
+              textUnderlineOffset: 3,
+            }}
+          >
+            {l.toUpperCase()}
+          </button>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 // ─── Intro Screen ─────────────────────────────────────────────────────────────
 
-const AGENTS_DATA = [
-  {
-    name: "explore",
-    badge: "READ-ONLY",
-    badgeColor: "#0369a1",
-    badgeBg: "#e0f2fe",
-    desc: "Recherche, glob, grep, lecture de fichiers. Aucun droit d'écriture ni de commande. Usage : reconnaissance et cartographie du codebase.",
-  },
-  {
-    name: "general",
-    badge: "FULL ACCESS",
-    badgeColor: "#166534",
-    badgeBg: "#dcfce7",
-    desc: "Lecture, édition, écriture, bash. Toutes les permissions. Usage : toute implémentation, refactoring, ou commande système.",
-  },
-  {
-    name: "review-manager",
-    badge: "SUB-AGENT",
-    badgeColor: "#92400e",
-    badgeBg: "#fef3c7",
-    desc: "Orchestrateur de review. Spawne code-reviewer, security-reviewer et requirements-reviewer en parallèle, puis arbitre les verdicts.",
-  },
-  {
-    name: "bug-finder",
-    badge: "DIAGNOSTIC",
-    badgeColor: "#991b1b",
-    badgeBg: "#fee2e2",
-    desc: "Investigation structurée de bugs. Force l'analyse root-cause complète avant tout fix — empêche les workarounds et la divergence.",
-  },
-];
-
-const USE_CASES = [
-  {
-    label: "Implémenter une feature",
-    steps: ["explore cartographie le codebase", "general implémente", "review-manager valide"],
-    color: "#2563eb",
-  },
-  {
-    label: "Corriger un bug",
-    steps: ["bug-finder diagnostique la root-cause", "general applique le fix", "review-manager review"],
-    color: "#dc2626",
-  },
-  {
-    label: "Refactoring",
-    steps: ["explore mappe les dépendances", "general refactorise", "review-manager approuve"],
-    color: "#7c3aed",
-  },
-  {
-    label: "Audit de sécurité",
-    steps: ["review-manager spawne security-reviewer", "rapport de vulnérabilités", "escalade si BLOCKED"],
-    color: "#b45309",
-  },
-];
-
-function IntroScreen({ onEnter }: { onEnter: () => void }) {
+function IntroScreen({ onEnter, lang, setLang }: { onEnter: () => void; lang: Lang; setLang: (l: Lang) => void }) {
+  const t = translations[lang];
   return (
     <div style={{
       height: "100vh", width: "100vw", overflowY: "auto",
@@ -944,6 +1135,11 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
           pointerEvents: "none",
         }} />
 
+        {/* Lang toggle — top right of hero */}
+        <div style={{ position: "absolute", top: 20, right: 24 }}>
+          <LangToggle lang={lang} setLang={setLang} dark />
+        </div>
+
         <div style={{ position: "relative", maxWidth: 860, margin: "0 auto" }}>
           <div style={{
             display: "inline-block",
@@ -953,7 +1149,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             fontSize: 11, fontWeight: 700, letterSpacing: "0.12em",
             textTransform: "uppercase", marginBottom: 20,
           }}>
-            OpenCode Plugin
+            {t.plugin_label}
           </div>
 
           <h1 style={{
@@ -967,14 +1163,14 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             fontSize: 18, color: "#94a3b8", margin: "0 0 36px",
             lineHeight: 1.5, maxWidth: 560,
           }}>
-            Orchestrateur pur. Planifie le travail, délègue tout à des sous-agents spécialisés, review les résultats, synthétise et reporte.
+            {t.hero_tagline}
           </p>
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 40 }}>
             {[
               { label: "Temperature", value: "0.3" },
               { label: "Variant", value: "max" },
-              { label: "Accès code direct", value: "jamais" },
+              { label: t.pill_direct_access, value: t.pill_never },
             ].map(pill => (
               <div key={pill.label} style={{
                 background: "rgba(255,255,255,0.06)",
@@ -1002,7 +1198,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#4338ca"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#4f46e5"; }}
           >
-            Voir le workflow
+            {t.cta_workflow}
             <span style={{ fontSize: 16 }}>→</span>
           </button>
         </div>
@@ -1013,18 +1209,13 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
 
         {/* 1. Concept */}
         <section style={{ marginBottom: 48 }}>
-          <SectionTitle>Concept & philosophie</SectionTitle>
+          <SectionTitle>{t.section_concept}</SectionTitle>
           <div style={{
             background: "white", border: "1px solid #e2e8f0",
             borderRadius: 10, padding: "24px 28px",
             display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16,
           }}>
-            {[
-              { icon: "⊘", text: "Ne touche jamais au code directement — toute action technique est déléguée" },
-              { icon: "◈", text: "Planifie, délègue, review, synthétise — dans cet ordre, toujours" },
-              { icon: "⟳", text: "Délibéré et méthodique — temperature 0.3, variant max" },
-              { icon: "✦", text: "Mémoire persistante via scratchpad + memory.md, survit aux resets de contexte" },
-            ].map((item, i) => (
+            {t.concept_items.map((item, i) => (
               <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 18, color: "#6366f1", flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
                 <span style={{ fontSize: 14, color: "#374151", lineHeight: 1.6 }}>{item.text}</span>
@@ -1035,7 +1226,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
 
         {/* 2. Memory */}
         <section style={{ marginBottom: 48 }}>
-          <SectionTitle>Gestion de la mémoire</SectionTitle>
+          <SectionTitle>{t.section_memory}</SectionTitle>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
 
             <div style={{
@@ -1045,16 +1236,11 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <span style={{ fontSize: 16 }}>📄</span>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0369a1" }}>Scratchpad</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0369a1" }}>{t.scratchpad_label}</div>
                   <code style={{ fontSize: 11, color: "#64748b", fontFamily: "ui-monospace, monospace" }}>scratchpad.md</code>
                 </div>
               </div>
-              {[
-                "État de la mission courante",
-                "Écrasé à chaque nouvelle mission",
-                "Survit à la compaction de contexte",
-                "Lu et écrit à 5 moments clés du workflow",
-              ].map((t, i) => <MemItem key={i} text={t} color="#0369a1" />)}
+              {t.scratchpad_items.map((text, i) => <MemItem key={i} text={text} color="#0369a1" />)}
             </div>
 
             <div style={{
@@ -1064,16 +1250,11 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                 <span style={{ fontSize: 16 }}>🧠</span>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#166534" }}>Memory</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#166534" }}>{t.memory_label}</div>
                   <code style={{ fontSize: 11, color: "#64748b", fontFamily: "ui-monospace, monospace" }}>memory.md</code>
                 </div>
               </div>
-              {[
-                "Connaissances projet inter-sessions",
-                "Injecté dans chaque appel LLM automatiquement",
-                "Append-only — jamais écrasé",
-                "Commandes build, conventions, décisions archi",
-              ].map((t, i) => <MemItem key={i} text={t} color="#166534" />)}
+              {t.memory_items.map((text, i) => <MemItem key={i} text={text} color="#166534" />)}
             </div>
 
           </div>
@@ -1081,9 +1262,9 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
 
         {/* 3. Agents */}
         <section style={{ marginBottom: 48 }}>
-          <SectionTitle>Les agents disponibles</SectionTitle>
+          <SectionTitle>{t.section_agents}</SectionTitle>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            {AGENTS_DATA.map(agent => (
+            {t.agents.map(agent => (
               <div key={agent.name} style={{
                 background: "white", border: "1px solid #e2e8f0",
                 borderRadius: 10, padding: "18px 20px",
@@ -1110,9 +1291,9 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
 
         {/* 4. Use cases */}
         <section style={{ marginBottom: 48 }}>
-          <SectionTitle>Cas d'usage typiques</SectionTitle>
+          <SectionTitle>{t.section_usecases}</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {USE_CASES.map(uc => (
+            {t.usecases.map(uc => (
               <div key={uc.label} style={{
                 background: "white", border: "1px solid #e2e8f0",
                 borderRadius: 10, padding: "16px 20px",
@@ -1158,7 +1339,7 @@ function IntroScreen({ onEnter }: { onEnter: () => void }) {
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#1e293b"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#0f172a"; }}
           >
-            Voir le workflow complet
+            {t.cta_workflow_full}
             <span style={{ fontSize: 16 }}>→</span>
           </button>
         </div>
@@ -1191,6 +1372,7 @@ function MemItem({ text, color }: { text: string; color: string }) {
 
 export default function App() {
   const [view, setView] = useState<"intro" | "flowchart">("intro");
+  const [lang, setLang] = useState<Lang>("en");
   const [selected, setSelected] = useState<string>("understand");
   const [zoom, setZoom] = useState<number>(1.0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1208,11 +1390,13 @@ export default function App() {
     }
   };
 
+  const t = translations[lang];
+
   if (view === "intro") {
     return (
       <>
         <style>{STYLE_TAG}</style>
-        <IntroScreen onEnter={() => setView("flowchart")} />
+        <IntroScreen onEnter={() => setView("flowchart")} lang={lang} setLang={setLang} />
       </>
     );
   }
@@ -1242,15 +1426,18 @@ export default function App() {
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
             >
-              ← Retour
+              {t.back}
             </button>
             <div style={{ width: 1, height: 16, background: "#e2e8f0" }} />
             <div>
               <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>team-lead — Workflow</span>
-              <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 12 }}>Orchestrateur pur · délègue tout · ne touche jamais au code</span>
+              <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 12 }}>{t.flowchart_subtitle}</span>
             </div>
           </div>
-          <span style={{ fontSize: 11, color: "#cbd5e1", fontStyle: "italic" }}>Cliquer sur un nœud →</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <LangToggle lang={lang} setLang={setLang} />
+            <span style={{ fontSize: 11, color: "#cbd5e1", fontStyle: "italic" }}>{t.click_node_hint}</span>
+          </div>
         </div>
 
         {/* Body */}
