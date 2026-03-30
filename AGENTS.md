@@ -43,6 +43,56 @@ This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no 
 - The plugin merges user config from `opencode.json` instead of overwriting it. Users can override `temperature`, `color`, `variant`, `mode` and add/override permissions; the merge applies plugin defaults first, then user overrides on top via spread order. The `prompt` is always provided by the plugin and cannot be overridden.
 - The review-manager uses nested sub-agent delegation (team-lead → review-manager → reviewer agents). OpenCode supports unlimited nesting depth as long as each level has `task: "allow"`. The review-manager runs with `mode: "subagent"` so it only appears as a sub-agent, never in the main agent list.
 
+## Website (Documentation)
+
+### What it is
+
+A single-page React artifact located in `team-lead-workflow/` that documents the team-lead agent's workflow and philosophy. Deployed automatically to GitHub Pages via `.github/workflows/pages.yml` on every push to `main` that modifies `team-lead-workflow/bundle.html`. The entry point served is `team-lead-workflow/bundle.html`, copied to `index.html` at deploy time.
+
+### Structure
+
+```
+team-lead-workflow/
+├── src/
+│   └── App.tsx          # All application code — intro screen + flowchart (single file)
+├── bundle.html          # Pre-built bundle, committed to repo, served by GitHub Pages
+├── package.json
+└── vite.config.ts
+```
+
+### What the site contains
+
+Two views navigable via a CTA button:
+
+1. **Intro screen** — presents Orion (concept & philosophy, memory management, available agents, typical use cases). Has a FR/EN language toggle (default EN).
+2. **Flowchart view** — interactive SVG diagram of the 5-phase workflow (Understand → Plan → Delegate → Review → Synthesize) with a detail panel on the right. Also supports FR/EN.
+
+### How to update the site
+
+When making changes to the site content or UI:
+
+1. Edit `team-lead-workflow/src/App.tsx`
+2. Rebuild the bundle — run from `team-lead-workflow/`:
+   ```bash
+   bash /Users/mickael/.opencode/skills/ComposioHQ_awesome-claude-skills/artifacts-builder/scripts/bundle-artifact.sh
+   ```
+3. Commit both `src/App.tsx` and `bundle.html`
+4. Push — GitHub Actions deploys automatically
+
+> **Important:** Always commit `bundle.html` along with the source changes. The Pages deployment uses the committed bundle, not a CI build.
+
+### i18n
+
+All user-facing text is translated via a `translations` object in `App.tsx`. To add or change text:
+
+- Find the `translations` constant in `App.tsx`
+- Update both `en` and `fr` keys
+- For the flowchart specifically, update `getFlowchartData(lang)` which returns `{ svgLabels, details }` for the SVG labels and detail panel content
+
+### GitHub Pages setup (one-time)
+
+The workflow requires GitHub Pages to be configured with source set to **"GitHub Actions"** in repo Settings → Pages. Without this, the deployment action will fail.
+
 ## Development
 
 No build step. No transpilation. No tests. What you see is what ships.
