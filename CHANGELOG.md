@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-30
+
 ### Added
 
 - New `bug-finder` agent — a structured bug investigation orchestrator that forces root-cause analysis before any fix is applied. Prevents Orion from rushing to workarounds that mask symptoms and create code divergence.
@@ -109,7 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode
 - npm package with installation docs
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/azrod/opencode-team-lead/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/azrod/opencode-team-lead/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/azrod/opencode-team-lead/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/azrod/opencode-team-lead/compare/v0.5.0...v0.6.1
