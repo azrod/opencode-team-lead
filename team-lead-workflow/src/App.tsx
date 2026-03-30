@@ -25,255 +25,592 @@ interface DetailData {
   sections: { heading: string; items: string[] }[];
 }
 
-const DETAILS: Record<string, DetailData> = {
-  start: {
-    title: "Requête utilisateur",
-    color: "#1e293b",
-    nodeType: "POINT D'ENTRÉE",
-    sections: [
-      { heading: "Point d'entrée", items: ["L'utilisateur soumet une demande", "Le team-lead analyse le type de requête avant d'agir"] },
-    ],
-  },
-  understand: {
-    title: "1. Understand",
-    color: "#2563eb",
-    nodeType: "PHASE PRINCIPALE",
-    sections: [
-      { heading: "Lecture mémoire", items: [".opencode/scratchpad.md — plan de travail courant", ".opencode/memory.md — apprentissages projet persistants"] },
-      { heading: "Objectif", items: ["Parser la requête (explicite vs implicite)", "Identifier si ambigu avant de planifier", "Vérifier si un scope était en cours (scratchpad)"] },
-    ],
-  },
-  scratchpad: {
-    title: "📄 scratchpad.md",
-    color: "#0ea5e9",
-    nodeType: "MÉMOIRE DE TRAVAIL",
-    sections: [
-      { heading: "Rôle", items: [
-        "Mémoire de travail mission courante",
-        "Survit à la compaction de contexte",
-        "Écrasé à chaque nouvelle mission",
-      ]},
-      { heading: "Quand lire", items: ["Au démarrage — lire l'état de la mission si elle existe"] },
-      { heading: "Quand écrire (5 moments)", items: [
-        "Démarrage — objectif + plan + décisions initiales",
-        "Avant délégation — sous-tâches, fichiers modifiés, contexte de reprise",
-        "Après retour d'agent — résultats clés synthétisés",
-        "Après review — statut des tâches + verdict",
-        "Fin de mission — capture finale avant rapport utilisateur",
-      ]},
-    ],
-  },
-  memory: {
-    title: "📄 memory.md",
-    color: "#22c55e",
-    nodeType: "MÉMOIRE PERSISTANTE",
-    sections: [
-      { heading: "Rôle", items: [
-        "Base de connaissances projet inter-sessions",
-        "Injecté dans chaque appel LLM automatiquement",
-        "Append-only — ne jamais écraser, nettoyer les entrées obsolètes",
-      ]},
-      { heading: "Quand lire", items: ["Injecté automatiquement — pas d'action requise"] },
-      { heading: "Quand écrire", items: [
-        "Commandes build/test découvertes dans le projet",
-        "Décisions d'architecture importantes retenues",
-        "Conventions et patterns récurrents du codebase",
-        "Préférences utilisateur observées",
-        "Technos/contraintes spécifiques au projet",
-      ]},
-      { heading: "Ce qui N'y appartient PAS", items: [
-        "État des tâches courantes → scratchpad",
-        "Infos temporaires ou mission-spécifiques",
-      ]},
-    ],
-  },
-  ambigu: {
-    title: "Ambigu ?",
-    color: "#64748b",
-    nodeType: "DÉCISION",
-    sections: [
-      { heading: "Décision", items: ["OUI → poser des questions via outil `question` → attendre réponse → reprendre Understand", "NON → continuer vers Plan"] },
-    ],
-  },
-  question: {
-    title: "Question utilisateur",
-    color: "#64748b",
-    nodeType: "ACTION",
-    sections: [
-      { heading: "Outil", items: ["`question` — bloque jusqu'à réponse de l'utilisateur"] },
-      { heading: "Règle", items: ["Une fois la réponse reçue, reprendre depuis Understand pour intégrer les nouvelles informations"] },
-    ],
-  },
-  plan: {
-    title: "2. Plan",
-    color: "#4f46e5",
-    nodeType: "PHASE PRINCIPALE",
-    sections: [
-      { heading: "Actions", items: ["Créer/MAJ todolist → todowrite", "Écrire plan + contexte dans scratchpad", "Identifier les agents nécessaires", "Déterminer parallèle vs séquentiel"] },
-      { heading: "Règle", items: ["Un seul scope à la fois — finir avant de passer au suivant", "Parquer les scopes secondaires dans le scratchpad"] },
-    ],
-  },
-  delegate: {
-    title: "3. Delegate",
-    color: "#7c3aed",
-    nodeType: "PHASE PRINCIPALE",
-    sections: [
-      { heading: "Agents disponibles", items: ["`explore` — read-only, reconnaissance codebase", "`general` — implémentation, écriture, commandes", "Custom persona (`backend-engineer`, `react-specialist`…)"] },
-      { heading: "Règles", items: ["Tâches indépendantes → spawner en parallèle", "Tâches dépendantes → séquentiel avec handoff de contexte", "Après chaque retour → MAJ scratchpad + compress"] },
-    ],
-  },
-  bug_decision: {
-    title: "Bug report ?",
-    color: "#be123c",
-    nodeType: "DÉCISION",
-    sections: [
-      { heading: "Déclencher bug-finder si", items: ["Comportement inattendu / régression / crash / sortie incorrecte", "Quelque chose « a arrêté de fonctionner » sans cause évidente", "Un fix a été appliqué mais le problème persiste ou s'est déplacé"] },
-      { heading: "Ne PAS déclencher si", items: ["Bug trivialement localisable (utilisateur pointe la ligne + typo évidente) ET fix isolé → flow normal"] },
-    ],
-  },
-  bug_finder: {
-    title: "bug-finder",
-    color: "#dc2626",
-    nodeType: "AGENT SPÉCIALISÉ",
-    sections: [
-      { heading: "Rôle", items: ["Forcer l'analyse root-cause AVANT tout fix", "Empêche les workarounds et la divergence de code"] },
-      { heading: "Verdicts", items: ["HIGH → fix direct via `general` avec l'analyse", "MEDIUM → fix via `general` + signaler l'incertitude à l'utilisateur", "UNCERTAINTY_EXPOSED → remonter les questions ouvertes à l'utilisateur avant de continuer"] },
-    ],
-  },
-  certitude: {
-    title: "Certitude ?",
-    color: "#be123c",
-    nodeType: "DÉCISION",
-    sections: [
-      { heading: "Branches", items: ["HIGH / MEDIUM → rejoindre le flow Agents avec l'analyse en contexte", "UNCERTAINTY_EXPOSED → escalade utilisateur, attendre réponse avant tout fix"] },
-    ],
-  },
-  escalade_uncertainty: {
-    title: "Escalade — UNCERTAINTY_EXPOSED",
-    color: "#991b1b",
-    nodeType: "ESCALADE",
-    sections: [
-      { heading: "Message à l'utilisateur", items: ["Présenter les hypothèses identifiées et leurs probabilités", "Lister les questions précises qui bloquent le diagnostic", "Ne pas proposer de fix dans cet état"] },
-    ],
-  },
-  agents: {
-    title: "Agents",
-    color: "#6d28d9",
-    nodeType: "DÉLÉGATION",
-    sections: [
-      { heading: "Types", items: ["`explore` — recherche, lecture de fichiers, architecture", "`general` — écriture, édition, bash, implémentation", "Custom persona — `backend-engineer`, `api-architect`…"] },
-      { heading: "Contexte handoff", items: ["Chaque agent repart de zéro — être explicite", "Inclure fichiers modifiés, décisions, interfaces", "Parallèle = plusieurs task calls dans le même message"] },
-    ],
-  },
-  agent_failure: {
-    title: "Échec agent ?",
-    color: "#64748b",
-    nodeType: "DÉCISION",
-    sections: [
-      { heading: "Diagnostics", items: ["Mauvais prompt → reformuler avec plus de précision", "Contexte insuffisant → envoyer `explore` d'abord, retry avec findings", "Tâche trop grande → décomposer en sous-tâches", "Erreur outil → vérifier permissions et chemins"] },
-      { heading: "Règle", items: ["Max 2 retries — toujours changer quelque chose entre les tentatives", "Si toujours KO après 2 tentatives → escalade utilisateur"] },
-    ],
-  },
-  retry: {
-    title: "↩ Retry (max 2)",
-    color: "#b45309",
-    nodeType: "BOUCLE",
-    sections: [
-      { heading: "Process", items: ["Diagnostiquer la cause de l'échec", "Reformuler / décomposer / enrichir le contexte", "Relancer l'agent avec le nouveau prompt"] },
-    ],
-  },
-  escalade_retry: {
-    title: "Escalade — 2 retries dépassés",
-    color: "#991b1b",
-    nodeType: "ESCALADE",
-    sections: [
-      { heading: "Message à l'utilisateur", items: ["Décrire ce qui a été tenté (2 tentatives)", "Expliquer le diagnostic de chaque échec", "Proposer des options : reformuler la tâche, fournir du contexte supplémentaire", "Ne jamais retenter une 3e fois sans instruction explicite"] },
-    ],
-  },
-  review: {
-    title: "4. Review",
-    color: "#b45309",
-    nodeType: "PHASE PRINCIPALE",
-    sections: [
-      { heading: "Règle absolue", items: ["TOUJOURS via review-manager — jamais de reviewer direct", "Obligatoire pour tout changement code, config, infra, sécurité"] },
-      { heading: "Fournir au review-manager", items: ["Fichiers modifiés + résumé des changements", "Exigences originales de l'utilisateur", "Trade-offs et décisions effectuées", "Ce qui était explicitement hors scope"] },
-    ],
-  },
-  review_manager: {
-    title: "review-manager",
-    color: "#92400e",
-    nodeType: "AGENT ORCHESTRATEUR",
-    sections: [
-      { heading: "Rôle", items: ["Orchestrateur de review — jamais reviewer direct", "Spawne en parallèle : code-reviewer, security-reviewer, requirements-reviewer", "Synthétise les verdicts et arbitre les désaccords"] },
-      { heading: "Skip autorisé uniquement si", items: ["Changement docs-only (aucun code modifié)", "Aucun impact sécurité possible", "L'utilisateur demande explicitement la vitesse"] },
-    ],
-  },
-  verdict: {
-    title: "Verdict review ?",
-    color: "#b45309",
-    nodeType: "DÉCISION",
-    sections: [
-      { heading: "Branches", items: ["APPROVED → Synthesize & Report", "CHANGES_REQUESTED → re-déléguer fixes au producteur → re-review (max 2 rounds)", "BLOCKED → escalade immédiate à l'utilisateur, ne pas corriger sans input user"] },
-    ],
-  },
-  changes_loop: {
-    title: "↩ Fix + re-review",
-    color: "#b45309",
-    nodeType: "BOUCLE",
-    sections: [
-      { heading: "Process", items: ["Renvoyer les fixes précis à l'agent producteur", "Re-passer par le review-manager", "Maximum 2 rounds au total"] },
-    ],
-  },
-  escalade_blocked: {
-    title: "Escalade — BLOCKED",
-    color: "#991b1b",
-    nodeType: "ESCALADE",
-    sections: [
-      { heading: "Règles strictes", items: ["Signaler le problème précis identifié par le reviewer", "Expliquer pourquoi c'est bloquant (pas juste un warning)", "Ne proposer AUCUN fix dans le message d'escalade", "Attendre une instruction explicite avant de continuer"] },
-    ],
-  },
-  synthesize: {
-    title: "5. Synthesize & Report",
-    color: "#15803d",
-    nodeType: "PHASE PRINCIPALE",
-    sections: [
-      { heading: "Auto-évaluation", items: ["Répond à la vraie demande (pas l'interprétée) ?", "Pas de contradiction entre résultats d'agents ?", "Rien de manquant dans la livraison ?"] },
-      { heading: "MAJ mémoire", items: ["Écrire apprentissages dans .opencode/memory.md", "Nettoyer le scratchpad (tâches terminées)"] },
-    ],
-  },
-  autoeval: {
-    title: "Auto-éval OK ?",
-    color: "#15803d",
-    nodeType: "DÉCISION",
-    sections: [
-      { heading: "Branches", items: ["OK → rapport final à l'utilisateur", "Gap mineur (détail manquant) → fix rapide puis rapport", "Gap majeur (mauvaise approche) → retour Delegate"] },
-    ],
-  },
-  gap_majeur: {
-    title: "↩ Retour Delegate",
-    color: "#166534",
-    nodeType: "BOUCLE",
-    sections: [
-      { heading: "Traitement", items: ["Traiter le gap comme une nouvelle tâche", "Reprendre depuis la phase Delegate", "MAJ todolist et scratchpad avant de déléguer"] },
-    ],
-  },
-  fix_rapide: {
-    title: "Fix rapide",
-    color: "#166534",
-    nodeType: "ACTION",
-    sections: [
-      { heading: "Traitement", items: ["Corriger le détail manquant directement", "Pas besoin de repasser par Review si le fix est trivial", "Inclure dans le rapport final"] },
-    ],
-  },
-  end: {
-    title: "Rapport à l'utilisateur",
-    color: "#1e293b",
-    nodeType: "LIVRAISON",
-    sections: [
-      { heading: "Livraison", items: ["Résumé concis des changements effectués", "Problèmes éventuels signalés honnêtement", "Prochaines étapes proposées si pertinent"] },
-    ],
-  },
-};
+// ─── Flowchart i18n data ──────────────────────────────────────────────────────
+
+interface FlowchartData {
+  svgLabels: {
+    start: string;
+    scratchpad_sub: string;
+    memory_sub: string;
+    ambigu: string;
+    question_label: string;
+    question_sub: string;
+    bug_decision: string;
+    certitude: string;
+    agent_failure: string;
+    esc_uncertainty_label: string;
+    esc_retry_label: string;
+    esc_retry_sub: string;
+    esc_blocked_label: string;
+    end: string;
+    arrow_oui: string;
+    arrow_non: string;
+    arrow_gap_majeur: string;
+    arrow_gap_mineur: string;
+    mem_read_here: string;
+    annot_delegate: string;
+    annot_agents: string;
+    annot_memory: string;
+  };
+  details: Record<string, DetailData>;
+}
+
+function getFlowchartData(lang: "en" | "fr"): FlowchartData {
+  if (lang === "fr") {
+    return {
+      svgLabels: {
+        start: "Requête utilisateur",
+        scratchpad_sub: "Plan courant · Contexte",
+        memory_sub: "Apprentissages persistants",
+        ambigu: "Ambigu ?",
+        question_label: "Question util.",
+        question_sub: "outil: question",
+        bug_decision: "Bug report ?",
+        certitude: "Certitude ?",
+        agent_failure: "Échec agent ?",
+        esc_uncertainty_label: "Escalade utilisateur",
+        esc_retry_label: "Escalade util.",
+        esc_retry_sub: "2 retries dépassés",
+        esc_blocked_label: "Escalade util.",
+        end: "Rapport à l'utilisateur",
+        arrow_oui: "OUI",
+        arrow_non: "NON",
+        arrow_gap_majeur: "Gap majeur",
+        arrow_gap_mineur: "Gap mineur",
+        mem_read_here: "lu ici",
+        annot_delegate: "↳ MAJ scratchpad après chaque retour d'agent",
+        annot_agents: "✎ après retour d'agent",
+        annot_memory: "↳ Écrire memory.md si nouveaux apprentissages",
+      },
+      details: {
+        start: {
+          title: "Requête utilisateur",
+          color: "#1e293b",
+          nodeType: "POINT D'ENTRÉE",
+          sections: [
+            { heading: "Point d'entrée", items: ["L'utilisateur soumet une demande", "Le team-lead analyse le type de requête avant d'agir"] },
+          ],
+        },
+        understand: {
+          title: "1. Understand",
+          color: "#2563eb",
+          nodeType: "PHASE PRINCIPALE",
+          sections: [
+            { heading: "Lecture mémoire", items: [".opencode/scratchpad.md — plan de travail courant", ".opencode/memory.md — apprentissages projet persistants"] },
+            { heading: "Objectif", items: ["Parser la requête (explicite vs implicite)", "Identifier si ambigu avant de planifier", "Vérifier si un scope était en cours (scratchpad)"] },
+          ],
+        },
+        scratchpad: {
+          title: "📄 scratchpad.md",
+          color: "#0ea5e9",
+          nodeType: "MÉMOIRE DE TRAVAIL",
+          sections: [
+            { heading: "Rôle", items: [
+              "Mémoire de travail mission courante",
+              "Survit à la compaction de contexte",
+              "Écrasé à chaque nouvelle mission",
+            ]},
+            { heading: "Quand lire", items: ["Au démarrage — lire l'état de la mission si elle existe"] },
+            { heading: "Quand écrire (5 moments)", items: [
+              "Démarrage — objectif + plan + décisions initiales",
+              "Avant délégation — sous-tâches, fichiers modifiés, contexte de reprise",
+              "Après retour d'agent — résultats clés synthétisés",
+              "Après review — statut des tâches + verdict",
+              "Fin de mission — capture finale avant rapport utilisateur",
+            ]},
+          ],
+        },
+        memory: {
+          title: "📄 memory.md",
+          color: "#22c55e",
+          nodeType: "MÉMOIRE PERSISTANTE",
+          sections: [
+            { heading: "Rôle", items: [
+              "Base de connaissances projet inter-sessions",
+              "Injecté dans chaque appel LLM automatiquement",
+              "Append-only — ne jamais écraser, nettoyer les entrées obsolètes",
+            ]},
+            { heading: "Quand lire", items: ["Injecté automatiquement — pas d'action requise"] },
+            { heading: "Quand écrire", items: [
+              "Commandes build/test découvertes dans le projet",
+              "Décisions d'architecture importantes retenues",
+              "Conventions et patterns récurrents du codebase",
+              "Préférences utilisateur observées",
+              "Technos/contraintes spécifiques au projet",
+            ]},
+            { heading: "Ce qui N'y appartient PAS", items: [
+              "État des tâches courantes → scratchpad",
+              "Infos temporaires ou mission-spécifiques",
+            ]},
+          ],
+        },
+        ambigu: {
+          title: "Ambigu ?",
+          color: "#64748b",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Décision", items: ["OUI → poser des questions via outil `question` → attendre réponse → reprendre Understand", "NON → continuer vers Plan"] },
+          ],
+        },
+        question: {
+          title: "Question utilisateur",
+          color: "#64748b",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "Outil", items: ["`question` — bloque jusqu'à réponse de l'utilisateur"] },
+            { heading: "Règle", items: ["Une fois la réponse reçue, reprendre depuis Understand pour intégrer les nouvelles informations"] },
+          ],
+        },
+        plan: {
+          title: "2. Plan",
+          color: "#4f46e5",
+          nodeType: "PHASE PRINCIPALE",
+          sections: [
+            { heading: "Actions", items: ["Créer/MAJ todolist → todowrite", "Écrire plan + contexte dans scratchpad", "Identifier les agents nécessaires", "Déterminer parallèle vs séquentiel"] },
+            { heading: "Règle", items: ["Un seul scope à la fois — finir avant de passer au suivant", "Parquer les scopes secondaires dans le scratchpad"] },
+          ],
+        },
+        delegate: {
+          title: "3. Delegate",
+          color: "#7c3aed",
+          nodeType: "PHASE PRINCIPALE",
+          sections: [
+            { heading: "Agents disponibles", items: ["`explore` — read-only, reconnaissance codebase", "`general` — implémentation, écriture, commandes", "Custom persona (`backend-engineer`, `react-specialist`…)"] },
+            { heading: "Règles", items: ["Tâches indépendantes → spawner en parallèle", "Tâches dépendantes → séquentiel avec handoff de contexte", "Après chaque retour → MAJ scratchpad + compress"] },
+          ],
+        },
+        bug_decision: {
+          title: "Bug report ?",
+          color: "#be123c",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Déclencher bug-finder si", items: ["Comportement inattendu / régression / crash / sortie incorrecte", "Quelque chose « a arrêté de fonctionner » sans cause évidente", "Un fix a été appliqué mais le problème persiste ou s'est déplacé"] },
+            { heading: "Ne PAS déclencher si", items: ["Bug trivialement localisable (utilisateur pointe la ligne + typo évidente) ET fix isolé → flow normal"] },
+          ],
+        },
+        bug_finder: {
+          title: "bug-finder",
+          color: "#dc2626",
+          nodeType: "AGENT SPÉCIALISÉ",
+          sections: [
+            { heading: "Rôle", items: ["Forcer l'analyse root-cause AVANT tout fix", "Empêche les workarounds et la divergence de code"] },
+            { heading: "Verdicts", items: ["HIGH → fix direct via `general` avec l'analyse", "MEDIUM → fix via `general` + signaler l'incertitude à l'utilisateur", "UNCERTAINTY_EXPOSED → remonter les questions ouvertes à l'utilisateur avant de continuer"] },
+          ],
+        },
+        certitude: {
+          title: "Certitude ?",
+          color: "#be123c",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Branches", items: ["HIGH / MEDIUM → rejoindre le flow Agents avec l'analyse en contexte", "UNCERTAINTY_EXPOSED → escalade utilisateur, attendre réponse avant tout fix"] },
+          ],
+        },
+        escalade_uncertainty: {
+          title: "Escalade — UNCERTAINTY_EXPOSED",
+          color: "#991b1b",
+          nodeType: "ESCALADE",
+          sections: [
+            { heading: "Message à l'utilisateur", items: ["Présenter les hypothèses identifiées et leurs probabilités", "Lister les questions précises qui bloquent le diagnostic", "Ne pas proposer de fix dans cet état"] },
+          ],
+        },
+        agents: {
+          title: "Agents",
+          color: "#6d28d9",
+          nodeType: "DÉLÉGATION",
+          sections: [
+            { heading: "Types", items: ["`explore` — recherche, lecture de fichiers, architecture", "`general` — écriture, édition, bash, implémentation", "Custom persona — `backend-engineer`, `api-architect`…"] },
+            { heading: "Contexte handoff", items: ["Chaque agent repart de zéro — être explicite", "Inclure fichiers modifiés, décisions, interfaces", "Parallèle = plusieurs task calls dans le même message"] },
+          ],
+        },
+        agent_failure: {
+          title: "Échec agent ?",
+          color: "#64748b",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Diagnostics", items: ["Mauvais prompt → reformuler avec plus de précision", "Contexte insuffisant → envoyer `explore` d'abord, retry avec findings", "Tâche trop grande → décomposer en sous-tâches", "Erreur outil → vérifier permissions et chemins"] },
+            { heading: "Règle", items: ["Max 2 retries — toujours changer quelque chose entre les tentatives", "Si toujours KO après 2 tentatives → escalade utilisateur"] },
+          ],
+        },
+        retry: {
+          title: "↩ Retry (max 2)",
+          color: "#b45309",
+          nodeType: "BOUCLE",
+          sections: [
+            { heading: "Process", items: ["Diagnostiquer la cause de l'échec", "Reformuler / décomposer / enrichir le contexte", "Relancer l'agent avec le nouveau prompt"] },
+          ],
+        },
+        escalade_retry: {
+          title: "Escalade — 2 retries dépassés",
+          color: "#991b1b",
+          nodeType: "ESCALADE",
+          sections: [
+            { heading: "Message à l'utilisateur", items: ["Décrire ce qui a été tenté (2 tentatives)", "Expliquer le diagnostic de chaque échec", "Proposer des options : reformuler la tâche, fournir du contexte supplémentaire", "Ne jamais retenter une 3e fois sans instruction explicite"] },
+          ],
+        },
+        review: {
+          title: "4. Review",
+          color: "#b45309",
+          nodeType: "PHASE PRINCIPALE",
+          sections: [
+            { heading: "Règle absolue", items: ["TOUJOURS via review-manager — jamais de reviewer direct", "Obligatoire pour tout changement code, config, infra, sécurité"] },
+            { heading: "Fournir au review-manager", items: ["Fichiers modifiés + résumé des changements", "Exigences originales de l'utilisateur", "Trade-offs et décisions effectuées", "Ce qui était explicitement hors scope"] },
+          ],
+        },
+        review_manager: {
+          title: "review-manager",
+          color: "#92400e",
+          nodeType: "AGENT ORCHESTRATEUR",
+          sections: [
+            { heading: "Rôle", items: ["Orchestrateur de review — jamais reviewer direct", "Spawne en parallèle : code-reviewer, security-reviewer, requirements-reviewer", "Synthétise les verdicts et arbitre les désaccords"] },
+            { heading: "Skip autorisé uniquement si", items: ["Changement docs-only (aucun code modifié)", "Aucun impact sécurité possible", "L'utilisateur demande explicitement la vitesse"] },
+          ],
+        },
+        verdict: {
+          title: "Verdict review ?",
+          color: "#b45309",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Branches", items: ["APPROVED → Synthesize & Report", "CHANGES_REQUESTED → re-déléguer fixes au producteur → re-review (max 2 rounds)", "BLOCKED → escalade immédiate à l'utilisateur, ne pas corriger sans input user"] },
+          ],
+        },
+        changes_loop: {
+          title: "↩ Fix + re-review",
+          color: "#b45309",
+          nodeType: "BOUCLE",
+          sections: [
+            { heading: "Process", items: ["Renvoyer les fixes précis à l'agent producteur", "Re-passer par le review-manager", "Maximum 2 rounds au total"] },
+          ],
+        },
+        escalade_blocked: {
+          title: "Escalade — BLOCKED",
+          color: "#991b1b",
+          nodeType: "ESCALADE",
+          sections: [
+            { heading: "Règles strictes", items: ["Signaler le problème précis identifié par le reviewer", "Expliquer pourquoi c'est bloquant (pas juste un warning)", "Ne proposer AUCUN fix dans le message d'escalade", "Attendre une instruction explicite avant de continuer"] },
+          ],
+        },
+        synthesize: {
+          title: "5. Synthesize & Report",
+          color: "#15803d",
+          nodeType: "PHASE PRINCIPALE",
+          sections: [
+            { heading: "Auto-évaluation", items: ["Répond à la vraie demande (pas l'interprétée) ?", "Pas de contradiction entre résultats d'agents ?", "Rien de manquant dans la livraison ?"] },
+            { heading: "MAJ mémoire", items: ["Écrire apprentissages dans .opencode/memory.md", "Nettoyer le scratchpad (tâches terminées)"] },
+          ],
+        },
+        autoeval: {
+          title: "Auto-éval OK ?",
+          color: "#15803d",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Branches", items: ["OK → rapport final à l'utilisateur", "Gap mineur (détail manquant) → fix rapide puis rapport", "Gap majeur (mauvaise approche) → retour Delegate"] },
+          ],
+        },
+        gap_majeur: {
+          title: "↩ Retour Delegate",
+          color: "#166534",
+          nodeType: "BOUCLE",
+          sections: [
+            { heading: "Traitement", items: ["Traiter le gap comme une nouvelle tâche", "Reprendre depuis la phase Delegate", "MAJ todolist et scratchpad avant de déléguer"] },
+          ],
+        },
+        fix_rapide: {
+          title: "Fix rapide",
+          color: "#166534",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "Traitement", items: ["Corriger le détail manquant directement", "Pas besoin de repasser par Review si le fix est trivial", "Inclure dans le rapport final"] },
+          ],
+        },
+        end: {
+          title: "Rapport à l'utilisateur",
+          color: "#1e293b",
+          nodeType: "LIVRAISON",
+          sections: [
+            { heading: "Livraison", items: ["Résumé concis des changements effectués", "Problèmes éventuels signalés honnêtement", "Prochaines étapes proposées si pertinent"] },
+          ],
+        },
+      },
+    };
+  }
+
+  // English
+  return {
+    svgLabels: {
+      start: "User request",
+      scratchpad_sub: "Current plan · Context",
+      memory_sub: "Persistent learnings",
+      ambigu: "Ambiguous?",
+      question_label: "User question",
+      question_sub: "tool: question",
+      bug_decision: "Bug report?",
+      certitude: "Certainty?",
+      agent_failure: "Agent failure?",
+      esc_uncertainty_label: "User escalation",
+      esc_retry_label: "Escalation",
+      esc_retry_sub: "2 retries exceeded",
+      esc_blocked_label: "Escalation",
+      end: "Report to user",
+      arrow_oui: "YES",
+      arrow_non: "NO",
+      arrow_gap_majeur: "Major gap",
+      arrow_gap_mineur: "Minor gap",
+      mem_read_here: "read here",
+      annot_delegate: "↳ Update scratchpad after each agent return",
+      annot_agents: "✎ after agent return",
+      annot_memory: "↳ Write memory.md if new learnings",
+    },
+    details: {
+      start: {
+        title: "User request",
+        color: "#1e293b",
+        nodeType: "ENTRY POINT",
+        sections: [
+          { heading: "Entry point", items: ["User submits a request", "team-lead analyzes the request type before acting"] },
+        ],
+      },
+      understand: {
+        title: "1. Understand",
+        color: "#2563eb",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "Memory read", items: [".opencode/scratchpad.md — current work plan", ".opencode/memory.md — persistent project learnings"] },
+          { heading: "Goal", items: ["Parse the request (explicit vs implicit)", "Identify ambiguity before planning", "Check if a scope was in progress (scratchpad)"] },
+        ],
+      },
+      scratchpad: {
+        title: "📄 scratchpad.md",
+        color: "#0ea5e9",
+        nodeType: "WORKING MEMORY",
+        sections: [
+          { heading: "Role", items: [
+            "Working memory for current mission",
+            "Survives context compaction",
+            "Overwritten at each new mission",
+          ]},
+          { heading: "When to read", items: ["On startup — read mission state if it exists"] },
+          { heading: "When to write (5 moments)", items: [
+            "Startup — goal + plan + initial decisions",
+            "Before delegation — sub-tasks, modified files, resume context",
+            "After agent return — synthesized key results",
+            "After review — task status + verdict",
+            "End of mission — final capture before user report",
+          ]},
+        ],
+      },
+      memory: {
+        title: "📄 memory.md",
+        color: "#22c55e",
+        nodeType: "PERSISTENT MEMORY",
+        sections: [
+          { heading: "Role", items: [
+            "Cross-session project knowledge base",
+            "Injected into every LLM call automatically",
+            "Append-only — never overwrite, clean obsolete entries",
+          ]},
+          { heading: "When to read", items: ["Injected automatically — no action required"] },
+          { heading: "When to write", items: [
+            "Build/test commands discovered in the project",
+            "Important architecture decisions retained",
+            "Recurring conventions and patterns in the codebase",
+            "Observed user preferences",
+            "Project-specific technologies/constraints",
+          ]},
+          { heading: "What does NOT belong here", items: [
+            "Current task state → scratchpad",
+            "Temporary or mission-specific info",
+          ]},
+        ],
+      },
+      ambigu: {
+        title: "Ambiguous?",
+        color: "#64748b",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Decision", items: ["YES → ask questions via `question` tool → wait for answer → resume Understand", "NO → continue to Plan"] },
+        ],
+      },
+      question: {
+        title: "User question",
+        color: "#64748b",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "Tool", items: ["`question` — blocks until user responds"] },
+          { heading: "Rule", items: ["Once the answer is received, resume from Understand to integrate the new information"] },
+        ],
+      },
+      plan: {
+        title: "2. Plan",
+        color: "#4f46e5",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "Actions", items: ["Create/update todo list → todowrite", "Write plan + context in scratchpad", "Identify required agents", "Determine parallel vs sequential"] },
+          { heading: "Rule", items: ["One scope at a time — finish before moving to the next", "Park secondary scopes in the scratchpad"] },
+        ],
+      },
+      delegate: {
+        title: "3. Delegate",
+        color: "#7c3aed",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "Available agents", items: ["`explore` — read-only, codebase reconnaissance", "`general` — implementation, writing, commands", "Custom persona (`backend-engineer`, `react-specialist`…)"] },
+          { heading: "Rules", items: ["Independent tasks → spawn in parallel", "Dependent tasks → sequential with context handoff", "After each return → update scratchpad + compress"] },
+        ],
+      },
+      bug_decision: {
+        title: "Bug report?",
+        color: "#be123c",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Trigger bug-finder if", items: ["Unexpected behavior / regression / crash / incorrect output", "Something 'stopped working' with no obvious cause", "A fix was applied but the problem persists or moved"] },
+          { heading: "Do NOT trigger if", items: ["Bug trivially locatable (user points to line + obvious typo) AND isolated fix → normal flow"] },
+        ],
+      },
+      bug_finder: {
+        title: "bug-finder",
+        color: "#dc2626",
+        nodeType: "SPECIALIZED AGENT",
+        sections: [
+          { heading: "Role", items: ["Force root-cause analysis BEFORE any fix", "Prevents workarounds and code divergence"] },
+          { heading: "Verdicts", items: ["HIGH → direct fix via `general` with the analysis", "MEDIUM → fix via `general` + report uncertainty to user", "UNCERTAINTY_EXPOSED → surface open questions to user before continuing"] },
+        ],
+      },
+      certitude: {
+        title: "Certainty?",
+        color: "#be123c",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["HIGH / MEDIUM → join Agents flow with analysis in context", "UNCERTAINTY_EXPOSED → user escalation, wait for answer before any fix"] },
+        ],
+      },
+      escalade_uncertainty: {
+        title: "Escalation — UNCERTAINTY_EXPOSED",
+        color: "#991b1b",
+        nodeType: "ESCALATION",
+        sections: [
+          { heading: "Message to user", items: ["Present identified hypotheses and their probabilities", "List the precise questions blocking the diagnosis", "Do not propose a fix in this state"] },
+        ],
+      },
+      agents: {
+        title: "Agents",
+        color: "#6d28d9",
+        nodeType: "DELEGATION",
+        sections: [
+          { heading: "Types", items: ["`explore` — search, file reads, architecture", "`general` — writing, editing, bash, implementation", "Custom persona — `backend-engineer`, `api-architect`…"] },
+          { heading: "Context handoff", items: ["Each agent starts from scratch — be explicit", "Include modified files, decisions, interfaces", "Parallel = multiple task calls in the same message"] },
+        ],
+      },
+      agent_failure: {
+        title: "Agent failure?",
+        color: "#64748b",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Diagnostics", items: ["Bad prompt → rephrase with more precision", "Insufficient context → send `explore` first, retry with findings", "Task too large → break into sub-tasks", "Tool error → check permissions and paths"] },
+          { heading: "Rule", items: ["Max 2 retries — always change something between attempts", "If still failing after 2 attempts → user escalation"] },
+        ],
+      },
+      retry: {
+        title: "↩ Retry (max 2)",
+        color: "#b45309",
+        nodeType: "LOOP",
+        sections: [
+          { heading: "Process", items: ["Diagnose the cause of failure", "Rephrase / decompose / enrich context", "Relaunch the agent with the new prompt"] },
+        ],
+      },
+      escalade_retry: {
+        title: "Escalation — 2 retries exceeded",
+        color: "#991b1b",
+        nodeType: "ESCALATION",
+        sections: [
+          { heading: "Message to user", items: ["Describe what was attempted (2 attempts)", "Explain the diagnosis of each failure", "Propose options: rephrase the task, provide additional context", "Never retry a 3rd time without explicit instruction"] },
+        ],
+      },
+      review: {
+        title: "4. Review",
+        color: "#b45309",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "Absolute rule", items: ["ALWAYS via review-manager — never a direct reviewer", "Mandatory for any code, config, infra, security change"] },
+          { heading: "Provide to review-manager", items: ["Modified files + summary of changes", "Original user requirements", "Trade-offs and decisions made", "What was explicitly out of scope"] },
+        ],
+      },
+      review_manager: {
+        title: "review-manager",
+        color: "#92400e",
+        nodeType: "ORCHESTRATOR AGENT",
+        sections: [
+          { heading: "Role", items: ["Review orchestrator — never a direct reviewer", "Spawns in parallel: code-reviewer, security-reviewer, requirements-reviewer", "Synthesizes verdicts and arbitrates disagreements"] },
+          { heading: "Skip authorized only if", items: ["Docs-only change (no code modified)", "No possible security impact", "User explicitly requests speed"] },
+        ],
+      },
+      verdict: {
+        title: "Review verdict?",
+        color: "#b45309",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["APPROVED → Synthesize & Report", "CHANGES_REQUESTED → re-delegate fixes to producer → re-review (max 2 rounds)", "BLOCKED → immediate user escalation, do not fix without user input"] },
+        ],
+      },
+      changes_loop: {
+        title: "↩ Fix + re-review",
+        color: "#b45309",
+        nodeType: "LOOP",
+        sections: [
+          { heading: "Process", items: ["Send precise fixes back to the producer agent", "Re-run through review-manager", "Maximum 2 rounds total"] },
+        ],
+      },
+      escalade_blocked: {
+        title: "Escalation — BLOCKED",
+        color: "#991b1b",
+        nodeType: "ESCALATION",
+        sections: [
+          { heading: "Strict rules", items: ["Report the precise problem identified by the reviewer", "Explain why it is blocking (not just a warning)", "Propose NO fix in the escalation message", "Wait for explicit instruction before continuing"] },
+        ],
+      },
+      synthesize: {
+        title: "5. Synthesize & Report",
+        color: "#15803d",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "Self-evaluation", items: ["Answers the real request (not the interpreted one)?", "No contradiction between agent results?", "Nothing missing in the deliverable?"] },
+          { heading: "Memory update", items: ["Write learnings to .opencode/memory.md", "Clean up scratchpad (completed tasks)"] },
+        ],
+      },
+      autoeval: {
+        title: "Self-eval OK?",
+        color: "#15803d",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["OK → final report to user", "Minor gap (missing detail) → quick fix then report", "Major gap (wrong approach) → back to Delegate"] },
+        ],
+      },
+      gap_majeur: {
+        title: "↩ Back to Delegate",
+        color: "#166534",
+        nodeType: "LOOP",
+        sections: [
+          { heading: "Treatment", items: ["Treat the gap as a new task", "Resume from Delegate phase", "Update todo list and scratchpad before delegating"] },
+        ],
+      },
+      fix_rapide: {
+        title: "Quick fix",
+        color: "#166534",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "Treatment", items: ["Fix the missing detail directly", "No need to go through Review if the fix is trivial", "Include in the final report"] },
+        ],
+      },
+      end: {
+        title: "Report to user",
+        color: "#1e293b",
+        nodeType: "DELIVERY",
+        sections: [
+          { heading: "Delivery", items: ["Concise summary of changes made", "Any issues reported honestly", "Suggested next steps if relevant"] },
+        ],
+      },
+    },
+  };
+}
 
 // Y positions map for scroll-to (populated in FlowChart, read in App)
 const NODE_Y_MAP: Record<string, number> = {};
@@ -410,7 +747,8 @@ function Annot({ x, y, text, color }: { x: number; y: number; text: string; colo
   );
 }
 
-function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: string, nodeY: number) => void }) {
+function FlowChart({ selected, onSelect, lang }: { selected: string; onSelect: (id: string, nodeY: number) => void; lang: Lang }) {
+  const { svgLabels: L } = getFlowchartData(lang);
   const svgWidth = 700;
   const svgHeight = 1850;
   const ns: NodeProps = { id: "", selected, onSelect };
@@ -489,7 +827,7 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
       </defs>
 
       {/* ── START ── */}
-      <PillNode {...ns} id="start" cx={CX} cy={Y.start} label="Requête utilisateur" />
+      <PillNode {...ns} id="start" cx={CX} cy={Y.start} label={L.start} />
 
       <path d={`M ${CX},${Y.start + H_PILL / 2} L ${CX},${Y.understand - H_PHASE / 2 - 6}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
@@ -499,11 +837,11 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
 
       {/* ── MEMORY FILE NODES ── */}
       <MemFileNode {...ns} id="scratchpad" cx={MEM_LX} cy={Y.mem_files}
-        label="📄 scratchpad.md" sub="Plan courant · Contexte"
+        label="📄 scratchpad.md" sub={L.scratchpad_sub}
         bgColor="#f0f9ff" borderColor="#0ea5e9" textColor="#0369a1" />
 
       <MemFileNode {...ns} id="memory" cx={MEM_RX} cy={Y.mem_files}
-        label="📄 memory.md" sub="Apprentissages persistants"
+        label="📄 memory.md" sub={L.memory_sub}
         bgColor="#f0fdf4" borderColor="#22c55e" textColor="#166534" />
 
       {/* Bidirectional: scratchpad ↔ understand */}
@@ -517,7 +855,7 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
         x={(CX - W_PHASE / 2 + MEM_LX + W_MEM / 2) / 2 - 10}
         y={Y.understand + 32}
         textAnchor="middle" fill="#0ea5e9" fontSize={10} fontStyle="italic"
-        fontFamily="system-ui, sans-serif">lu ici</text>
+        fontFamily="system-ui, sans-serif">{L.mem_read_here}</text>
 
       {/* Bidirectional: memory.md ↔ understand */}
       <path
@@ -528,21 +866,21 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
         x={(CX + W_PHASE / 2 + MEM_RX - W_MEM / 2) / 2 + 10}
         y={Y.understand + 32}
         textAnchor="middle" fill="#22c55e" fontSize={10} fontStyle="italic"
-        fontFamily="system-ui, sans-serif">lu ici</text>
+        fontFamily="system-ui, sans-serif">{L.mem_read_here}</text>
 
       {/* understand → ambigu */}
       <path d={`M ${CX},${Y.understand + H_PHASE / 2} L ${CX},${Y.ambigu - DHH - 6}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
 
       {/* ── AMBIGU ── */}
-      <DiamondNode {...ns} id="ambigu" cx={CX} cy={Y.ambigu} label="Ambigu ?" stroke="#64748b" />
+      <DiamondNode {...ns} id="ambigu" cx={CX} cy={Y.ambigu} label={L.ambigu} stroke="#64748b" />
 
       <path d={`M ${CX - DHW},${Y.ambigu} L ${LX + W_SMALL / 2 + 6},${Y.ambigu}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
-      <ArrowLabel x={CX - DHW - 6} y={Y.ambigu - 6} text="OUI" color="#f59e0b" align="end" />
+      <ArrowLabel x={CX - DHW - 6} y={Y.ambigu - 6} text={L.arrow_oui} color="#f59e0b" align="end" />
 
-      <ActionNode {...ns} id="question" cx={LX} cy={Y.question} label="Question util."
-        sub="outil: question" fill="#fef9c3" stroke="#ca8a04" textFill="#854d0e"
+      <ActionNode {...ns} id="question" cx={LX} cy={Y.question} label={L.question_label}
+        sub={L.question_sub} fill="#fef9c3" stroke="#ca8a04" textFill="#854d0e"
         w={W_SMALL} h={H_SMALL + 6} />
 
       <path
@@ -552,7 +890,7 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
 
       <path d={`M ${CX},${Y.ambigu + DHH} L ${CX},${Y.plan - H_PHASE / 2 - 6}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
-      <ArrowLabel x={CX + 6} y={(Y.ambigu + DHH + Y.plan - H_PHASE / 2) / 2 + 5} text="NON"
+      <ArrowLabel x={CX + 6} y={(Y.ambigu + DHH + Y.plan - H_PHASE / 2) / 2 + 5} text={L.arrow_non}
         color="#16a34a" align="start" />
 
       {/* ── PLAN ── */}
@@ -564,17 +902,17 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
 
       {/* ── DELEGATE ── */}
       <PhaseNode {...ns} id="delegate" cx={CX} cy={Y.delegate} label="3. Delegate" fill="#7c3aed" />
-      <Annot x={CX} y={Y.delegate + H_PHASE / 2 + 13} text="↳ MAJ scratchpad après chaque retour d'agent" color="#7c3aed" />
+      <Annot x={CX} y={Y.delegate + H_PHASE / 2 + 13} text={L.annot_delegate} color="#7c3aed" />
 
       <path d={`M ${CX},${Y.delegate + H_PHASE / 2 + 17} L ${CX},${Y.bug_decision - DHH - 6}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
 
       {/* ── BUG DECISION ── */}
-      <DiamondNode {...ns} id="bug_decision" cx={CX} cy={Y.bug_decision} label="Bug report ?" stroke="#be123c" />
+      <DiamondNode {...ns} id="bug_decision" cx={CX} cy={Y.bug_decision} label={L.bug_decision} stroke="#be123c" />
 
       <path d={`M ${CX + DHW},${Y.bug_decision} L ${RX - W_SMALL / 2 - 6},${Y.bug_finder}`}
         stroke="#dc2626" strokeWidth={1.5} fill="none" markerEnd="url(#arrow-red)" />
-      <ArrowLabel x={CX + DHW + 6} y={Y.bug_decision - 8} text="OUI" color="#dc2626" align="start" />
+      <ArrowLabel x={CX + DHW + 6} y={Y.bug_decision - 8} text={L.arrow_oui} color="#dc2626" align="start" />
 
       {/* ── BUG FINDER ── */}
       <ActionNode {...ns} id="bug_finder" cx={RX} cy={Y.bug_finder} label="bug-finder"
@@ -584,7 +922,7 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
         stroke="#dc2626" strokeWidth={1.5} fill="none" markerEnd="url(#arrow-red)" />
 
       {/* ── CERTITUDE ── */}
-      <DiamondNode {...ns} id="certitude" cx={RX} cy={Y.certitude} label="Certitude ?" stroke="#be123c" />
+      <DiamondNode {...ns} id="certitude" cx={RX} cy={Y.certitude} label={L.certitude} stroke="#be123c" />
 
       <path
         d={`M ${RX - DHW},${Y.certitude} L ${CX + W_ACTION / 2 + 6},${Y.agents}`}
@@ -598,27 +936,27 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
         text="UNCERT." color="#dc2626" align="start" />
 
       <EscaladeNode {...ns} id="escalade_uncertainty" cx={RX} cy={Y.esc_uncertainty}
-        label="Escalade utilisateur" sub="UNCERTAINTY_EXPOSED" w={W_SMALL + 10} />
+        label={L.esc_uncertainty_label} sub="UNCERTAINTY_EXPOSED" w={W_SMALL + 10} />
 
       <path d={`M ${CX},${Y.bug_decision + DHH} L ${CX},${Y.agents - H_ACTION / 2 - 8}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
       <ArrowLabel x={CX + 6} y={(Y.bug_decision + DHH + Y.agents - H_ACTION / 2) / 2 + 5}
-        text="NON" color="#16a34a" align="start" />
+        text={L.arrow_non} color="#16a34a" align="start" />
 
       {/* ── AGENTS ── */}
       <ActionNode {...ns} id="agents" cx={CX} cy={Y.agents} label="Agents"
         sub="explore / general / custom" fill="#ede9fe" stroke="#7c3aed" textFill="#4c1d95" />
-      <Annot x={CX} y={Y.agents + H_ACTION / 2 + 13} text="✎ après retour d'agent" color="#0ea5e9" />
+      <Annot x={CX} y={Y.agents + H_ACTION / 2 + 13} text={L.annot_agents} color="#0ea5e9" />
 
       <path d={`M ${CX},${Y.agents + H_ACTION / 2 + 17} L ${CX},${Y.agent_failure - DHH - 6}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
 
       {/* ── AGENT FAILURE ── */}
-      <DiamondNode {...ns} id="agent_failure" cx={CX} cy={Y.agent_failure} label="Échec agent ?" stroke="#64748b" />
+      <DiamondNode {...ns} id="agent_failure" cx={CX} cy={Y.agent_failure} label={L.agent_failure} stroke="#64748b" />
 
       <path d={`M ${CX - DHW},${Y.agent_failure} L ${LX + W_SMALL / 2 + 6},${Y.retry}`}
         stroke="#f59e0b" strokeWidth={1.5} fill="none" markerEnd="url(#arrow-amber)" />
-      <ArrowLabel x={CX - DHW - 6} y={Y.agent_failure - 8} text="OUI" color="#f59e0b" align="end" />
+      <ArrowLabel x={CX - DHW - 6} y={Y.agent_failure - 8} text={L.arrow_oui} color="#f59e0b" align="end" />
 
       {/* ── RETRY ── */}
       <ActionNode {...ns} id="retry" cx={LX} cy={Y.retry} label="↩ Retry (max 2)"
@@ -635,12 +973,12 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
         text="2×" color="#dc2626" align="start" />
 
       <EscaladeNode {...ns} id="escalade_retry" cx={LX} cy={Y.esc_retry}
-        label="Escalade util." sub="2 retries dépassés" />
+        label={L.esc_retry_label} sub={L.esc_retry_sub} />
 
       <path d={`M ${CX},${Y.agent_failure + DHH} L ${CX},${Y.review - H_PHASE / 2 - 6}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
       <ArrowLabel x={CX + 6} y={(Y.agent_failure + DHH + Y.review - H_PHASE / 2) / 2 + 5}
-        text="NON" color="#16a34a" align="start" />
+        text={L.arrow_non} color="#16a34a" align="start" />
 
       {/* ── REVIEW ── */}
       <PhaseNode {...ns} id="review" cx={CX} cy={Y.review} label="4. Review" fill="#b45309" />
@@ -678,7 +1016,7 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
       <ArrowLabel x={CX + DHW + 6} y={Y.verdict - 8} text="BLOCKED" color="#dc2626" align="start" />
 
       <EscaladeNode {...ns} id="escalade_blocked" cx={RX} cy={Y.esc_blocked}
-        label="Escalade util." sub="BLOCKED" />
+        label={L.esc_blocked_label} sub="BLOCKED" />
 
       <path d={`M ${CX},${Y.verdict + DHH} L ${CX},${Y.synthesize - H_PHASE / 2 - 6}`}
         stroke="#16a34a" strokeWidth={1.5} fill="none" markerEnd="url(#arrow-green)" />
@@ -688,17 +1026,17 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
       {/* ── SYNTHESIZE ── */}
       <PhaseNode {...ns} id="synthesize" cx={CX} cy={Y.synthesize} label="5. Synthesize & Report" fill="#15803d" />
       <Annot x={CX} y={Y.synthesize + H_PHASE / 2 + 13} text="✎ scratchpad  ✎ memory.md" color="#0ea5e9" />
-      <Annot x={CX} y={Y.synthesize + H_PHASE / 2 + 26} text="↳ Écrire memory.md si nouveaux apprentissages" color="#16a34a" />
+      <Annot x={CX} y={Y.synthesize + H_PHASE / 2 + 26} text={L.annot_memory} color="#16a34a" />
 
       <path d={`M ${CX},${Y.synthesize + H_PHASE / 2 + 30} L ${CX},${Y.autoeval - DHH - 6}`}
         stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#arrow)" />
 
       {/* ── AUTOEVAL ── */}
-      <DiamondNode {...ns} id="autoeval" cx={CX} cy={Y.autoeval} label="Auto-éval OK ?" stroke="#15803d" />
+      <DiamondNode {...ns} id="autoeval" cx={CX} cy={Y.autoeval} label="Auto-eval OK?" stroke="#15803d" />
 
       <path d={`M ${CX - DHW},${Y.autoeval} L ${LX + W_SMALL / 2 + 6},${Y.gap_majeur}`}
         stroke="#dc2626" strokeWidth={1.5} fill="none" markerEnd="url(#arrow-red)" />
-      <ArrowLabel x={CX - DHW - 6} y={Y.autoeval - 8} text="Gap majeur" color="#dc2626" align="end" />
+      <ArrowLabel x={CX - DHW - 6} y={Y.autoeval - 8} text={L.arrow_gap_majeur} color="#dc2626" align="end" />
 
       <ActionNode {...ns} id="gap_majeur" cx={LX} cy={Y.gap_majeur}
         label="↩ Delegate" fill="#dcfce7" stroke="#16a34a" textFill="#166534"
@@ -711,7 +1049,7 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
 
       <path d={`M ${CX + DHW},${Y.autoeval} L ${RX - W_SMALL / 2 - 6},${Y.fix_rapide}`}
         stroke="#f59e0b" strokeWidth={1.5} fill="none" markerEnd="url(#arrow-amber)" />
-      <ArrowLabel x={CX + DHW + 6} y={Y.autoeval - 8} text="Gap mineur" color="#f59e0b" align="start" />
+      <ArrowLabel x={CX + DHW + 6} y={Y.autoeval - 8} text={L.arrow_gap_mineur} color="#f59e0b" align="start" />
 
       <ActionNode {...ns} id="fix_rapide" cx={RX} cy={Y.fix_rapide}
         label="Fix rapide" fill="#dcfce7" stroke="#16a34a" textFill="#166534"
@@ -728,7 +1066,7 @@ function FlowChart({ selected, onSelect }: { selected: string; onSelect: (id: st
         text="OK" color="#16a34a" align="start" />
 
       {/* ── END ── */}
-      <PillNode {...ns} id="end" cx={CX} cy={Y.end} label="Rapport à l'utilisateur" />
+      <PillNode {...ns} id="end" cx={CX} cy={Y.end} label={L.end} />
     </svg>
   );
 }
@@ -799,15 +1137,19 @@ function BulletItem({ item, nodeColor }: { item: string; nodeColor: string }) {
   if (item.startsWith("BLOCKED")) return <VerdictBadge color="#dc2626" label="BLOCKED" rest={item.slice(7)} />;
   if (item.startsWith("OUI")) return <FlowBullet icon="→" color="#22c55e" text={item.slice(3)} nodeColor={nodeColor} />;
   if (item.startsWith("NON")) return <FlowBullet icon="→" color="#6b7280" text={item.slice(3)} nodeColor={nodeColor} />;
+  if (item.startsWith("YES")) return <FlowBullet icon="→" color="#22c55e" text={item.slice(3)} nodeColor={nodeColor} />;
+  if (item.startsWith("NO →") || item.startsWith("NO ")) return <FlowBullet icon="→" color="#6b7280" text={item.slice(2)} nodeColor={nodeColor} />;
   if (item.startsWith("OK →")) return <FlowBullet icon="→" color="#16a34a" text={item.slice(2)} nodeColor={nodeColor} />;
   return <NormalBullet item={item} nodeColor={nodeColor} />;
 }
 
-function DetailPanel({ nodeId }: { nodeId: string }) {
+function DetailPanel({ nodeId, lang }: { nodeId: string; lang: Lang }) {
+  const { details: DETAILS } = getFlowchartData(lang);
   const detail = DETAILS[nodeId];
+  const placeholder = lang === "fr" ? "Cliquer sur un nœud pour voir ses détails." : "Click a node to see its details.";
   if (!detail) return (
     <div style={{ padding: 40, color: "#94a3b8", fontSize: 15, fontStyle: "italic" }}>
-      Cliquer sur un nœud pour voir ses détails.
+      {placeholder}
     </div>
   );
 
@@ -1472,13 +1814,13 @@ export default function App() {
 
             {/* SVG with zoom */}
             <div style={{ transformOrigin: "top center", transform: `scale(${zoom})`, width: "fit-content" }}>
-              <FlowChart selected={selected} onSelect={handleSelect} />
+              <FlowChart selected={selected} onSelect={handleSelect} lang={lang} />
             </div>
           </div>
 
           {/* RIGHT — detail panel */}
           <div style={{ flex: 1, background: "white", overflowY: "auto" }}>
-            <DetailPanel nodeId={selected} />
+            <DetailPanel nodeId={selected} lang={lang} />
           </div>
 
         </div>
