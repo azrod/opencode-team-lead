@@ -1,0 +1,57 @@
+name: Checks
+
+# Two lightweight structural checks that enforce project invariants which can't
+# be caught by code review alone: zero dependencies and a valid CHANGELOG format.
+# These run on every push and PR — they're fast (no install step needed).
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  zero-deps:
+    name: Zero dependencies check
+    runs-on: ubuntu-latest
+    # Pattern enforced: this project ships zero runtime and dev dependencies by design.
+    # Adding any dependency (even a devDep) breaks the "no npm install" contract and
+    # must be a conscious decision reviewed explicitly. Without this check, a stray
+    # `npm install <pkg>` can silently sneak into package.json.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert no dependencies or devDependencies
+        run: |
+          node -e "
+          const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
+          const forbidden = ['dependencies', 'devDependencies'];
+          const found = forbidden.filter(k => pkg[k] && Object.keys(pkg[k]).length > 0);
+          if (found.length > 0) {
+            console.error('Error: This project must have zero dependencies. Found: ' + found.join(', '));
+            process.exit(1);
+          }
+          console.log('OK: zero dependencies confirmed');
+          "
+
+  changelog-unreleased:
+    name: CHANGELOG Unreleased section check
+    runs-on: ubuntu-latest
+    # Pattern enforced: CHANGELOG.md must always have a ## [Unreleased] section.
+    # Without it, the release process breaks — the workflow that cuts a release reads
+    # the Unreleased block to populate the GitHub release notes. A missing section
+    # also signals that someone may have committed user-visible changes without
+    # documenting them (see docs/guiding-principles.md — CHANGELOG entries target users).
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert ## [Unreleased] section exists in CHANGELOG.md
+        run: |
+          node -e "
+          const fs = require('fs');
+          const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+          if (!changelog.includes('## [Unreleased]')) {
+            console.error('Error: CHANGELOG.md must contain a ## [Unreleased] section.');
+            console.error('Add one before the first versioned section.');
+            process.exit(1);
+          }
+          console.log('OK: ## [Unreleased] section found');
+          "

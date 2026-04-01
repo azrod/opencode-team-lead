@@ -1,6 +1,6 @@
 {
   "name": "opencode-team-lead",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Team-lead orchestrator agent for opencode — delegates work, reviews quality, manages context",
   "type": "module",
   "main": "index.js",
@@ -9,6 +9,9 @@
     "agents/",
     "README.md"
   ],
+  "scripts": {
+    "lint": "npx eslint index.js"
+  },
   "keywords": [
     "opencode",
     "opencode-plugin",
