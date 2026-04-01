@@ -1,0 +1,29 @@
+#!/bin/sh
+# .git-hooks/commit-msg
+#
+# Enforces that commit messages are non-empty and not the default editor template.
+#
+# Pattern encoded: agents and bots must always pass -m to `git commit`. Without -m,
+# git opens $EDITOR and hangs in non-interactive contexts. This hook is the last line
+# of defense: if something slips through and produces an empty or template-only message,
+# the commit is rejected rather than creating a garbage commit object.
+#
+# Install: run .git-hooks/install.sh once after cloning.
+# chmod +x .git-hooks/commit-msg  (already set if you used install.sh)
+
+COMMIT_MSG_FILE="$1"
+
+if [ ! -f "$COMMIT_MSG_FILE" ]; then
+  echo "commit-msg: commit message file not found: $COMMIT_MSG_FILE" >&2
+  exit 1
+fi
+
+# Strip comment lines (lines starting with #) and whitespace-only lines.
+MSG=$(grep -v '^#' "$COMMIT_MSG_FILE" | tr -d '[:space:]')
+
+if [ -z "$MSG" ]; then
+  echo "commit-msg: commit message is empty. Use 'git commit -m \"your message\"'." >&2
+  exit 1
+fi
+
+exit 0

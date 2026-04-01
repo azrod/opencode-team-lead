@@ -1,5 +1,21 @@
 # AGENTS.md — opencode-team-lead
 
+## Navigation
+
+Point d'entrée documentation : [`docs/index.md`](docs/index.md)
+
+| Type de contenu | Où chercher |
+|-----------------|-------------|
+| État des agents (implémentés / en conception) | `docs/index.md` |
+| Architecture du plugin | `docs/architecture.md` |
+| Décisions stratégiques | `docs/decisions.md` |
+| Specs des agents | `docs/specs/` |
+| ADRs | `docs/adr/` |
+| Templates de nouveaux fichiers | `docs/templates/` |
+| Docs narratifs humains (non agentiques) | `docs/background/` ← ne pas charger sauf recherche de contexte historique |
+
+> Les fichiers dans `docs/background/` sont des essais pour lecteurs humains, pas des contraintes actionnables.
+
 ## Project Overview
 
 `opencode-team-lead` is an OpenCode plugin that injects a "team-lead" orchestrator agent. The agent plans work, delegates everything to sub-agents, reviews results, and reports back. It never touches code directly.
@@ -267,6 +283,36 @@ CI (`.github/workflows/publish.yml`) triggers on `v*` tags and:
 - Creates a GitHub release with notes extracted from the CHANGELOG
 
 No manual npm publish. No tokens to manage. Tag it and forget it.
+
+## Enforcement Artifacts
+
+Patterns that have been encoded as mechanical checks. When you touch these areas, these checks will catch violations automatically.
+
+| Artifact | What it enforces | When it runs |
+|---|---|---|
+| `eslint.config.js` + `npm run lint` | `node:` protocol prefix on all built-in imports in `*.js` files | Manually / pre-PR |
+| `.github/workflows/checks.yml` job `zero-deps` | No `dependencies` or `devDependencies` in `package.json` | Every push + PR |
+| `.github/workflows/checks.yml` job `changelog-unreleased` | `## [Unreleased]` section must exist in `CHANGELOG.md` | Every push + PR |
+| `.git-hooks/commit-msg` | Commit message is non-empty (guards against `git commit` without `-m`) | On commit (after `sh .git-hooks/install.sh`) |
+| `docs/guiding-principles.md` | Non-interactive git, zero deps, user-facing CHANGELOG, default-deny permissions, external prompts | Human + Gardener review |
+
+### Installing the git hook
+
+The commit-msg hook is tracked in `.git-hooks/` but must be linked manually (`.git/hooks/` is not tracked by git):
+
+```bash
+sh .git-hooks/install.sh
+```
+
+Run once after cloning. The hook will then reject empty commit messages — the symptom of running `git commit` without `-m`.
+
+### Running the lint check
+
+```bash
+npm run lint
+```
+
+ESLint is run via `npx` — no install needed. The config is a flat `eslint.config.js` with an inline plugin (zero deps constraint respected).
 
 ## References
 
