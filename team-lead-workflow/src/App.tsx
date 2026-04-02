@@ -1106,7 +1106,7 @@ function VerdictBadge({ color, label, rest }: { color: string; label: string; re
   );
 }
 
-function FlowBullet({ icon, color, text }: { icon: string; color: string; text: string; nodeColor?: string }) {
+function FlowBullet({ icon, color, text }: { icon: string; color: string; text: string }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
       <span style={{ color, fontWeight: 700, fontSize: 14, marginTop: 2, flexShrink: 0 }}>{icon}</span>
@@ -1135,11 +1135,11 @@ function BulletItem({ item, nodeColor }: { item: string; nodeColor: string }) {
   if (item.startsWith("APPROVED")) return <VerdictBadge color="#16a34a" label="APPROVED" rest={item.slice(8)} />;
   if (item.startsWith("CHANGES_REQUESTED")) return <VerdictBadge color="#d97706" label="CHANGES" rest={item.slice(17)} />;
   if (item.startsWith("BLOCKED")) return <VerdictBadge color="#dc2626" label="BLOCKED" rest={item.slice(7)} />;
-  if (item.startsWith("OUI")) return <FlowBullet icon="→" color="#22c55e" text={item.slice(3)} nodeColor={nodeColor} />;
-  if (item.startsWith("NON")) return <FlowBullet icon="→" color="#6b7280" text={item.slice(3)} nodeColor={nodeColor} />;
-  if (item.startsWith("YES")) return <FlowBullet icon="→" color="#22c55e" text={item.slice(3)} nodeColor={nodeColor} />;
-  if (item.startsWith("NO →") || item.startsWith("NO ")) return <FlowBullet icon="→" color="#6b7280" text={item.slice(2)} nodeColor={nodeColor} />;
-  if (item.startsWith("OK →")) return <FlowBullet icon="→" color="#16a34a" text={item.slice(2)} nodeColor={nodeColor} />;
+  if (item.startsWith("OUI")) return <FlowBullet icon="→" color="#22c55e" text={item.slice(3)} />;
+  if (item.startsWith("NON")) return <FlowBullet icon="→" color="#6b7280" text={item.slice(3)} />;
+  if (item.startsWith("YES")) return <FlowBullet icon="→" color="#22c55e" text={item.slice(3)} />;
+  if (item.startsWith("NO →") || item.startsWith("NO ")) return <FlowBullet icon="→" color="#6b7280" text={item.slice(2)} />;
+  if (item.startsWith("OK →")) return <FlowBullet icon="→" color="#16a34a" text={item.slice(2)} />;
   return <NormalBullet item={item} nodeColor={nodeColor} />;
 }
 

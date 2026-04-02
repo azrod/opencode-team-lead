@@ -294,6 +294,7 @@ const SUBAGENT_DEFS = [
     variant: "max",
     mode: "all",
     color: "info",
+    silent: true,
     permission: {
       "*": "deny",
       task: "allow",
