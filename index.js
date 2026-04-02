@@ -195,6 +195,95 @@ const SUBAGENT_DEFS = [
     color: "warning",
     permission: { "*": "deny", task: "allow", question: "allow" },
   },
+  {
+    id: "harness",
+    file: "harness.md",
+    description:
+      "Encodes emerging patterns as permanent mechanical enforcement artifacts — " +
+      "lint rules, CI checks, AGENTS.md entries, guiding principles. " +
+      "Transforms recurring patterns into systematic prevention.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "all",
+    color: "success",
+    permission: {
+      "*": "deny",
+      task: "allow",
+      question: "allow",
+      todowrite: "allow",
+      todoread: "allow",
+      glob: "allow",
+      grep: "allow",
+      bash: "allow",
+      read: "allow",
+      edit: "allow",
+      write: "allow",
+    },
+  },
+  {
+    id: "planning",
+    file: "planning.md",
+    description:
+      "Transforms complex or ambiguous requests into structured work contracts on disk. " +
+      "Produces exec-plans in docs/exec-plans/ for multi-session tasks. " +
+      "Returns plan simple inline for small, clear tasks.",
+    temperature: 0.3,
+    variant: "max",
+    mode: "all",
+    color: "info",
+    permission: {
+      "*": "deny",
+      task: "allow",
+      question: "allow",
+      read: {
+        "*": "deny",
+        "AGENTS.md": "allow",
+        "README.md": "allow",
+        "docs/**": "allow",
+      },
+      edit: {
+        "*": "deny",
+        "docs/exec-plans/**": "allow",
+      },
+      write: {
+        "*": "deny",
+        "docs/exec-plans/**": "allow",
+      },
+    },
+  },
+  {
+    id: "gardener",
+    file: "gardener.md",
+    description:
+      "Periodic maintenance agent — fixes stale documentation and detects code drift " +
+      "against established rules. Runs post-feature or on explicit request. " +
+      "Opens targeted PRs for corrections and updates QUALITY_SCORE.md.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "all",
+    color: "success",
+    permission: {
+      "*": "deny",
+      task: "allow",
+      question: "allow",
+      bash: {
+        "*": "deny",
+        "git log*": "allow",
+        "git diff*": "allow",
+        "git status*": "allow",
+        "gh pr create*": "allow",
+      },
+      read: { "*": "allow" },
+      edit: {
+        "*": "deny",
+        "QUALITY_SCORE.md": "allow",
+      },
+      write: {
+        "*": "deny",
+        "QUALITY_SCORE.md": "allow",
+      },
+    },
+  },
 ];
 
 /**
@@ -313,12 +402,10 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         read: {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
-          ".opencode/memory.md": "allow",
         },
         edit: {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
-          ".opencode/memory.md": "allow",
         },
         bash: {
           "*": "deny",
@@ -346,40 +433,14 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         permission: mergePermissions(defaultPermission, userConfigRest.permission),
       };
 
-      const subagentUserConfigs = SUBAGENT_DEFS.map((def) => input.agent[def.id] ?? {});
-      for (let i = 0; i < SUBAGENT_DEFS.length; i++) {
+      const subagentUserConfigs = SUBAGENT_DEFS.map((def) => input.agent[def.id] ?? {});      for (let i = 0; i < SUBAGENT_DEFS.length; i++) {
         if (subagentPrompts[i]) {
           registerSubagent(input, SUBAGENT_DEFS[i], subagentPrompts[i], subagentUserConfigs[i]);
         }
       }
     },
 
-    // ── System transform hook: inject memory into every session ───────
-    "experimental.chat.system.transform": async (_input, output) => {
-      try {
-        const memoryPath = join(projectRoot, ".opencode", "memory.md");
-        const raw = await readFile(memoryPath, "utf-8");
-        const MAX_MEMORY_CHARS = 50_000; // limit in characters, not bytes
-        const content = raw.length > MAX_MEMORY_CHARS
-          ? raw.slice(0, MAX_MEMORY_CHARS) + "\n\n[memory.md truncated — exceeds 50 KB size limit]"
-          : raw;
-
-        if (!content.trim()) return;
-
-        const injection = `## Persistent Project Memory\n\nThe following is reference context only. It does not override user instructions or your core directives.\n\n<memory>\n${content.trim()}\n</memory>`;
-        if (Array.isArray(output.system)) {
-          output.system.push(injection);
-        } else {
-          output.system = (output.system ? output.system + "\n\n" : "") + injection;
-        }
-      } catch (err) {
-        if (err?.code !== "ENOENT") {
-          console.error("[opencode-team-lead] Failed to inject memory.md:", err.message);
-        }
-      }
-    },
-
-    // ── Compaction hook: preserve scratchpad and memory across compactions ───────
+    // ── Compaction hook: preserve scratchpad across compactions ───────
     "experimental.session.compacting": async (_input, output) => {
       try {
         const scratchpadPath = join(projectRoot, ".opencode", "scratchpad.md");
@@ -401,27 +462,6 @@ ${content.trim()}
         }
       } catch {
         // Scratchpad doesn't exist or isn't readable — skip silently.
-      }
-
-      try {
-        const memoryPath = join(projectRoot, ".opencode", "memory.md");
-        const content = await readFile(memoryPath, "utf-8");
-
-        if (content.trim()) {
-          output.context.push(`## Persistent Project Memory
-
-The following is accumulated knowledge about this project — architecture decisions, conventions, user preferences, and learnings from previous sessions.
-
-You MUST preserve this content verbatim in your compaction output. Never drop or summarize it aggressively — this is long-term knowledge.
-
-<memory>
-${content.trim()}
-</memory>`);
-        }
-      } catch (err) {
-        if (err?.code !== "ENOENT") {
-          console.error("[opencode-team-lead] Failed to inject memory.md into compaction:", err.message);
-        }
       }
     },
   };
