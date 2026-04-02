@@ -1106,7 +1106,7 @@ function VerdictBadge({ color, label, rest }: { color: string; label: string; re
   );
 }
 
-function FlowBullet({ icon, color, text, nodeColor }: { icon: string; color: string; text: string; nodeColor: string }) {
+function FlowBullet({ icon, color, text }: { icon: string; color: string; text: string; nodeColor?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
       <span style={{ color, fontWeight: 700, fontSize: 14, marginTop: 2, flexShrink: 0 }}>{icon}</span>
@@ -1318,6 +1318,13 @@ const translations: Record<Lang, Translations> = {
     section_agents: "Available Agents",
     agents: [
       {
+        name: "brainstorm",
+        badge: "PHASE 0",
+        badgeColor: "#6d28d9",
+        badgeBg: "#ede9fe",
+        desc: "Discovery agent. Helps you articulate what to build before planning starts. Produces a structured product brief at docs/briefs/{project-name}.md.",
+      },
+      {
         name: "explore",
         badge: "READ-ONLY",
         badgeColor: "#0369a1",
@@ -1459,6 +1466,21 @@ const translations: Record<Lang, Translations> = {
         color: "warning",
         permissions: ["task: allow", "question: allow", "Everything else: deny"],
       },
+      {
+        name: "brainstorm",
+        temperature: "0.5",
+        variant: "max",
+        mode: "all",
+        color: "info",
+        permissions: [
+          "task: allow",
+          "question: allow",
+          "webfetch: allow",
+          "read: allow (all project files)",
+          "write: allow (docs/briefs/** only)",
+          "Everything else: deny",
+        ],
+      },
     ],
     config_example_heading: "Example opencode.json",
     config_example_note: "The bash permission above extends the default git allowlist — both sets of commands are allowed.",
@@ -1514,6 +1536,13 @@ const translations: Record<Lang, Translations> = {
     ],
     section_agents: "Les agents disponibles",
     agents: [
+      {
+        name: "brainstorm",
+        badge: "PHASE 0",
+        badgeColor: "#6d28d9",
+        badgeBg: "#ede9fe",
+        desc: "Agent de découverte. Vous aide à articuler ce que vous voulez construire avant la planification. Produit un product brief dans docs/briefs/{project-name}.md.",
+      },
       {
         name: "explore",
         badge: "READ-ONLY",
@@ -1655,6 +1684,21 @@ const translations: Record<Lang, Translations> = {
         mode: "all",
         color: "warning",
         permissions: ["task: allow", "question: allow", "Tout le reste : deny"],
+      },
+      {
+        name: "brainstorm",
+        temperature: "0.5",
+        variant: "max",
+        mode: "all",
+        color: "info",
+        permissions: [
+          "task: allow",
+          "question: allow",
+          "webfetch: allow",
+          "read: allow (tous les fichiers du projet)",
+          "write: allow (docs/briefs/** uniquement)",
+          "Tout le reste : deny",
+        ],
       },
     ],
     config_example_heading: "Exemple opencode.json",

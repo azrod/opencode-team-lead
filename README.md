@@ -8,6 +8,7 @@ An [opencode](https://opencode.ai) plugin that installs **Orion**, a team-lead o
 - **Preserves the scratchpad across compactions** via the `experimental.session.compacting` hook — Orion's working memory (`.opencode/scratchpad.md`) is injected into the compaction prompt so mission state survives context resets
 - **Injects persistent memory into every session** via the `experimental.chat.system.transform` hook — project-level knowledge Orion accumulates in `.opencode/memory.md` (architecture decisions, conventions, user preferences) is automatically available from the first message of every session
 - **Registers the `review-manager` sub-agent** — a review orchestrator that spawns specialized reviewer agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Orion delegates all code reviews to it automatically.
+- **Registers the `brainstorm` agent** — a Phase 0 discovery agent that helps you articulate what you want to build before planning starts. Produces a structured product brief at `docs/briefs/{project-name}.md`. Visible in the agent list (`mode: "all"`).
 
 ## Installation
 
@@ -63,6 +64,20 @@ It works in 3 steps:
 3. **Synthesizes the verdict** — resolves disagreements, groups issues by severity, and returns a single structured review
 
 The review-manager never reviews code itself. It orchestrates reviewers, just like Orion orchestrates workers.
+
+### The brainstorm agent
+
+Run `brainstorm` before reaching out to Orion when you have a vague idea and want to explore it before committing to a plan.
+
+It runs a 3-phase conversational flow:
+
+1. **Discovery** — open-ended questions to surface the problem, users, and context
+2. **Deep dive** — probes the most uncertain or high-stakes aspects of the idea
+3. **Draft + validation** — proposes a structured product brief and confirms it with you before writing
+
+The output is a product brief written to `docs/briefs/{project-name}.md`. You can hand it directly to `planning` or to Orion as the first input of a new mission.
+
+Permission set: `task`, `question`, `webfetch` (for context research), `read` (all project files), `write` scoped to `docs/briefs/`. No bash access.
 
 ### The bug-finder agent
 

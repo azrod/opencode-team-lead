@@ -8,6 +8,7 @@ Décrit le comportement d'Orion une fois les agents `harness` et `planning` impl
 
 | Agent | Rôle | Mode | Spec |
 |-------|------|------|------|
+| `brainstorm` | Phase 0 discovery — aide l'utilisateur à formuler ce qu'il veut construire avant d'engager Orion. Produit un brief dans `docs/briefs/`. | user-facing | — |
 | `planning` | Compresse une requête ambiguë en brief structuré sur le disque | sub-agent | [planning-agent.md](planning-agent.md) |
 | `bug-finder` | Orchestre l'investigation de bugs, force root-cause avant fix | user-facing + sub-agent | — |
 | `review-manager` | Orchestre les reviewers spécialisés en parallèle | sub-agent | — |
