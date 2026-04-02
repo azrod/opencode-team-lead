@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Opens targeted PRs; updates `QUALITY_SCORE.md`; escalates recurring patterns to `harness`.
 - Orion now knows when to invoke `planning` (complex/ambiguous requests) and when to suggest `harness` post-delivery (recurring patterns).
 
+### Changed
+- Harness now operates fully autonomously — it explores the codebase, decides what to encode, and acts without asking for confirmation at each step. It only stops in three explicit cases: the pattern can't be mechanized, encoding requires creating a new workflow file, or the trigger is too vague with no codebase signal to anchor it.
+
 ### Fixed
 - Harness agent now has full `bash`, `read`, `write`, `edit`, `glob`, and `grep` permissions — previously it was registered with a restricted command allowlist and scoped file targets, which prevented it from running arbitrary lint commands or writing enforcement artifacts outside the predefined list.
 
