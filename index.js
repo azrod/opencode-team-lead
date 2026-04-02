@@ -284,6 +284,28 @@ const SUBAGENT_DEFS = [
       },
     },
   },
+  {
+    id: "brainstorm",
+    file: "brainstorm.md",
+    description:
+      "Brainstorming agent — helps you discover and articulate what you want to build " +
+      "before planning starts. Produces a product brief at docs/briefs/{project-name}.md.",
+    temperature: 0.5,
+    variant: "max",
+    mode: "all",
+    color: "info",
+    permission: {
+      "*": "deny",
+      task: "allow",
+      question: "allow",
+      webfetch: "allow",
+      read: "allow",
+      write: {
+        "*": "deny",
+        "docs/briefs/**": "allow",
+      },
+    },
+  },
 ];
 
 /**
