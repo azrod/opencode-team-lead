@@ -35,6 +35,9 @@ This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no 
 | `agents/code-reviewer.md` | System prompt for the code-reviewer agent — evaluates correctness, logic, error handling, and maintainability. |
 | `agents/security-reviewer.md` | System prompt for the security-reviewer agent — identifies vulnerabilities, misconfigurations, and data exposure risks. |
 | `agents/bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
+| `agents/harness.md` | System prompt for the harness agent — pattern enforcement agent that encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries, guiding principles). |
+| `agents/planning.md` | System prompt for the planning agent — transforms complex or ambiguous requests into structured exec-plans on disk. |
+| `agents/gardener.md` | System prompt for the gardener agent — periodic maintenance agent that fixes stale docs and detects code drift, then escalates recurring patterns to harness. |
 | `package.json` | Standard npm config. Ships `index.js`, the `agents/` directory (all agent prompts), and `README.md`. |
 | `.github/workflows/publish.yml` | CI: OIDC trusted publishing to npm on `v*` tags, plus GitHub release creation. |
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
@@ -47,6 +50,9 @@ This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no 
    - **`review-manager`** — Review orchestrator, runs as a sub-agent only (`mode: "subagent"`). Permissions: `task`, `question` only. Temperature 0.2, variant `max`. Registered only if `review-manager.md` loads successfully — the team-lead still works without it.
    - **`requirements-reviewer`**, **`code-reviewer`**, **`security-reviewer`** — Specialized reviewers, sub-agent only. Each has `task: "allow"` only. Registered gracefully — missing files are skipped silently.
    - **`bug-finder`** — Bug investigation orchestrator, visible to user (`mode: "all"`). Permissions: `task`, `question` only. Temperature 0.2. Registered gracefully.
+   - **`harness`** — Pattern enforcement agent, visible to user (`mode: "all"`). Permissions: full `bash`, `read`, `write`, `edit`, `glob`, `grep`, `task`, `question`, `todowrite`, `todoread`. Temperature 0.2. Registered gracefully — missing file skipped silently.
+   - **`planning`** — Work contract agent, visible to user (`mode: "all"`). Permissions: `task`, `question`, `read` (docs + AGENTS.md), `write`/`edit` (exec-plans only). Temperature 0.3. Registered gracefully.
+   - **`gardener`** — Maintenance agent, visible to user (`mode: "all"`). Permissions: `task`, `question`, limited `bash` (git + gh), `read` all, `write`/`edit` (QUALITY_SCORE.md). Temperature 0.2. Registered gracefully.
 
 2. **`experimental.session.compacting` hook** — Reads both `.opencode/scratchpad.md` and `.opencode/memory.md` and injects them into the compaction context, so working memory and persistent project knowledge survive context resets.
 

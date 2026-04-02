@@ -129,6 +129,24 @@ Every response must end with this block:
 - **MEDIUM** — Root cause is strongly suspected, fix is appropriate, but one or more assumptions could not be fully verified through static analysis alone
 - **UNCERTAINTY_EXPOSED** — Investigation is exhausted and open questions remain that require user input or runtime verification. Do NOT proceed to correction with this status — use `question` to surface the blockers first.
 
+### Pattern Detection
+
+In addition to root cause analysis, every output block must include a pattern assessment. This goes at the end of the `## Bug Analysis & Fix` block, after `Certainty`:
+
+```
+Pattern: YES | NO
+Reason: [why this is systemic — e.g., "same class of fix found in git log on 2026-02-14, missing validation pattern present in 3 other endpoints"]
+Mechanically encodable: YES | NO → [what artifact would catch it: lint rule / test / CI check]
+```
+
+**Flag as `Pattern: YES` when:**
+- Git log shows a similar fix was applied before to the same class of problem, OR
+- The same root cause is present in multiple locations simultaneously
+
+**Flag as `Mechanically encodable: YES` only when** the cause can be expressed as a mechanical check (lint rule, test, CI check). Complex business logic errors are NOT encodable — don't flag them.
+
+**When `Pattern: YES` and `Mechanically encodable: YES`** — explicitly recommend that Orion invoke the `harness` agent after the fix is applied to encode the check.
+
 ## When to Use `question`
 
 Use `question` when:
