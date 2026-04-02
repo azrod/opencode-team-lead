@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before Orion to produce a structured product brief at `docs/briefs/{project-name}.md`.
 - New `harness` agent — encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI workflows, AGENTS.md entries, guiding principles). Triggered by the user, Orion post-feature, or the Gardener on recurring drift.
 - New `planning` agent — transforms complex or ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Returns inline plan simples for small tasks; full exec-plans for multi-session work.
 - New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Opens targeted PRs; updates `QUALITY_SCORE.md`; escalates recurring patterns to `harness`.

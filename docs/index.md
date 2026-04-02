@@ -14,6 +14,7 @@ Plugin OpenCode qui injecte Orion, un orchestrateur team-lead qui planifie, dél
 | `code-reviewer` | subagent | Correctness, logique, maintenabilité |
 | `security-reviewer` | subagent | Vulnérabilités, misconfigs, exposition de données |
 | `bug-finder` | all | Investigation de bugs avec analyse root-cause |
+| `brainstorm` | all | Phase 0 — aide l'utilisateur à découvrir ce qu'il veut construire, produit un product brief dans `docs/briefs/` |
 | `harness` | all | Encode les patterns récurrents en règles mécaniques (lint, CI, AGENTS.md) |
 | `planning` | all | Transforme les requêtes complexes en contrats de travail sur disque |
 | `gardener` | all | Maintenance périodique — docs stales et drift de code |

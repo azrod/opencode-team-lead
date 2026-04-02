@@ -48,6 +48,9 @@ Résultat : la mémoire projet est disponible dès le premier message de chaque 
 │  ┌──────────────┐                                              │
 │  │  bug-finder  │ (mode: all — visible utilisateur)            │
 │  └──────────────┘                                              │
+│  ┌──────────────┐                                              │
+│  │  brainstorm  │ (mode: all — phase 0, avant Orion)           │
+│  └──────────────┘                                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -59,6 +62,7 @@ Résultat : la mémoire projet est disponible dès le premier message de chaque 
 | `code-reviewer` | `subagent` | 0.2 | max | Qualité technique : logique, gestion d'erreurs, API design. |
 | `security-reviewer` | `subagent` | 0.1 | max | Vulnérabilités, mauvaises configs, exposition de données. |
 | `bug-finder` | `all` | 0.2 | max | Investigation structurée de bugs. Force l'analyse root-cause avant toute correction. |
+| `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
 
 Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`silent: true`) — un fichier manquant ne fait pas planter le plugin.
 
@@ -82,6 +86,8 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 
 **bug-finder** : `task` + `question` uniquement.
 
+**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `write` (`docs/briefs/**` uniquement). Pas de bash.
+
 La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
 
 ## La mémoire persistante
@@ -104,6 +110,7 @@ Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`,
 - `agents/prompt.md` → team-lead (Orion)
 - `agents/review-manager.md` → review-manager
 - `agents/requirements-reviewer.md`, `agents/code-reviewer.md`, `agents/security-reviewer.md`, `agents/bug-finder.md` → reviewers + bug-finder
+- `agents/brainstorm.md` → brainstorm
 
 Avantage : les prompts sont modifiables et diffables indépendamment du code.
 
