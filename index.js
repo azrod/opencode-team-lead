@@ -294,13 +294,12 @@ const SUBAGENT_DEFS = [
     variant: "max",
     mode: "all",
     color: "info",
-    silent: true,
     permission: {
       "*": "deny",
       task: "allow",
       question: "allow",
       webfetch: "allow",
-      read: "allow",
+      read: { "*": "allow" },
       write: {
         "*": "deny",
         "docs/briefs/**": "allow",
