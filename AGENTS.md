@@ -23,7 +23,7 @@ Point d'entrée documentation : [`docs/index.md`](docs/index.md)
 
 `opencode-team-lead` is an OpenCode plugin that injects a "team-lead" orchestrator agent. The agent plans work, delegates everything to sub-agents, reviews results, and reports back. It never touches code directly.
 
-This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no build step, no tests.
+This is a tiny project — zero dependencies, pure ESM, no build step, no tests. The following files constitute the meaningful surface area of the plugin:
 
 ## Architecture
 
@@ -31,7 +31,7 @@ This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no 
 
 | File | Role |
 |------|------|
-| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers the agent) and `experimental.session.compacting` (preserves scratchpad across context resets). |
+| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers agents) and `experimental.session.compacting` (preserves scratchpad across context resets). |
 | `agents/prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
 | `agents/review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
 | `agents/requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
@@ -47,28 +47,21 @@ This is a tiny project — 11 meaningful files, zero dependencies, pure ESM, no 
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
 | `README.md` | User-facing docs — installation, usage, permissions. |
 
+Full technical details: [`docs/architecture.md`](docs/architecture.md)
+
 ### How the plugin works
 
-1. **`config` hook** — Injects agent definitions into OpenCode's config:
-   - **`team-lead`** — The orchestrator. Permissions: deny-all except `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `read`/`edit` restricted to `.opencode/scratchpad.md` and `.opencode/memory.md`, and git-only bash. Temperature 0.3, variant `max`, mode `all`.
-   - **`review-manager`** — Review orchestrator, runs as a sub-agent only (`mode: "subagent"`). Permissions: `task`, `question` only. Temperature 0.2, variant `max`. Registered only if `review-manager.md` loads successfully — the team-lead still works without it.
-   - **`requirements-reviewer`**, **`code-reviewer`**, **`security-reviewer`** — Specialized reviewers, sub-agent only. Each has `task: "allow"` only. Registered gracefully — missing files are skipped silently.
-   - **`bug-finder`** — Bug investigation orchestrator, visible to user (`mode: "all"`). Permissions: `task`, `question` only. Temperature 0.2. Registered gracefully.
-   - **`harness`** — Pattern enforcement agent, visible to user (`mode: "all"`). Permissions: full `bash`, `read`, `write`, `edit`, `glob`, `grep`, `task`, `question`, `todowrite`, `todoread`. Temperature 0.2. Registered gracefully — missing file skipped silently.
-   - **`planning`** — Work contract agent, visible to user (`mode: "all"`). Permissions: `task`, `question`, `read` (docs + AGENTS.md), `write`/`edit` (exec-plans only). Temperature 0.3. Registered gracefully.
-   - **`gardener`** — Maintenance agent, visible to user (`mode: "all"`). Permissions: `task`, `question`, limited `bash` (git + gh), `read` all, `write`/`edit` (QUALITY_SCORE.md). Temperature 0.2. Registered gracefully.
-   - **`brainstorm`** — Discovery agent, visible to user (`mode: "all"`). Permissions: `task`, `question`, `webfetch`, `read` (all project files), `write` (docs/briefs/ only). No bash. Temperature 0.5 (higher variance for open-ended discovery). Registered gracefully — missing file skipped silently.
-
-2. **`experimental.session.compacting` hook** — Reads both `.opencode/scratchpad.md` and `.opencode/memory.md` and injects them into the compaction context, so working memory and persistent project knowledge survive context resets.
-
-3. **`experimental.chat.system.transform` hook** — Fires before every LLM call. Reads `.opencode/memory.md` from the project root and injects it into `output.system` (handles both array and string forms). Truncates at 50 KB. Silent on ENOENT — no error if the file doesn't exist yet.
+1. **`config` hook** — Injects all agent definitions into OpenCode's config, merging user overrides from `opencode.json` on top of plugin defaults. The `prompt` is always provided by the plugin and cannot be overridden.
+2. **`experimental.session.compacting` hook** — Reads `.opencode/scratchpad.md` and injects it into the compaction context, so working state survives context resets.
 
 ### Key design decisions
 
-- The permission set is intentionally restrictive — the agent can only delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), and run basic git commands.
-- `agents/prompt.md` is loaded at plugin init time via `readFile`, not inlined in `index.js`. This keeps the prompt editable and diffable.
-- The plugin merges user config from `opencode.json` instead of overwriting it. Users can override `temperature`, `color`, `variant`, `mode` and add/override permissions; the merge applies plugin defaults first, then user overrides on top via spread order. The `prompt` is always provided by the plugin and cannot be overridden.
-- The review-manager uses nested sub-agent delegation (team-lead → review-manager → reviewer agents). OpenCode supports unlimited nesting depth as long as each level has `task: "allow"`. The review-manager runs with `mode: "subagent"` so it only appears as a sub-agent, never in the main agent list.
+- Permissions are deny-all by default — the team-lead can only delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), and run basic git commands. This forces delegation rather than direct file access.
+- Agent prompts are loaded from `agents/*.md` at init time via `readFile`, not inlined — keeps them editable and diffable independently of the code.
+- The plugin merges user config without overwriting it — users can override `temperature`, `color`, `variant`, `mode`, and add permissions.
+- The review-manager uses nested delegation (team-lead → review-manager → reviewers) and runs as `mode: "subagent"` — invisible to the user, only reachable via `task`.
+
+For the rationale behind these decisions, see [`docs/decisions.md`](docs/decisions.md) and [`docs/guiding-principles.md`](docs/guiding-principles.md).
 
 ## Website (Documentation)
 
@@ -298,6 +291,8 @@ No manual npm publish. No tokens to manage. Tag it and forget it.
 ## Enforcement Artifacts
 
 Patterns that have been encoded as mechanical checks. When you touch these areas, these checks will catch violations automatically.
+
+For the principles behind these rules, see [`docs/guiding-principles.md`](docs/guiding-principles.md).
 
 | Artifact | What it enforces | When it runs |
 |---|---|---|
