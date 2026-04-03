@@ -1,7 +1,7 @@
 # Spec : Agent `harness`
 
 **Statut :** draft  
-**Mis à jour :** 2026-03-31
+**Mis à jour :** 2026-04-03
 
 ## Résumé
 
@@ -47,10 +47,14 @@ Sélectionner l'artefact le plus mécanique possible :
 |---------|-----------------|
 | Convention syntaxique ou structurelle | Lint custom (eslint rule, ruff plugin, etc.) |
 | Contrainte de build / CI | Workflow GitHub Actions |
-| Règle de navigation agentique | Entrée dans `AGENTS.md` |
+| Comment les agents naviguent ou délèguent dans CE repo | Entrée dans `AGENTS.md` — uniquement pour les règles de comportement agentique (quel agent appeler, quels patterns suivre dans les prompts, comment interpréter les conventions du projet). JAMAIS pour des checklists opérationnelles humaines — même si l'action en question implique des agents. |
 | Principe architectural non-mécanisable | Entrée dans `docs/guiding-principles.md` |
 
 Règle : si ça peut être vérifié mécaniquement → lint ou CI. Jamais un document quand un check suffit.
+
+**Le piège de la checklist.** Si tu te retrouves à écrire un bullet point qui prescrit une action manuelle humaine — quelque chose que quelqu'un doit se rappeler de faire lui-même — plutôt que de décrire un check automatique, arrête. Exemples : "vérifier X avant de merger", "toujours lancer le scan", "checker les trois chemins" — tout ça c'est de la documentation. Convertis-la : un job CI qui exécute le check automatiquement, une règle lint qui détecte la violation au commit, un git hook avant le push. Si rien de tout ça n'est faisable, le pattern va dans `docs/guiding-principles.md` — jamais dans `AGENTS.md`.
+
+**Un script n'est pas un artefact d'enforcement sauf s'il est déclenché automatiquement.** Un script de validation que les humains exécutent manuellement est un outil de confort, pas de l'enforcement. Pour qu'un script compte comme artefact mécanique, il doit être appelé automatiquement — depuis un job CI, un git hook, ou un pre-commit. Quand tu crées un script de validation, tu dois toujours le câbler dans un déclencheur automatique dans la même PR.
 
 ### Étape 3 — Génération de l'artefact
 
@@ -89,6 +93,8 @@ Règle : si ça peut être vérifié mécaniquement → lint ou CI. Jamais un do
 - Ne fait pas de setup from scratch (→ rôle initial d'Orion)
 - N'ouvre pas de PR sans avoir testé la règle
 - Ne re-vérifie pas les artefacts existants — leur exécution est assurée par la chaîne de dev
+- N'écrit pas de checklists humaines dans `AGENTS.md` — AGENTS.md est exclusivement pour les règles de navigation et délégation agentique. Les règles opérationnelles humaines vont en CI si automatisables, en `docs/guiding-principles.md` sinon.
+- Ne valide pas un script existant non-câblé comme artefact d'enforcement — un script sans déclencheur automatique n'est pas de l'enforcement, peu importe qu'il existe déjà dans le repo. L'action correcte est de le câbler dans un déclencheur automatique dans la même PR.
 
 ---
 

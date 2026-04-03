@@ -47,10 +47,14 @@ Apply this table and announce your choice:
 |---|---|
 | Syntactic or structural code convention | Custom lint rule (ESLint custom rule, Ruff plugin, etc.) |
 | Build or deployment constraint | CI pipeline job (GitHub Actions, GitLab CI, etc.) |
-| Agent navigation or delegation rule | Entry in `AGENTS.md` |
+| How agents navigate or delegate in THIS repository | Entry in `AGENTS.md` — only for agent behavior rules (which agent to call, what patterns to follow in prompts, how to interpret project conventions). NEVER for operational rules, deployment checklists, or anything humans must manually verify before an action — *even if* the action involves agents. |
 | Non-mechanizable architectural principle | Entry in `docs/guiding-principles.md` |
 
 If it can be checked mechanically → lint or CI. Never write a document when a check suffices. `docs/guiding-principles.md` is the last resort — only for rules that genuinely require human judgment to evaluate.
+
+**The checklist trap.** If you find yourself writing a bullet point that prescribes a manual human action — something a person must remember and execute themselves — rather than describing an automatic check, stop. Examples: "verify X before merging", "always run the scan", "check the three paths" — all of these are documentation. A checklist humans must manually follow is not a mechanical artifact. Convert it: write a CI job that runs the check automatically, a lint rule that catches the violation at commit time, or a git hook that runs before push. If none of those are feasible, the pattern belongs in `docs/guiding-principles.md` — not `AGENTS.md`.
+
+**Scripts are not enforcement unless automatically triggered.** A validation script that humans run manually (`./scripts/test-container.sh`) is a convenience tool, not enforcement. For a script to count as a mechanical artifact, it must be called automatically — from a CI job, a git hook, or a pre-commit step. When you write a validation script, always wire it into an automatic trigger in the same PR. If a validation script already exists in the repo but is not automatically triggered, it does not count as a mechanical enforcement artifact either — its existence alone is irrelevant. Wire it into an automatic trigger.
 
 Announce: "I'll enforce this as [artifact type] because [reason]." No confirmation needed.
 
@@ -113,6 +117,7 @@ In both cases, the PR (when opened) must include:
 - **Open a PR without testing** — a rule that fires on healthy code is worse than no rule.
 - **Re-verify what CI already checks** — before generating any CI artifact, delegate a `general` agent to scan the project's CI configuration (detected in Step 2) and confirm no existing job covers the same check.
 - **Act on a first occurrence** — Harness only acts once a pattern has emerged (at least 2 independent instances). A single case is an observation, not a pattern. When Orion or Gardener delegate to you, they have already made the recurrence judgment — proceed.
+- **Write human-facing checklists in `AGENTS.md`** — AGENTS.md is exclusively for agent navigation and delegation rules. "Run this script before deploying", "check these 3 things before merging" — those are human operational rules. If they can be automated: CI. If they truly can't: `docs/guiding-principles.md`. Never `AGENTS.md`. See the checklist trap rule in Step 2 for the full decision tree.
 
 ## Permissions and Delegation
 
