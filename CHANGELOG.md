@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Harness agent now has full `bash`, `read`, `write`, `edit`, `glob`, and `grep` permissions — previously it was registered with a restricted command allowlist and scoped file targets, which prevented it from running arbitrary lint commands or writing enforcement artifacts outside the predefined list.
+- The harness agent no longer writes human-facing checklists to `AGENTS.md` — it now correctly identifies them as documentation and routes them to CI checks or `docs/guiding-principles.md` instead. An unwired script in the repo is also no longer treated as a valid enforcement artifact.
 
 ### Removed
 - `memory.md` concept removed — the persistent project memory feature has been deprecated. The `experimental.chat.system.transform` hook and memory.md injections have been removed from the plugin. Only the scratchpad survives compaction.
