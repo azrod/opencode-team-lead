@@ -1,142 +1,123 @@
 # opencode-team-lead
 
-An [opencode](https://opencode.ai) plugin that installs **Orion**, a team-lead orchestrator agent — a pure delegation layer that plans work, dispatches it to specialized sub-agents, reviews results, and reports back.
+[![npm version](https://img.shields.io/npm/v/opencode-team-lead)](https://www.npmjs.com/package/opencode-team-lead)
+[![license](https://img.shields.io/npm/l/opencode-team-lead)](https://github.com/azrod/opencode-team-lead/blob/main/LICENSE)
+
+An [OpenCode](https://opencode.ai) plugin that installs **Orion**, a team-lead orchestrator, and a full suite of specialized sub-agents. Orion plans work, delegates everything to sub-agents, reviews results, and reports back. It never reads or writes files directly.
 
 ## What it does
 
-- **Injects the `team-lead` agent** via the `config` hook — with a locked-down permission set (no file I/O, no bash except git), `temperature: 0.3`, variant `max`
-- **Preserves the scratchpad across compactions** via the `experimental.session.compacting` hook — Orion's working memory (`.opencode/scratchpad.md`) is injected into the compaction prompt so mission state survives context resets
-- **Injects persistent memory into every session** via the `experimental.chat.system.transform` hook — project-level knowledge Orion accumulates in `.opencode/memory.md` (architecture decisions, conventions, user preferences) is automatically available from the first message of every session
-- **Registers the `review-manager` sub-agent** — a review orchestrator that spawns specialized reviewer agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Orion delegates all code reviews to it automatically.
-- **Registers the `brainstorm` agent** — a Phase 0 discovery agent that helps you articulate what you want to build before planning starts. Produces a structured product brief at `docs/briefs/{project-name}.md`. Visible in the agent list (`mode: "all"`).
+Two hooks power the plugin:
+
+- **`config`** — registers all agents into OpenCode's config, merging your overrides from `opencode.json` on top of plugin defaults
+- **`experimental.session.compacting`** — injects `.opencode/scratchpad.md` into the compaction context so Orion's working state survives context resets
+
+## Agents
+
+| Agent | Role |
+|-------|------|
+| `team-lead` (Orion) | Pure orchestrator — understands, plans, delegates, reviews, synthesizes. Never touches code. |
+| `review-manager` | Spawns specialized reviewers in parallel, arbitrates disagreements, returns a single structured verdict |
+| `requirements-reviewer` | Verifies implementation matches the original requirements |
+| `code-reviewer` | Evaluates correctness, logic, error handling, and maintainability |
+| `security-reviewer` | Identifies vulnerabilities, misconfigurations, and data exposure risks |
+| `bug-finder` | Structured bug investigation — forces root-cause analysis before any fix |
+| `brainstorm` | Phase 0 thinking partner — helps articulate what you want to build before planning starts |
+| `harness` | Encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries) |
+| `planning` | Transforms complex or ambiguous requests into structured exec-plans written to disk |
+| `gardener` | Periodic maintenance — fixes stale docs, detects code drift, escalates patterns to harness |
+
+### Orion's workflow
+
+1. **Understand** — asks clarifying questions if the request is ambiguous
+2. **Plan** — breaks work into tasks using `todowrite`
+3. **Delegate** — dispatches sub-agents (`explore`, `general`, or specialized personas)
+4. **Review** — every code change goes through the `review-manager`, which spawns reviewers in parallel
+5. **Synthesize** — consolidates results and reports back
+
+### Review cluster
+
+`review-manager`, `requirements-reviewer`, `code-reviewer`, and `security-reviewer` work together. Orion delegates to `review-manager`, which selects the relevant reviewers based on what changed, runs them in parallel, and returns a single verdict. None of these agents are visible in the main agent list — they're only reachable via `task`.
+
+### bug-finder
+
+Enforces a structured investigation workflow: frames the symptom vs. root cause, investigates via `explore` sub-agents, evaluates fix alternatives, then delegates the actual fix to a `general` sub-agent with full analysis context. Cardinal rule: never apply a workaround that masks the root cause.
+
+### brainstorm
+
+Run before Orion when you have a vague idea. Runs a 3-phase conversational flow (discovery → deep dive → draft) and produces a product brief at `docs/briefs/{project-name}.md`. Hand it to `planning` or directly to Orion as mission input.
+
+### harness
+
+When a pattern recurs (a mistake that keeps happening, a convention that keeps being missed), harness codifies it as a mechanical check — an ESLint rule, a CI job, an AGENTS.md entry — so humans and agents stop relying on memory to enforce it.
+
+### planning
+
+Takes a complex or ambiguous request and writes a structured exec-plan to `docs/exec-plans/`. Useful before handing a large task to Orion, or when you want a reviewable plan before any work starts.
+
+### gardener
+
+Periodic hygiene agent. Reads docs and code, spots drift (docs that describe deleted features, patterns that have evolved, stale TODOs), fixes what it can, and escalates recurring issues to harness.
 
 ## Installation
 
-Add to your OpenCode config:
+```bash
+npm install -g opencode-team-lead
+```
 
-```jsonc
-// opencode.json
+Add to your `opencode.json`:
+
+```json
 {
-  "plugin": [
-    "opencode-team-lead@latest",
-    "@tarquinen/opencode-dcp@latest"
-  ]
+  "plugin": ["opencode-team-lead"]
 }
 ```
 
-Using `@latest` ensures you always get the newest version automatically when OpenCode starts.
+Use `opencode-team-lead@beta` to track the beta channel.
 
-To install the latest beta, use `"opencode-team-lead@beta"` instead of `@latest` in your config.
+Restart OpenCode — the plugin loads and registers all agents automatically.
 
-Restart OpenCode. The plugin will automatically install and register the team-lead agent.
+## Scratchpad
 
-Orion relies on [`opencode-dynamic-context-pruning`](https://github.com/Opencode-DCP/opencode-dynamic-context-pruning) for context window management. The DCP plugin provides `distill`, `prune`, and `compress` tools that the agent uses to condense verbose outputs and discard irrelevant tool calls — keeping the context clean across long sessions.
+Orion maintains `.opencode/scratchpad.md` in the project root. It contains the current mission, plan, delegated tasks, agent results, decisions, and enough context to resume after a crash or reset.
 
-## Orion (team-lead agent)
+The `experimental.session.compacting` hook injects this file into compaction so its content survives context resets. Orion reads it on resume — no re-briefing needed.
 
-Orion never touches code directly. It:
-
-1. **Understands** the user's request (asks clarifying questions if needed)
-2. **Plans** the work using `todowrite`
-3. **Delegates** everything to specialized sub-agents (`explore`, `general`, or custom personas like `backend-engineer`, `security-auditor`, etc.)
-4. **Reviews** every code change by delegating to the `review-manager`, which spawns specialized reviewers in parallel and arbitrates their verdicts
-5. **Synthesizes** results and reports back
-
-### Scratchpad
-
-Orion maintains a working memory file at `.opencode/scratchpad.md` in the project root. This survives context compaction — when the agent loses in-memory context, it reads the scratchpad to resume where it left off.
-
-### Persistent Memory
-
-Orion also maintains `.opencode/memory.md` — a project-level knowledge base that persists across all sessions. Unlike the scratchpad (which is mission-scoped and overwritten each mission), memory accumulates indefinitely.
-
-Orion writes to it at the end of missions when it discovers something worth preserving: build commands, architecture patterns, user preferences, recurring conventions. The plugin injects it automatically — no action needed on your part.
-
-Commit `.opencode/memory.md` to your repository to share it with your team.
-
-### The review-manager agent
-
-The review-manager is a sub-agent — it's never visible in the main agent list. Orion delegates reviews to it automatically.
-
-It works in 3 steps:
-1. **Selects reviewers** based on what changed (code quality, security, UX, infrastructure, etc.)
-2. **Spawns them in parallel** — each reviewer gets a focused brief and works independently
-3. **Synthesizes the verdict** — resolves disagreements, groups issues by severity, and returns a single structured review
-
-The review-manager never reviews code itself. It orchestrates reviewers, just like Orion orchestrates workers.
-
-### The brainstorm agent
-
-Run `brainstorm` before reaching out to Orion when you have a vague idea and want to explore it before committing to a plan.
-
-It runs a 3-phase conversational flow:
-
-1. **Discovery** — open-ended questions to surface the problem, users, and context
-2. **Deep dive** — probes the most uncertain or high-stakes aspects of the idea
-3. **Draft + validation** — proposes a structured product brief and confirms it with you before writing
-
-The output is a product brief written to `docs/briefs/{project-name}.md`. You can hand it directly to `planning` or to Orion as the first input of a new mission.
-
-Permission set: `task`, `question`, `webfetch` (for context research), `read` (all project files), `write` scoped to `docs/briefs/`. No bash access.
-
-### The bug-finder agent
-
-Unlike a general agent that will try to fix a bug as fast as possible, the bug-finder enforces a structured investigation workflow:
-
-1. **FRAMING** — separates symptom from root cause
-2. **INVESTIGATION** — delegates exploration to `explore` sub-agents to locate the source of truth
-3. **ALTERNATIVES** — evaluates multiple fix approaches before choosing
-4. **CORRECTION** — delegates the actual fix to a `general` sub-agent with full analysis context
-5. **DELIVERY** — returns a `## Bug Analysis & Fix` block with severity, root cause, rejected alternatives, and certainty level
-
-The agent's cardinal rule: never apply a workaround that masks the root cause. If the real fix requires touching foundational code, it says so instead of papering over the symptom.
-
-The agent's permission set is minimal: `task` (to delegate investigation and correction to sub-agents) and `question` (to surface uncertainty to the user). All file access is denied — it never touches code directly.
+The scratchpad is ephemeral: overwritten at the start of each new mission. It's not a journal.
 
 ## Permissions
 
-The agent has a minimal permission set:
+| Agent | Permissions |
+|-------|-------------|
+| `team-lead` | `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `bash` (git: status, diff, log, add, commit, push, tag), `read`/`edit` (`.opencode/scratchpad.md` only) |
+| `review-manager` | `task`, `question` |
+| `requirements-reviewer` / `code-reviewer` / `security-reviewer` | `task` |
+| `bug-finder` | `task`, `question` |
+| `brainstorm` | `task`, `question`, `webfetch`, `read` (all), `write` (`docs/briefs/**` only) |
+| `harness` | `task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all), `write` (all) |
+| `planning` | `task`, `question`, `read` (AGENTS.md, README.md, `docs/**`), `edit`/`write` (`docs/exec-plans/**` only) |
+| `gardener` | `task`, `question`, `bash` (git log/diff/status, gh pr create), `read` (all), `edit`/`write` (`QUALITY_SCORE.md` only) |
 
-| Tool | Access |
-|------|--------|
-| `task` | allow |
-| `todowrite` / `todoread` | allow |
-| `skill` | allow |
-| `question` | allow |
-| `distill` / `prune` / `compress` | allow |
-| `bash` (git only) | allow |
-| `read` / `edit` (`.opencode/scratchpad.md`, `.opencode/memory.md`) | allow |
-| Everything else | deny |
-
-The `review-manager` sub-agent has a minimal permission set: `task` (to spawn reviewers) and `question`. It inherits no file or bash access.
+Everything not listed is denied.
 
 ## Customization
 
-You can override agent properties in your `opencode.json` — `temperature`, `color`, `variant`, `mode`, and additional permissions are all fair game:
+You can override `temperature`, `color`, `variant`, `mode`, and add permissions for any agent. The system prompt is always provided by the plugin and cannot be overridden.
 
-```jsonc
-// opencode.json
+```json
 {
-  "agent": {
+  "plugin": ["opencode-team-lead"],
+  "agents": {
     "team-lead": {
-      "temperature": 0.5,
-      "color": "#FF5733",
-      "permission": {
-        "webfetch": "allow",
-        "my_custom_tool": "allow"
-      }
+      "temperature": 0.2
     }
   }
 }
 ```
 
-Your overrides are merged on top of the plugin defaults — anything you don't specify keeps its default value. Permissions work the same way: the plugin's built-in permissions stay intact, and yours are added (or override specific entries).
+Your overrides are merged on top of plugin defaults — anything you don't specify keeps its default value.
 
-The system prompt is always provided by the plugin and cannot be overridden.
-
-The `review-manager` agent can be customized the same way — override `temperature`, `color`, or add permissions under `"review-manager"` in the `agent` block.
-
-To always start sessions with the team-lead agent, set it as the default in your `opencode.json`:
+To start sessions in the team-lead agent by default:
 
 ```json
 {
