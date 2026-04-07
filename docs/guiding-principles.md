@@ -122,3 +122,140 @@ const prompt = `You are Orion...
 **Threshold blocker:** A PR that moves agent prompt content into `index.js` as a string. Reject — extract to `agents/<name>.md`.
 
 **Threshold warning:** An agent prompt file that exceeds 600 lines without a clear structural reason. Consider splitting into focused sections or extracting shared boilerplate to a separate file.
+
+---
+
+## Principle: Agent prompt files do not declare permissions
+
+Permissions for every agent are declared exclusively in `index.js` via the `SUBAGENT_DEFS` array. An `agents/*.md` file must never contain a `## Permissions` section. Such a section is purely documentary — it has no effect on what the agent can actually do — and it diverges from the real enforcement in `index.js`. Stale or incorrect permission docs are worse than no docs.
+
+**Good:**
+```markdown
+<!-- agents/my-agent.md — no permissions section -->
+## Role
+
+You are a specialist agent that...
+
+## Workflow
+
+1. Receive task from orchestrator
+2. ...
+```
+
+**Bad:**
+```markdown
+<!-- agents/my-agent.md — permissions section present -->
+## Permissions
+
+- task: allow
+- todowrite: allow
+
+## Role
+
+You are a specialist agent that...
+```
+
+**Threshold blocker:** Any PR that adds a `## Permissions` section to any file under `agents/`. This is caught automatically by the `no-permissions-in-agent-prompts` CI check — do not merge until the section is removed.
+
+---
+
+## Principle: Product briefs follow a verifiable schema
+
+Briefs produced by the brainstorm agent are consumed by downstream agents — Planning uses them to generate exec-plans, and Orion uses them to scope delegated work. A brief missing required frontmatter fields or section headings is not machine-actionable: a downstream agent cannot reliably extract the project name, scope, or success criteria without a predictable structure. The schema enforces the minimum structural contract. Content quality — whether the Vision is compelling, whether the Use Cases are realistic — remains the brainstorm agent's responsibility and is not checked here.
+
+**Good:**
+```markdown
+---
+project: "api-usage-dashboard"
+type: tool
+status: draft
+created: 2026-04-03
+updated: 2026-04-03
+---
+
+## Problem
+...
+
+## Vision
+...
+
+## Users
+...
+
+## Core Use Cases
+...
+
+## Success Criteria
+...
+
+## Scope
+...
+```
+
+**Bad:**
+```markdown
+---
+project: "api-usage-dashboard"
+type: tool
+status: draft
+created: 2026-04-03
+---
+
+## Problem
+...
+
+## Vision
+...
+
+## Users
+...
+
+## Core Use Cases
+...
+
+## Success Criteria
+...
+```
+*(Missing `updated:` frontmatter field and `## Scope` section — this brief would be rejected by CI.)*
+
+**Threshold blocker:** A brief file in `docs/briefs/` that is missing any of the 6 required sections (`## Problem`, `## Vision`, `## Users`, `## Core Use Cases`, `## Success Criteria`, `## Scope`) or any of the 5 required frontmatter fields (`project:`, `type:`, `status:`, `created:`, `updated:`). Caught automatically by the `brief-schema` CI check.
+
+**Threshold warning:** A brief with an `## Open Questions` or `## Rejected Ideas` section that is empty (no items) — indicates the brainstorm session may have been rushed.
+
+---
+
+## Principle: Declared write/edit target directories must exist in the repo
+
+Every directory that an agent is granted `write` or `edit` access to in `index.js` must physically exist in the repository — either with a `.gitkeep` or real content. A missing directory causes a silent runtime failure: the agent has the correct permission configured but the underlying file operation fails with a misleading error (permissions conflict rather than "directory not found"). Without this check, a new agent permission can be declared and code-reviewed without anyone noticing the target directory was never created.
+
+**Good:**
+```js
+// In SUBAGENT_DEFS — write permission declared AND directory exists on disk
+write: {
+  "*": "deny",
+  "docs/briefs/**": "allow",   // docs/briefs/ exists (has .gitkeep or real files)
+},
+```
+```
+docs/
+  briefs/
+    .gitkeep    ← guarantees the directory is tracked by git
+```
+
+**Bad:**
+```js
+// Permission declared but directory absent from the repo
+write: {
+  "*": "deny",
+  "docs/exec-plans/**": "allow",   // docs/exec-plans/ does NOT exist → runtime failure
+},
+```
+```
+docs/
+  briefs/
+  # exec-plans/ never created — agent silently fails at write time
+```
+
+**Threshold blocker:** Any PR that adds or modifies a `write` or `edit` permission path in `index.js` without a corresponding directory in the repository. Caught automatically by the `agent-write-dirs-exist` CI check — do not merge until the directory (with `.gitkeep`) is committed alongside the permission change.
+
+**Threshold warning:** A directory tracked only by `.gitkeep` that has accumulated real files — the `.gitkeep` can be removed, but is harmless if left in place.
