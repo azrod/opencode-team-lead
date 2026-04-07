@@ -221,3 +221,41 @@ created: 2026-04-03
 **Threshold blocker:** A brief file in `docs/briefs/` that is missing any of the 6 required sections (`## Problem`, `## Vision`, `## Users`, `## Core Use Cases`, `## Success Criteria`, `## Scope`) or any of the 5 required frontmatter fields (`project:`, `type:`, `status:`, `created:`, `updated:`). Caught automatically by the `brief-schema` CI check.
 
 **Threshold warning:** A brief with an `## Open Questions` or `## Rejected Ideas` section that is empty (no items) — indicates the brainstorm session may have been rushed.
+
+---
+
+## Principle: Declared write/edit target directories must exist in the repo
+
+Every directory that an agent is granted `write` or `edit` access to in `index.js` must physically exist in the repository — either with a `.gitkeep` or real content. A missing directory causes a silent runtime failure: the agent has the correct permission configured but the underlying file operation fails with a misleading error (permissions conflict rather than "directory not found"). Without this check, a new agent permission can be declared and code-reviewed without anyone noticing the target directory was never created.
+
+**Good:**
+```js
+// In SUBAGENT_DEFS — write permission declared AND directory exists on disk
+write: {
+  "*": "deny",
+  "docs/briefs/**": "allow",   // docs/briefs/ exists (has .gitkeep or real files)
+},
+```
+```
+docs/
+  briefs/
+    .gitkeep    ← guarantees the directory is tracked by git
+```
+
+**Bad:**
+```js
+// Permission declared but directory absent from the repo
+write: {
+  "*": "deny",
+  "docs/exec-plans/**": "allow",   // docs/exec-plans/ does NOT exist → runtime failure
+},
+```
+```
+docs/
+  briefs/
+  # exec-plans/ never created — agent silently fails at write time
+```
+
+**Threshold blocker:** Any PR that adds or modifies a `write` or `edit` permission path in `index.js` without a corresponding directory in the repository. Caught automatically by the `agent-write-dirs-exist` CI check — do not merge until the directory (with `.gitkeep`) is committed alongside the permission change.
+
+**Threshold warning:** A directory tracked only by `.gitkeep` that has accumulated real files — the `.gitkeep` can be removed, but is harmless if left in place.
