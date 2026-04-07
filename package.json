@@ -7,10 +7,15 @@
   "files": [
     "index.js",
     "agents/",
+    "tools/",
     "README.md"
   ],
+  "peerDependencies": {
+    "@opencode-ai/plugin": "*"
+  },
   "scripts": {
-    "lint": "npx eslint index.js"
+    "lint": "npx eslint index.js",
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [
     "opencode",
