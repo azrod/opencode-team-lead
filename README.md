@@ -85,6 +85,20 @@ The `experimental.session.compacting` hook injects this file into compaction so 
 
 The scratchpad is ephemeral: overwritten at the start of each new mission. It's not a journal.
 
+## Lifecycle Tools
+
+Orion has direct access to five bookkeeping tools that enforce consistency at zero LLM cost — no delegation, no sub-agent:
+
+| Tool | When Orion calls it |
+|------|---------------------|
+| `project_state()` | At the start of every mission — full view of exec-plans, specs, and briefs |
+| `check_artifacts()` | At mission start and after completing each scope — cross-artifact consistency scan |
+| `mark_block_done(plan, block)` | After each validated delivery — marks a block complete in an exec-plan |
+| `complete_plan(plan)` | When all blocks are checked and the final review is APPROVED |
+| `register_spec(file, title)` | When a new spec needs to exist on disk |
+
+These are not visible in the OpenCode UI. They run automatically as part of Orion's internal workflow.
+
 ## Permissions
 
 | Agent | Permissions |

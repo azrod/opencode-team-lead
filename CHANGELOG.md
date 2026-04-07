@@ -13,11 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `planning` agent — transforms complex or ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Returns inline plan simples for small tasks; full exec-plans for multi-session work.
 - New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Opens targeted PRs; updates `QUALITY_SCORE.md`; escalates recurring patterns to `harness`.
 - Orion now knows when to invoke `planning` (complex/ambiguous requests) and when to suggest `harness` post-delivery (recurring patterns).
+- Five lifecycle tools now available directly to Orion — no delegation needed for project bookkeeping: `project_state` (full artifact inventory), `check_artifacts` (consistency scan), `mark_block_done` (check a block in an exec-plan), `complete_plan` (close a scope), and `register_spec` (create a new spec file). Orion calls these at mission start and after each delivery automatically.
+- Exec-plans now support an optional `brief:` frontmatter field to trace the brainstorm → implementation link bidirectionally.
 
 ### Changed
 - Harness now operates fully autonomously — it explores the codebase, decides what to encode, and acts without asking for confirmation at each step. It only stops in three explicit cases: the pattern can't be mechanized, encoding requires creating a new workflow file, or the trigger is too vague with no codebase signal to anchor it.
 
 ### Fixed
+- Lifecycle tools (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`) now return valid responses — previously the `execute` functions returned raw objects instead of strings, causing the OpenCode plugin API to silently discard their output
 - Harness agent now has full `bash`, `read`, `write`, `edit`, `glob`, and `grep` permissions — previously it was registered with a restricted command allowlist and scoped file targets, which prevented it from running arbitrary lint commands or writing enforcement artifacts outside the predefined list.
 - The harness agent no longer writes human-facing checklists to `AGENTS.md` — it now correctly identifies them as documentation and routes them to CI checks or `docs/guiding-principles.md` instead. An unwired script in the repo is also no longer treated as a valid enforcement artifact.
 

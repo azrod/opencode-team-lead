@@ -23,7 +23,7 @@ Point d'entrée documentation : [`docs/index.md`](docs/index.md)
 
 `opencode-team-lead` is an OpenCode plugin that injects a "team-lead" orchestrator agent. The agent plans work, delegates everything to sub-agents, reviews results, and reports back. It never touches code directly.
 
-This is a tiny project — zero dependencies, pure ESM, no build step, no tests. The following files constitute the meaningful surface area of the plugin:
+This is a tiny project — zero dependencies, pure ESM, no build step. Tests run with `npm test`. The following files constitute the meaningful surface area of the plugin:
 
 ## Architecture
 
@@ -115,7 +115,7 @@ The workflow requires GitHub Pages to be configured with source set to **"GitHub
 
 ## Development
 
-No build step. No transpilation. No tests. What you see is what ships.
+No build step. No transpilation. Tests run with `npm test`. What you see is what ships.
 
 ### Local testing
 
@@ -301,6 +301,7 @@ For the principles behind these rules, see [`docs/guiding-principles.md`](docs/g
 | `.github/workflows/checks.yml` job `changelog-unreleased` | `## [Unreleased]` section must exist in `CHANGELOG.md` | Every push + PR |
 | `.git-hooks/commit-msg` | Commit message is non-empty (guards against `git commit` without `-m`) | On commit (after `sh .git-hooks/install.sh`) |
 | `docs/guiding-principles.md` | Non-interactive git, zero deps, user-facing CHANGELOG, default-deny permissions, external prompts | Human + Gardener review |
+| `tests/lifecycle.test.js` + `npm test` | Correctness of the 5 lifecycle tool functions | Manually / pre-PR |
 
 ### Installing the git hook
 
@@ -319,6 +320,14 @@ npm run lint
 ```
 
 ESLint is run via `npx` — no install needed. The config is a flat `eslint.config.js` with an inline plugin (zero deps constraint respected).
+
+### Running the tests
+
+```bash
+npm test
+```
+
+28 tests covering all 5 lifecycle tool functions (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`). Uses `node:test` + `node:assert/strict` — no external test runner needed.
 
 ## References
 
