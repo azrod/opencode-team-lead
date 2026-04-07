@@ -122,3 +122,102 @@ const prompt = `You are Orion...
 **Threshold blocker:** A PR that moves agent prompt content into `index.js` as a string. Reject — extract to `agents/<name>.md`.
 
 **Threshold warning:** An agent prompt file that exceeds 600 lines without a clear structural reason. Consider splitting into focused sections or extracting shared boilerplate to a separate file.
+
+---
+
+## Principle: Agent prompt files do not declare permissions
+
+Permissions for every agent are declared exclusively in `index.js` via the `SUBAGENT_DEFS` array. An `agents/*.md` file must never contain a `## Permissions` section. Such a section is purely documentary — it has no effect on what the agent can actually do — and it diverges from the real enforcement in `index.js`. Stale or incorrect permission docs are worse than no docs.
+
+**Good:**
+```markdown
+<!-- agents/my-agent.md — no permissions section -->
+## Role
+
+You are a specialist agent that...
+
+## Workflow
+
+1. Receive task from orchestrator
+2. ...
+```
+
+**Bad:**
+```markdown
+<!-- agents/my-agent.md — permissions section present -->
+## Permissions
+
+- task: allow
+- todowrite: allow
+
+## Role
+
+You are a specialist agent that...
+```
+
+**Threshold blocker:** Any PR that adds a `## Permissions` section to any file under `agents/`. This is caught automatically by the `no-permissions-in-agent-prompts` CI check — do not merge until the section is removed.
+
+---
+
+## Principle: Product briefs follow a verifiable schema
+
+Briefs produced by the brainstorm agent are consumed by downstream agents — Planning uses them to generate exec-plans, and Orion uses them to scope delegated work. A brief missing required frontmatter fields or section headings is not machine-actionable: a downstream agent cannot reliably extract the project name, scope, or success criteria without a predictable structure. The schema enforces the minimum structural contract. Content quality — whether the Vision is compelling, whether the Use Cases are realistic — remains the brainstorm agent's responsibility and is not checked here.
+
+**Good:**
+```markdown
+---
+project: "api-usage-dashboard"
+type: tool
+status: draft
+created: 2026-04-03
+updated: 2026-04-03
+---
+
+## Problem
+...
+
+## Vision
+...
+
+## Users
+...
+
+## Core Use Cases
+...
+
+## Success Criteria
+...
+
+## Scope
+...
+```
+
+**Bad:**
+```markdown
+---
+project: "api-usage-dashboard"
+type: tool
+status: draft
+created: 2026-04-03
+---
+
+## Problem
+...
+
+## Vision
+...
+
+## Users
+...
+
+## Core Use Cases
+...
+
+## Success Criteria
+...
+```
+*(Missing `updated:` frontmatter field and `## Scope` section — this brief would be rejected by CI.)*
+
+**Threshold blocker:** A brief file in `docs/briefs/` that is missing any of the 6 required sections (`## Problem`, `## Vision`, `## Users`, `## Core Use Cases`, `## Success Criteria`, `## Scope`) or any of the 5 required frontmatter fields (`project:`, `type:`, `status:`, `created:`, `updated:`). Caught automatically by the `brief-schema` CI check.
+
+**Threshold warning:** A brief with an `## Open Questions` or `## Rejected Ideas` section that is empty (no items) — indicates the brainstorm session may have been rushed.

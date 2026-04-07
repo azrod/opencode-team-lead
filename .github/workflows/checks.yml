@@ -1,7 +1,8 @@
 name: Checks
 
-# Two lightweight structural checks that enforce project invariants which can't
-# be caught by code review alone: zero dependencies and a valid CHANGELOG format.
+# Lightweight structural checks that enforce project invariants which can't
+# be caught by code review alone: zero dependencies, a valid CHANGELOG format,
+# and no permission declarations in agent prompt files.
 # These run on every push and PR — they're fast (no install step needed).
 
 on:
@@ -55,3 +56,89 @@ jobs:
           }
           console.log('OK: ## [Unreleased] section found');
           "
+
+  no-permissions-in-agent-prompts:
+    name: No permissions section in agent prompts
+    runs-on: ubuntu-latest
+    # Pattern enforced: permissions are declared exclusively in index.js via SUBAGENT_DEFS.
+    # A ## Permissions section in an agents/*.md file is purely documentary and diverges
+    # from the real enforcement — it creates false documentation. Any such section is
+    # mechanically forbidden (see docs/guiding-principles.md).
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert no ## Permissions section in agents/*.md
+        run: |
+          if grep -l '^## Permissions$' agents/*.md 2>/dev/null; then
+            echo "Error: Found '## Permissions' section in one or more agent prompt files."
+            echo "Permissions must be declared exclusively in index.js via SUBAGENT_DEFS."
+            echo "Remove the ## Permissions section from the files listed above."
+            exit 1
+          fi
+          echo "OK: no ## Permissions section found in agents/*.md"
+
+  # Pattern enforced: product briefs written by the brainstorm agent must be structurally valid
+  # so downstream agents (Planning, Orion) can parse them reliably. A brief missing required
+  # sections or frontmatter is not machine-actionable. This check catches structural regressions
+  # without validating content quality.
+  brief-schema:
+    name: Product brief schema check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert all docs/briefs/*.md files are structurally valid
+        run: |
+          shopt -s nullglob
+          brief_files=(docs/briefs/*.md)
+          if [ ${#brief_files[@]} -eq 0 ]; then
+            echo "OK: no briefs found — nothing to check"
+            exit 0
+          fi
+
+          failed=0
+
+          for file in "${brief_files[@]}"; do
+            file_failed=0
+
+            # Check frontmatter block (file must start with ---)
+            if ! head -1 "$file" | tr -d '\r' | grep -q '^---$'; then
+              echo "FAIL [$file]: missing YAML frontmatter (file must start with ---)"
+              file_failed=1
+            else
+              # Check required frontmatter fields
+              for field in project: type: status: created: updated:; do
+                if ! awk '/^---$/{f++; if(f==2) exit; next} f==1{print}' "$file" | grep -qE "^${field}($|[[:space:]])"; then
+                  echo "FAIL [$file]: missing frontmatter field '${field}'"
+                  file_failed=1
+                fi
+              done
+
+              # Check for duplicate frontmatter keys
+              dupes=$(awk '/^---$/{f++; if(f==2) exit; next} f==1 && /^[^#[:space:]]/{print $1}' "$file" | sort | uniq -d)
+              if [ -n "$dupes" ]; then
+                echo "FAIL [$file]: duplicate frontmatter key(s): $dupes"
+                file_failed=1
+              fi
+            fi
+
+            # Check required section headings
+            for section in "## Problem" "## Vision" "## Users" "## Core Use Cases" "## Success Criteria" "## Scope"; do
+              if ! grep -q "^${section}$" "$file"; then
+                echo "FAIL [$file]: missing section '${section}'"
+                file_failed=1
+              fi
+            done
+
+            if [ "$file_failed" -eq 0 ]; then
+              echo "OK: $file"
+            else
+              failed=1
+            fi
+          done
+
+          if [ "$failed" -ne 0 ]; then
+            echo ""
+            echo "Error: one or more brief files failed the schema check (see above)."
+            exit 1
+          fi
