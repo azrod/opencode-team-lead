@@ -287,7 +287,23 @@ function SectionOverview() {
           <div className="flex justify-center mb-2">
             <FlowBox color="zinc">👤 Utilisateur</FlowBox>
           </div>
-          <Arrow />
+
+          {/* Phase 0 — brainstorm (upstream, before Orion) */}
+          <div className="flex justify-center mb-1">
+            <div className="text-zinc-400 text-xs font-mono">↓ si découverte produit</div>
+          </div>
+          <div className="flex justify-center mb-1">
+            <div className="bg-blue-100 border-2 border-blue-400 rounded px-4 py-2 font-mono font-semibold text-blue-900 text-sm">
+              ◈ brainstorm (Phase 0)
+            </div>
+          </div>
+          <div className="flex justify-center mb-1">
+            <div className="text-zinc-400 text-xs font-mono">↓ produit docs/briefs/*.md</div>
+          </div>
+          <div className="flex justify-center mb-2">
+            <div className="text-zinc-400 text-xs font-mono">↓ sinon demande directe</div>
+          </div>
+
           {/* Orion center */}
           <div className="flex justify-center mb-2">
             <div className="bg-amber-100 border-2 border-amber-400 rounded px-5 py-2.5 font-mono font-bold text-amber-900 text-sm">
@@ -585,21 +601,22 @@ function SectionPhases() {
 }
 
 function SectionFlows() {
-  const [active, setActive] = useState<"delivery" | "bug" | "maintenance">(
-    "delivery"
-  );
+  const [active, setActive] = useState<
+    "delivery" | "bug" | "maintenance" | "discovery"
+  >("discovery");
 
   return (
     <div>
-      <SectionTitle>Les 3 flux principaux</SectionTitle>
+      <SectionTitle>Les flux principaux</SectionTitle>
       <SectionSubtitle>
-        Selon la nature de la demande, Orion suit un flux différent. Le flux est
-        déterminé lors de la phase Comprendre.
+        Selon la nature de la demande, Orion (ou Brainstorm en Phase 0) suit un
+        flux différent. Le flux Orion est déterminé lors de la phase Comprendre.
       </SectionSubtitle>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {(
           [
+            { id: "discovery", label: "Phase 0 — Découverte" },
             { id: "delivery", label: "Livraison (Feature)" },
             { id: "bug", label: "Bug" },
             { id: "maintenance", label: "Maintenance" },
@@ -618,6 +635,152 @@ function SectionFlows() {
           </button>
         ))}
       </div>
+
+      {active === "discovery" && (
+        <div>
+          <H3>Flux Phase 0 — Découverte produit (Brainstorm)</H3>
+          <P>
+            Le brainstorm s'exécute <strong className="text-zinc-900">avant</strong>{" "}
+            Orion et Planning. Il transforme une idée floue en product brief
+            structuré via un dialogue Socratique en 3 phases.
+          </P>
+          <div className="bg-zinc-50 border border-zinc-200 rounded p-5 mt-2">
+            <div className="flex flex-col items-center gap-1 max-w-sm mx-auto">
+              <FlowBox color="zinc">👤 User → brainstorm agent</FlowBox>
+              <Arrow label="Démarrage de session" />
+
+              {/* Démarrage de session block */}
+              <div className="w-full border border-blue-200 rounded bg-blue-50/50 p-3">
+                <div className="text-xs font-mono text-blue-700 font-semibold mb-2">
+                  Démarrage de session — explorer docs/briefs/
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="border border-blue-100 rounded p-1.5 bg-white text-center">
+                    <div className="font-mono text-blue-600 mb-1">Aucun brief</div>
+                    <div className="text-zinc-500">→ Phase 1</div>
+                  </div>
+                  <div className="border border-amber-100 rounded p-1.5 bg-white text-center">
+                    <div className="font-mono text-amber-600 mb-1">Draft existant</div>
+                    <div className="text-zinc-500">continuer / nouveau</div>
+                  </div>
+                  <div className="border border-green-100 rounded p-1.5 bg-white text-center">
+                    <div className="font-mono text-green-600 mb-1">Brief terminé</div>
+                    <div className="text-zinc-500">réviser / nouveau</div>
+                  </div>
+                  <div className="border border-zinc-100 rounded p-1.5 bg-white text-center">
+                    <div className="font-mono text-zinc-500 mb-1">Multiples</div>
+                    <div className="text-zinc-500">liste → user choisit</div>
+                  </div>
+                </div>
+              </div>
+
+              <Arrow />
+
+              {/* Phase 1 */}
+              <div className="w-full border border-blue-200 rounded bg-white p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    Phase 1
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-700">
+                    Découverte
+                  </span>
+                </div>
+                <ul className="space-y-1 text-[10px] text-zinc-500">
+                  <li>≤ 2 questions à la fois</li>
+                  <li>Fin : problème en 2-4 phrases, utilisateur principal nommé</li>
+                </ul>
+              </div>
+
+              <Arrow />
+
+              {/* Phase 2 */}
+              <div className="w-full border border-amber-200 rounded bg-white p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-mono text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                    Phase 2
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-700">
+                    Approfondissement
+                  </span>
+                </div>
+                <ul className="space-y-1 text-[10px] text-zinc-500">
+                  <li>Scope, Critères de succès, Cas d'usage, Contraintes, Idées rejetées</li>
+                  <li>4 questions de défi</li>
+                  <li>webfetch autorisé pour contexte domaine externe</li>
+                </ul>
+              </div>
+
+              <Arrow label="Obligatoire avant Phase 3" />
+
+              {/* Vérification adversariale */}
+              <div className="w-full border border-red-200 rounded bg-red-50/50 p-3">
+                <div className="text-xs font-mono text-red-700 font-semibold mb-2">
+                  Vérification adversariale
+                </div>
+                <ol className="list-decimal list-inside space-y-1 text-[10px] text-zinc-600">
+                  <li>
+                    "Voici le meilleur argument contre ce projet…" → 3 choix proposés
+                  </li>
+                  <li>
+                    "Qu'est-ce qui devrait être vrai pour que ça échoue en 1 an ?"
+                    → enregistré en Open Questions / Contraintes
+                  </li>
+                </ol>
+                <p className="text-[10px] text-zinc-400 mt-1.5 italic">
+                  Séquentiel, obligatoire, exécuté une seule fois.
+                </p>
+              </div>
+
+              <Arrow />
+
+              {/* Phase 3 */}
+              <div className="w-full border border-green-200 rounded bg-white p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] font-mono text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
+                    Phase 3
+                  </span>
+                  <span className="text-xs font-semibold text-zinc-700">
+                    Rédaction + Validation
+                  </span>
+                </div>
+                <ul className="space-y-1 text-[10px] text-zinc-500">
+                  <li>Générer le brief complet → présenter inline (pas d'écriture)</li>
+                  <li>Itérer via question → Quality Gate</li>
+                </ul>
+              </div>
+
+              <Arrow label="Quality Gate passée" />
+
+              {/* Quality Gate */}
+              <div className="w-full border border-zinc-200 rounded bg-white p-3">
+                <div className="text-xs font-mono text-zinc-500 font-semibold mb-2">
+                  Quality Gate
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                  <div className="border border-zinc-100 rounded p-1.5 bg-zinc-50">
+                    <div className="font-mono text-zinc-600 mb-1">Tier 1 — auto-fix</div>
+                    <div className="text-zinc-400">Solution dans Problème, Vision &gt;3 phrases, nom non kebab-case…</div>
+                  </div>
+                  <div className="border border-red-100 rounded p-1.5 bg-red-50/50">
+                    <div className="font-mono text-red-600 mb-1">Tier 2 — question obligatoire</div>
+                    <div className="text-zinc-400">Utilisateur vague, Cas sans AC, Critère non mesurable…</div>
+                    <div className="text-red-400 mt-1">+ STOP si bloquant (Problème absent, Scope In vide…)</div>
+                  </div>
+                </div>
+              </div>
+
+              <Arrow />
+              <FlowBox color="blue">Écrire docs/briefs/&#123;nom&#125;.md</FlowBox>
+              <Arrow label="Transfert" />
+              <div className="flex gap-2 justify-center">
+                <FlowBox color="blue" small>→ planning agent</FlowBox>
+                <FlowBox color="amber" small>→ Orion</FlowBox>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {active === "delivery" && (
         <div>
@@ -858,6 +1021,160 @@ function SectionAgents() {
       </SectionSubtitle>
 
       <AgentCard
+        name="brainstorm agent"
+        role="Phase 0 — Product Brief Agent. Aide l'utilisateur à découvrir et articuler ce qu'il veut construire. Produit un product brief structuré dans docs/briefs/{project-name}.md. S'exécute avant Orion et avant Planning. N'implémente rien — pure discovery."
+        color="blue"
+        temp="0.5"
+        variant="max"
+        mode="all"
+        triggers={[
+          "Demande floue ou ouverte (\"je voudrais construire quelque chose qui...\")",
+          "Invocation directe par l'utilisateur",
+          "Brief existant dans docs/briefs/ → reprise ou révision du brief",
+          "Contexte suffisant dès le départ → passage direct à la Phase 3",
+          "Demande très vague reçue par Orion → Orion peut suggérer le brainstorm comme Phase 0",
+        ]}
+        permissions={[
+          "task",
+          "question",
+          "webfetch",
+          "write docs/briefs/**",
+        ]}
+        details={
+          <div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                  Démarrage de session
+                </div>
+                <ul className="space-y-1 text-xs text-zinc-600">
+                  <li className="flex gap-1.5">
+                    <span className="text-zinc-300">›</span>
+                    Délègue <Code>explore docs/briefs/</Code> en premier
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-zinc-300">›</span>
+                    Aucun brief → Phase 1 directement
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-zinc-300">›</span>
+                    Draft trouvé → continuer ou nouveau brief
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-zinc-300">›</span>
+                    Brief terminé → réviser ou nouveau
+                  </li>
+                  <li className="flex gap-1.5">
+                    <span className="text-zinc-300">›</span>
+                    Multiples → liste, l'utilisateur choisit
+                  </li>
+                </ul>
+                <p className="text-[11px] text-zinc-400 mt-2 italic">
+                  La lecture de fichiers est déléguée à un sous-agent{" "}
+                  <Code>explore</Code> via <Code>task</Code>.
+                </p>
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                  Workflow 3 phases
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex gap-2 items-start">
+                    <Badge color="blue">Phase 1</Badge>
+                    <span className="text-xs text-zinc-600">
+                      Découverte — ≤ 2 questions, problème en 2-4 phrases
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge color="amber">Phase 2</Badge>
+                    <span className="text-xs text-zinc-600">
+                      Approfondissement — Scope, Critères, Cas d'usage, Contraintes
+                    </span>
+                  </div>
+                  <div className="flex gap-2 items-start">
+                    <Badge color="green">Phase 3</Badge>
+                    <span className="text-xs text-zinc-600">
+                      Rédaction + Validation — brief inline → Quality Gate → écriture fichier
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-zinc-100 pt-3">
+              <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                Vérification adversariale (entre Phase 2 et Phase 3)
+              </div>
+              <ol className="space-y-1.5 list-decimal list-inside text-xs text-zinc-600">
+                <li>
+                  "Voici le meilleur argument contre ce projet…" → 3 choix proposés à l'utilisateur
+                </li>
+                <li>
+                  "Qu'est-ce qui devrait être vrai pour que ça échoue en 1 an ?" →
+                  enregistré en Open Questions / Contraintes
+                </li>
+              </ol>
+              <p className="text-[11px] text-zinc-400 mt-1.5 italic">
+                Séquentielle, obligatoire, exécutée une seule fois avant la Phase 3.
+              </p>
+            </div>
+
+            <div className="mt-3 border-t border-zinc-100 pt-3">
+              <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                Quality Gate
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Badge color="zinc">Tier 1 — auto-fix silencieux</Badge>
+                <Badge color="amber">Tier 2 — question obligatoire</Badge>
+                <Badge color="red">Tier 2 — STOP si bloquant</Badge>
+              </div>
+              <ul className="mt-2 space-y-1 text-xs text-zinc-500">
+                <li className="flex gap-1.5">
+                  <span className="text-zinc-300">›</span>
+                  Questions (Tier 2) : utilisateur vague, cas sans AC, critère non mesurable, rationale inconnu
+                </li>
+                <li className="flex gap-1.5">
+                  <span className="text-zinc-300">›</span>
+                  STOP conditions : Problème absent, aucun critère de succès, Scope In vide
+                </li>
+              </ul>
+            </div>
+
+            <div className="mt-3 border-t border-zinc-100 pt-3">
+              <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+                Artefact de sortie
+              </div>
+              <div className="bg-zinc-900 rounded p-3 font-mono text-xs text-zinc-300">
+                <div className="text-zinc-500"># docs/briefs/&#123;project-name&#125;.md</div>
+                <div className="text-zinc-500 mt-1">---</div>
+                <div className="text-zinc-400">project: nom-en-kebab-case</div>
+                <div className="text-zinc-400">type: product  <span className="text-zinc-600"># product | tool | library | service | experiment</span></div>
+                <div className="text-zinc-400">status: draft | done</div>
+                <div className="text-zinc-400">created / updated: date</div>
+                <div className="text-zinc-500 mt-1">---</div>
+                <div className="text-green-400 mt-1">## Problem</div>
+                <div className="text-zinc-500">## Vision</div>
+                <div className="text-zinc-500">## Users (Primary / Secondary)</div>
+                <div className="text-zinc-500">## Core Use Cases (UC-NNN)</div>
+                <div className="text-zinc-500">## Success Criteria (SC-NNN)</div>
+                <div className="text-zinc-500">## Scope (In / Out)</div>
+                <div className="text-zinc-500">## Constraints</div>
+                <div className="text-zinc-500">## Open Questions</div>
+                <div className="text-zinc-500">## Rejected Ideas</div>
+              </div>
+              <div className="mt-2 text-xs text-zinc-500">
+                Phase 0 — s'exécute avant Orion et avant le planning agent.
+                Ne fait PAS : market research, architecture technique, tickets, backlog.
+              </div>
+              <div className="mt-1.5 text-xs text-zinc-400 italic">
+                Le brief est toujours rédigé en anglais, quelle que soit la langue de la session.
+              </div>
+            </div>
+          </div>
+        }
+      />
+
+      <AgentCard
         name="orion (team-lead)"
         role="Orchestrateur pur. Planifie, délègue, synthétise. Ne touche JAMAIS au code directement. Qualifie les demandes, choisit les agents, supervise les reviews, et fait les rapports à l'utilisateur."
         color="amber"
@@ -900,20 +1217,6 @@ function SectionAgents() {
             </ul>
           </div>
         }
-      />
-
-      <AgentCard
-        name="brainstorm agent"
-        role="Aide l'utilisateur à découvrir et articuler ce qu'il veut construire. Produit un product brief structuré dans docs/briefs/{project-name}.md. N'implémente rien — pure discovery."
-        color="blue"
-        temp="0.5"
-        variant="max"
-        mode="all"
-        triggers={[
-          "Demande floue ou ouverte (\"je voudrais construire quelque chose qui...\")",
-          "Invocation directe par l'utilisateur",
-        ]}
-        permissions={["task", "question", "write docs/briefs/"]}
       />
 
       <AgentCard
@@ -1707,8 +2010,8 @@ const navItems: {
   },
   {
     id: "flows",
-    label: "Les 3 flux",
-    description: "Feature, Bug, Maintenance",
+    label: "Les flux",
+    description: "Phase 0, Feature, Bug, Maintenance",
   },
   {
     id: "agents",
@@ -1737,14 +2040,16 @@ const navItems: {
 export default function App() {
   const [activeSection, setActiveSection] = useState<Section>("overview");
 
-  const sectionComponents: Record<Section, React.ReactNode> = {
-    overview: <SectionOverview />,
-    phases: <SectionPhases />,
-    flows: <SectionFlows />,
-    agents: <SectionAgents />,
-    memory: <SectionMemory />,
-    "harness-gardener": <SectionHarnessGardener />,
-    protocols: <SectionProtocols />,
+  const renderSection = () => {
+    switch (activeSection) {
+      case "overview":         return <SectionOverview />;
+      case "phases":           return <SectionPhases />;
+      case "flows":            return <SectionFlows />;
+      case "agents":           return <SectionAgents />;
+      case "memory":           return <SectionMemory />;
+      case "harness-gardener": return <SectionHarnessGardener />;
+      case "protocols":        return <SectionProtocols />;
+    }
   };
 
   return (
@@ -1808,7 +2113,7 @@ export default function App() {
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto px-8 py-8">
-            {sectionComponents[activeSection]}
+            {renderSection()}
           </div>
         </main>
       </div>

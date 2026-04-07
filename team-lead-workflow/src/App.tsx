@@ -27,6 +27,50 @@ interface DetailData {
 
 // ─── Flowchart i18n data ──────────────────────────────────────────────────────
 
+interface BrainstormSvgLabels {
+  bs_start: string;
+  bs_existing_check: string;
+  bs_single_found: string;
+  bs_multi_found: string;
+  bs_status_check: string;
+  bs_ask_continue: string;
+  bs_load_brief: string;
+  bs_phase1: string;
+  bs_problem_clear: string;
+  bs_phase2: string;
+  bs_adversarial: string;
+  bs_template_fillable: string;
+  bs_phase3: string;
+  bs_quality_gate: string;
+  bs_quality_passed: string;
+  bs_file_exists: string;
+  bs_file_conflict: string;
+  bs_write: string;
+  bs_end: string;
+  // arrow labels
+  bs_arrow_yes: string;
+  bs_arrow_no: string;
+  bs_arrow_one: string;
+  bs_arrow_multiple: string;
+  bs_arrow_none: string;
+  bs_arrow_draft: string;
+  bs_arrow_done: string;
+  bs_arrow_continue: string;
+  bs_arrow_fresh: string;
+  bs_arrow_choose: string;
+  bs_arrow_new: string;
+  bs_arrow_all_fillable: string;
+  bs_arrow_missing: string;
+  bs_arrow_passed: string;
+  bs_arrow_tier2: string;
+  bs_arrow_blocked: string;
+  bs_esc_blocked_label: string;
+  bs_esc_blocked_sub: string;
+  bs_arrow_overwrite: string;
+  bs_arrow_version: string;
+  bs_arrow_rename: string;
+}
+
 interface FlowchartData {
   svgLabels: {
     start: string;
@@ -53,6 +97,8 @@ interface FlowchartData {
     annot_memory: string;
   };
   details: Record<string, DetailData>;
+  brainstormSvgLabels: BrainstormSvgLabels;
+  brainstormDetails: Record<string, DetailData>;
 }
 
 function getFlowchartData(lang: "en" | "fr"): FlowchartData {
@@ -329,6 +375,220 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
           nodeType: "LIVRAISON",
           sections: [
             { heading: "Livraison", items: ["Résumé concis des changements effectués", "Problèmes éventuels signalés honnêtement", "Prochaines étapes proposées si pertinent"] },
+          ],
+        },
+      },
+      brainstormSvgLabels: {
+        bs_start: "Démarrage session",
+        bs_existing_check: "Briefs existants ?",
+        bs_single_found: "Un brief trouvé",
+        bs_multi_found: "Plusieurs trouvés",
+        bs_status_check: "Statut = brouillon ?",
+        bs_ask_continue: "Continuer ou nouveau ?",
+        bs_load_brief: "Charger le brief",
+        bs_phase1: "Phase 1 — Découverte",
+        bs_problem_clear: "Problème clair ?",
+        bs_phase2: "Phase 2 — Approfondissement",
+        bs_adversarial: "Porte adversariale",
+        bs_template_fillable: "Toutes sections remplissables ?",
+        bs_phase3: "Phase 3 — Rédaction + Validation",
+        bs_quality_gate: "Porte qualité",
+        bs_quality_passed: "Porte qualité passée ?",
+        bs_file_exists: "Fichier existant ?",
+        bs_file_conflict: "Écraser / v2 / renommer ?",
+        bs_write: "Écrire le brief",
+        bs_end: "Brief écrit. Passer à Planning ou Orion.",
+        bs_arrow_yes: "OUI",
+        bs_arrow_no: "NON",
+        bs_arrow_one: "UN SEUL",
+        bs_arrow_multiple: "PLUSIEURS",
+        bs_arrow_none: "AUCUN",
+        bs_arrow_draft: "BROUILLON",
+        bs_arrow_done: "TERMINÉ",
+        bs_arrow_continue: "CONTINUER",
+        bs_arrow_fresh: "NOUVEAU",
+        bs_arrow_choose: "CHOISIR EXISTANT",
+        bs_arrow_new: "NOUVEAU PROJET",
+        bs_arrow_all_fillable: "OUI",
+        bs_arrow_missing: "NON",
+        bs_arrow_passed: "PASSÉ",
+        bs_arrow_tier2: "NIVEAU 2",
+        bs_arrow_blocked: "BLOQUÉ",
+        bs_esc_blocked_label: "Escalade",
+        bs_esc_blocked_sub: "BLOQUÉ",
+        bs_arrow_overwrite: "ÉCRASER",
+        bs_arrow_version: "NOUVELLE VERSION",
+        bs_arrow_rename: "RENOMMER",
+      },
+      brainstormDetails: {
+        bs_start: {
+          title: "Session Start",
+          color: "#0d9488",
+          nodeType: "ENTRY POINT",
+          sections: [
+            { heading: "What happens", items: ["Session is initiated with brainstorm agent", "Agent globs docs/briefs/**/*.md to check for existing briefs", "Routing decision made before any questions are asked"] },
+          ],
+        },
+        bs_existing_check: {
+          title: "Existing briefs found?",
+          color: "#0d9488",
+          nodeType: "DECISION",
+          sections: [
+            { heading: "Branches", items: ["NO → Flow normal → Phase 1 (Discovery)", "ONE found → check status (draft / done)", "MULTIPLE found → list briefs, ask which one or new project"] },
+          ],
+        },
+        bs_single_found: {
+          title: "One brief found",
+          color: "#0891b2",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "What happens", items: ["Single brief located at docs/briefs/", "Agent checks the status field in the brief frontmatter", "Routes to status decision"] },
+          ],
+        },
+        bs_multi_found: {
+          title: "Multiple briefs found",
+          color: "#0891b2",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "What happens", items: ["Agent lists all found briefs to the user", "Asks: which one to resume, or start a new project?", "CHOOSE EXISTING → Load brief → Phase 3 (revision)", "NEW PROJECT → Flow normal → Phase 1"] },
+          ],
+        },
+        bs_status_check: {
+          title: "Status = draft?",
+          color: "#0891b2",
+          nodeType: "DECISION",
+          sections: [
+            { heading: "Branches", items: ["YES (draft) → Ask: continue or fresh start?", "NO (done/other) → Inform user, ask new project name → Phase 1"] },
+          ],
+        },
+        bs_ask_continue: {
+          title: "Continue or fresh start?",
+          color: "#0891b2",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "What happens", items: ["User is shown the existing draft brief summary", "Asked: resume from where we left off, or start fresh?", "CONTINUE → Load brief → jump directly to Phase 3 (revision)", "FRESH → Ignore existing brief → Phase 1 (Discovery)"] },
+          ],
+        },
+        bs_load_brief: {
+          title: "Load brief",
+          color: "#0891b2",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "What happens", items: ["Agent reads the existing brief file from docs/briefs/", "Provides full context to Phase 3 (revision mode)", "User can iterate on the existing content rather than restarting"] },
+          ],
+        },
+        bs_phase1: {
+          title: "Phase 1 — Discovery",
+          color: "#2563eb",
+          nodeType: "MAIN PHASE",
+          sections: [
+            { heading: "Core question", items: ["\"What problem are you trying to solve, and who experiences it?\""] },
+            { heading: "Rules", items: ["Max 2 questions at a time — never overwhelm", "Surface the problem, not the solution", "Do not accept vague answers — push for specifics", "Iterate until problem is stated clearly"] },
+            { heading: "Exit criteria", items: ["Problem stated in 2–4 sentences", "Primary user named", "Problem is a problem, not a feature"] },
+          ],
+        },
+        bs_problem_clear: {
+          title: "Problem clear?",
+          color: "#2563eb",
+          nodeType: "DECISION",
+          sections: [
+            { heading: "Exit criteria", items: ["YES → problem stated in 2–4 clear sentences AND primary user named → Phase 2", "NO → iterate — ask more targeted follow-up questions"] },
+          ],
+        },
+        bs_phase2: {
+          title: "Phase 2 — Deep Dive",
+          color: "#4f46e5",
+          nodeType: "MAIN PHASE",
+          sections: [
+            { heading: "Topics to cover", items: ["Scope and boundaries — what is explicitly out of scope?", "Success criteria — how will you know it worked?", "Use cases — top 3–5 concrete scenarios", "Constraints — technical, time, team, budget", "Rejected ideas — what was considered and discarded?"] },
+            { heading: "Socratic pressure", items: ["Challenge assumptions — \"Why is X the right approach?\"", "Ask about failure modes — \"What would make this fail?\"", "Probe edges — \"What happens when Y doesn't work?\""] },
+          ],
+        },
+        bs_adversarial: {
+          title: "Adversarial Gate",
+          color: "#7c3aed",
+          nodeType: "GATE",
+          sections: [
+            { heading: "Two mandatory questions", items: ["\"What is the strongest case against building this?\"", "\"What would have to be true for this to fail in year 1?\""] },
+            { heading: "Purpose", items: ["Forces the user to articulate real risks", "Prevents over-optimistic briefs that skip failure modes", "If user can't answer, the problem statement needs more work"] },
+          ],
+        },
+        bs_template_fillable: {
+          title: "All template sections fillable?",
+          color: "#7c3aed",
+          nodeType: "DECISION",
+          sections: [
+            { heading: "Branches", items: ["YES → proceed to Phase 3 (draft + validation)", "NO → iterate back in Phase 2 — identify which sections are still empty"] },
+            { heading: "Template sections required", items: ["Problem statement", "Primary user", "Success criteria", "Top use cases", "Constraints", "Out of scope", "Risks / adversarial answers"] },
+          ],
+        },
+        bs_phase3: {
+          title: "Phase 3 — Draft + Validation",
+          color: "#6d28d9",
+          nodeType: "MAIN PHASE",
+          sections: [
+            { heading: "What happens", items: ["Agent generates the full brief inline from collected context", "User reviews the draft and provides feedback", "Agent iterates until user confirms the brief is ready", "Quality gate is run before writing to disk"] },
+            { heading: "Output format", items: ["Markdown file at docs/briefs/{project-name}.md", "Structured sections: problem, users, success criteria, use cases, constraints, risks"] },
+          ],
+        },
+        bs_quality_gate: {
+          title: "Quality Gate",
+          color: "#6d28d9",
+          nodeType: "GATE",
+          sections: [
+            { heading: "Tier 1 — auto-fix silently", items: ["Minor formatting issues", "Incomplete sentences that can be inferred", "Missing punctuation or capitalization"] },
+            { heading: "Tier 2 — ask user via question tool", items: ["Ambiguous success criteria", "Conflicting constraints", "Vague scope boundaries"] },
+            { heading: "BLOCKED — escalate immediately", items: ["No problem statement at all", "No success criteria", "Empty scope — can't determine what to build"] },
+          ],
+        },
+        bs_quality_passed: {
+          title: "Quality gate passed?",
+          color: "#6d28d9",
+          nodeType: "DECISION",
+          sections: [
+            { heading: "Branches", items: ["PASSED → proceed to file write check", "TIER 2 issues → ask user → resolve → re-run gate", "BLOCKED (no problem, no success criteria, empty scope) → STOP — escalate to user, do not write"] },
+          ],
+        },
+        bs_file_exists: {
+          title: "File already exists?",
+          color: "#7c3aed",
+          nodeType: "DECISION",
+          sections: [
+            { heading: "Check", items: ["Agent checks if docs/briefs/{project-name}.md already exists on disk"] },
+            { heading: "Branches", items: ["NO → write directly", "YES → ask user: overwrite, new version, or rename?"] },
+          ],
+        },
+        bs_file_conflict: {
+          title: "Overwrite / new version / rename?",
+          color: "#7c3aed",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "Options", items: ["OVERWRITE → replace existing file with new brief", "NEW VERSION → write as {name}-v2.md (or -v3, etc.)", "RENAME → write with a custom filename provided by the user"] },
+          ],
+        },
+        bs_write: {
+          title: "Write file",
+          color: "#15803d",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "What happens", items: ["Agent writes the validated brief to docs/briefs/{project-name}.md", "File is created or overwritten depending on the conflict resolution choice", "Brief is ready for Planning or Orion to consume"] },
+          ],
+        },
+        bs_end: {
+          title: "Brief written",
+          color: "#1e293b",
+          nodeType: "DELIVERY",
+          sections: [
+            { heading: "Handoff", items: ["Brief written to docs/briefs/{project-name}.md", "Hand to Planning agent for execution plan", "Or hand to Orion (team-lead) directly for implementation"] },
+          ],
+        },
+        bs_esc_blocked: {
+          title: "Escalation — BLOCKED",
+          color: "#991b1b",
+          nodeType: "ESCALATION",
+          sections: [
+            { heading: "When this triggers", items: ["No problem statement at all", "No success criteria defined", "Scope is empty — cannot determine what to build"] },
+            { heading: "What happens", items: ["Agent stops immediately — does not write the brief", "Reports precisely what is missing to the user", "User must provide the missing information before continuing"] },
           ],
         },
       },
@@ -611,11 +871,228 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
         ],
       },
     },
+    brainstormSvgLabels: {
+      bs_start: "Session Start",
+      bs_existing_check: "Existing briefs?",
+      bs_single_found: "One brief found",
+      bs_multi_found: "Multiple found",
+      bs_status_check: "Status = draft?",
+      bs_ask_continue: "Continue or fresh?",
+      bs_load_brief: "Load brief",
+      bs_phase1: "Phase 1 — Discovery",
+      bs_problem_clear: "Problem clear?",
+      bs_phase2: "Phase 2 — Deep Dive",
+      bs_adversarial: "Adversarial Gate",
+      bs_template_fillable: "All sections fillable?",
+      bs_phase3: "Phase 3 — Draft + Validate",
+      bs_quality_gate: "Quality Gate",
+      bs_quality_passed: "Quality gate passed?",
+      bs_file_exists: "File already exists?",
+      bs_file_conflict: "Overwrite / version / rename?",
+      bs_write: "Write file",
+      bs_end: "Brief written. Hand to Planning or Orion.",
+      bs_arrow_yes: "YES",
+      bs_arrow_no: "NO",
+      bs_arrow_one: "ONE",
+      bs_arrow_multiple: "MULTIPLE",
+      bs_arrow_none: "NONE",
+      bs_arrow_draft: "DRAFT",
+      bs_arrow_done: "DONE",
+      bs_arrow_continue: "CONTINUE",
+      bs_arrow_fresh: "FRESH",
+      bs_arrow_choose: "CHOOSE EXISTING",
+      bs_arrow_new: "NEW PROJECT",
+      bs_arrow_all_fillable: "YES",
+      bs_arrow_missing: "NO",
+      bs_arrow_passed: "PASSED",
+      bs_arrow_tier2: "TIER 2",
+      bs_arrow_blocked: "BLOCKED",
+      bs_esc_blocked_label: "Escalation",
+      bs_esc_blocked_sub: "BLOCKED",
+      bs_arrow_overwrite: "OVERWRITE",
+      bs_arrow_version: "NEW VERSION",
+      bs_arrow_rename: "RENAME",
+    },
+    brainstormDetails: {
+      bs_start: {
+        title: "Session Start",
+        color: "#0d9488",
+        nodeType: "ENTRY POINT",
+        sections: [
+          { heading: "What happens", items: ["Session is initiated with brainstorm agent", "Agent globs docs/briefs/**/*.md to check for existing briefs", "Routing decision made before any questions are asked"] },
+        ],
+      },
+      bs_existing_check: {
+        title: "Existing briefs found?",
+        color: "#0d9488",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["NO → Flow normal → Phase 1 (Discovery)", "ONE found → check status (draft / done)", "MULTIPLE found → list briefs, ask which one or new project"] },
+        ],
+      },
+      bs_single_found: {
+        title: "One brief found",
+        color: "#0891b2",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "What happens", items: ["Single brief located at docs/briefs/", "Agent checks the status field in the brief frontmatter", "Routes to status decision"] },
+        ],
+      },
+      bs_multi_found: {
+        title: "Multiple briefs found",
+        color: "#0891b2",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "What happens", items: ["Agent lists all found briefs to the user", "Asks: which one to resume, or start a new project?", "CHOOSE EXISTING → Load brief → Phase 3 (revision)", "NEW PROJECT → Flow normal → Phase 1"] },
+        ],
+      },
+      bs_status_check: {
+        title: "Status = draft?",
+        color: "#0891b2",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["YES (draft) → Ask: continue or fresh start?", "NO (done/other) → Inform user, ask new project name → Phase 1"] },
+        ],
+      },
+      bs_ask_continue: {
+        title: "Continue or fresh start?",
+        color: "#0891b2",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "What happens", items: ["User is shown the existing draft brief summary", "Asked: resume from where we left off, or start fresh?", "CONTINUE → Load brief → jump directly to Phase 3 (revision)", "FRESH → Ignore existing brief → Phase 1 (Discovery)"] },
+        ],
+      },
+      bs_load_brief: {
+        title: "Load brief",
+        color: "#0891b2",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "What happens", items: ["Agent reads the existing brief file from docs/briefs/", "Provides full context to Phase 3 (revision mode)", "User can iterate on the existing content rather than restarting"] },
+        ],
+      },
+      bs_phase1: {
+        title: "Phase 1 — Discovery",
+        color: "#2563eb",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "Core question", items: ["\"What problem are you trying to solve, and who experiences it?\""] },
+          { heading: "Rules", items: ["Max 2 questions at a time — never overwhelm", "Surface the problem, not the solution", "Do not accept vague answers — push for specifics", "Iterate until problem is stated clearly"] },
+          { heading: "Exit criteria", items: ["Problem stated in 2–4 sentences", "Primary user named", "Problem is a problem, not a feature"] },
+        ],
+      },
+      bs_problem_clear: {
+        title: "Problem clear?",
+        color: "#2563eb",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Exit criteria", items: ["YES → problem stated in 2–4 clear sentences AND primary user named → Phase 2", "NO → iterate — ask more targeted follow-up questions"] },
+        ],
+      },
+      bs_phase2: {
+        title: "Phase 2 — Deep Dive",
+        color: "#4f46e5",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "Topics to cover", items: ["Scope and boundaries — what is explicitly out of scope?", "Success criteria — how will you know it worked?", "Use cases — top 3–5 concrete scenarios", "Constraints — technical, time, team, budget", "Rejected ideas — what was considered and discarded?"] },
+          { heading: "Socratic pressure", items: ["Challenge assumptions — \"Why is X the right approach?\"", "Ask about failure modes — \"What would make this fail?\"", "Probe edges — \"What happens when Y doesn't work?\""] },
+        ],
+      },
+      bs_adversarial: {
+        title: "Adversarial Gate",
+        color: "#7c3aed",
+        nodeType: "GATE",
+        sections: [
+          { heading: "Two mandatory questions", items: ["\"What is the strongest case against building this?\"", "\"What would have to be true for this to fail in year 1?\""] },
+          { heading: "Purpose", items: ["Forces the user to articulate real risks", "Prevents over-optimistic briefs that skip failure modes", "If user can't answer, the problem statement needs more work"] },
+        ],
+      },
+      bs_template_fillable: {
+        title: "All template sections fillable?",
+        color: "#7c3aed",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["YES → proceed to Phase 3 (draft + validation)", "NO → iterate back in Phase 2 — identify which sections are still empty"] },
+          { heading: "Template sections required", items: ["Problem statement", "Primary user", "Success criteria", "Top use cases", "Constraints", "Out of scope", "Risks / adversarial answers"] },
+        ],
+      },
+      bs_phase3: {
+        title: "Phase 3 — Draft + Validation",
+        color: "#6d28d9",
+        nodeType: "MAIN PHASE",
+        sections: [
+          { heading: "What happens", items: ["Agent generates the full brief inline from collected context", "User reviews the draft and provides feedback", "Agent iterates until user confirms the brief is ready", "Quality gate is run before writing to disk"] },
+          { heading: "Output format", items: ["Markdown file at docs/briefs/{project-name}.md", "Structured sections: problem, users, success criteria, use cases, constraints, risks"] },
+        ],
+      },
+      bs_quality_gate: {
+        title: "Quality Gate",
+        color: "#6d28d9",
+        nodeType: "GATE",
+        sections: [
+          { heading: "Tier 1 — auto-fix silently", items: ["Minor formatting issues", "Incomplete sentences that can be inferred", "Missing punctuation or capitalization"] },
+          { heading: "Tier 2 — ask user via question tool", items: ["Ambiguous success criteria", "Conflicting constraints", "Vague scope boundaries"] },
+          { heading: "BLOCKED — escalate immediately", items: ["No problem statement at all", "No success criteria", "Empty scope — can't determine what to build"] },
+        ],
+      },
+      bs_quality_passed: {
+        title: "Quality gate passed?",
+        color: "#6d28d9",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["PASSED → proceed to file write check", "TIER 2 issues → ask user → resolve → re-run gate", "BLOCKED (no problem, no success criteria, empty scope) → STOP — escalate to user, do not write"] },
+        ],
+      },
+      bs_file_exists: {
+        title: "File already exists?",
+        color: "#7c3aed",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Check", items: ["Agent checks if docs/briefs/{project-name}.md already exists on disk"] },
+          { heading: "Branches", items: ["NO → write directly", "YES → ask user: overwrite, new version, or rename?"] },
+        ],
+      },
+      bs_file_conflict: {
+        title: "Overwrite / new version / rename?",
+        color: "#7c3aed",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "Options", items: ["OVERWRITE → replace existing file with new brief", "NEW VERSION → write as {name}-v2.md (or -v3, etc.)", "RENAME → write with a custom filename provided by the user"] },
+        ],
+      },
+      bs_write: {
+        title: "Write file",
+        color: "#15803d",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "What happens", items: ["Agent writes the validated brief to docs/briefs/{project-name}.md", "File is created or overwritten depending on the conflict resolution choice", "Brief is ready for Planning or Orion to consume"] },
+        ],
+      },
+      bs_end: {
+        title: "Brief written",
+        color: "#1e293b",
+        nodeType: "DELIVERY",
+        sections: [
+          { heading: "Handoff", items: ["Brief written to docs/briefs/{project-name}.md", "Hand to Planning agent for execution plan", "Or hand to Orion (team-lead) directly for implementation"] },
+        ],
+      },
+      bs_esc_blocked: {
+        title: "Escalation — BLOCKED",
+        color: "#991b1b",
+        nodeType: "ESCALATION",
+        sections: [
+          { heading: "When this triggers", items: ["No problem statement at all", "No success criteria defined", "Scope is empty — cannot determine what to build"] },
+          { heading: "What happens", items: ["Agent stops immediately — does not write the brief", "Reports precisely what is missing to the user", "User must provide the missing information before continuing"] },
+        ],
+      },
+    },
   };
 }
 
 // Y positions map for scroll-to (populated in FlowChart, read in App)
 const NODE_Y_MAP: Record<string, number> = {};
+
+// Y positions map for Brainstorm flowchart scroll-to
+const BRAINSTORM_NODE_Y_MAP: Record<string, number> = {};
 
 // ─── SVG Flowchart ────────────────────────────────────────────────────────────
 
@@ -1073,6 +1550,317 @@ function FlowChart({ selected, onSelect, lang }: { selected: string; onSelect: (
   );
 }
 
+// ─── Brainstorm Flowchart ─────────────────────────────────────────────────────
+
+const BS_CX = 330;   // main center x
+const BS_LX = 100;   // left branch x
+const BS_RX = 555;   // right branch x
+
+function BrainstormFlowChart({ selected, onSelect, lang }: { selected: string; onSelect: (id: string, nodeY: number) => void; lang: Lang }) {
+  const { brainstormSvgLabels: L } = getFlowchartData(lang);
+  const svgWidth = 700;
+  const svgHeight = 1980;
+  const ns: NodeProps = { id: "", selected, onSelect };
+
+  // ── Y positions ──
+  const Y = {
+    bs_start:             50,
+    bs_existing_check:   145,
+    bs_single_found:     240,   // right branch
+    bs_multi_found:      240,   // far right — same row but shifted to RX+30
+    bs_status_check:     340,   // right branch (continuing from single_found)
+    bs_ask_continue:     440,   // right branch
+    bs_load_brief:       540,   // right + multi load
+    bs_phase1:           680,
+    bs_problem_clear:    790,
+    bs_phase2:           920,
+    bs_adversarial:     1040,
+    bs_template_fillable:1140,
+    bs_phase3:          1280,
+    bs_quality_gate:    1390,
+    bs_quality_passed:  1495,
+    bs_file_exists:     1610,
+    bs_file_conflict:   1710,
+  };
+
+  // The "write" nodes sit at Y_WRITE, end node at Y_END
+  const Y_WRITE = 1810;
+  const Y_END = 1910;
+
+  // Populate BRAINSTORM_NODE_Y_MAP
+  Object.entries(Y).forEach(([k, v]) => { BRAINSTORM_NODE_Y_MAP[k] = v; });
+  BRAINSTORM_NODE_Y_MAP["bs_write_overwrite"] = Y_WRITE;
+  BRAINSTORM_NODE_Y_MAP["bs_write_version"] = Y_WRITE;
+  BRAINSTORM_NODE_Y_MAP["bs_write_rename"] = Y_WRITE;
+  BRAINSTORM_NODE_Y_MAP["bs_end"] = Y_END;
+  BRAINSTORM_NODE_Y_MAP["bs_esc_blocked"] = Y.bs_quality_passed;
+
+  // Widths
+  const W_P = W_PHASE;
+  const W_A = W_ACTION;
+  const W_S = W_SMALL;
+
+  return (
+    <svg width={svgWidth} height={svgHeight} style={{ display: "block", margin: "0 auto" }}>
+      <defs>
+        <filter id="bs-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="rgba(0,0,0,0.15)" />
+        </filter>
+        <marker id="bs-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8" />
+        </marker>
+        <marker id="bs-arrow-teal" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#0d9488" />
+        </marker>
+        <marker id="bs-arrow-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#2563eb" />
+        </marker>
+        <marker id="bs-arrow-indigo" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#4f46e5" />
+        </marker>
+        <marker id="bs-arrow-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#7c3aed" />
+        </marker>
+        <marker id="bs-arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#16a34a" />
+        </marker>
+        <marker id="bs-arrow-red" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#dc2626" />
+        </marker>
+        <marker id="bs-arrow-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#d97706" />
+        </marker>
+        <marker id="bs-arrow-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#0891b2" />
+        </marker>
+      </defs>
+
+      {/* ── SESSION START ── */}
+      <PillNode {...ns} id="bs_start" cx={BS_CX} cy={Y.bs_start} label={L.bs_start} />
+
+      <path d={`M ${BS_CX},${Y.bs_start + H_PILL / 2} L ${BS_CX},${Y.bs_existing_check - DHH - 6}`}
+        stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" />
+
+      {/* ── EXISTING BRIEFS? ── */}
+      <DiamondNode {...ns} id="bs_existing_check" cx={BS_CX} cy={Y.bs_existing_check} label={L.bs_existing_check} stroke="#0d9488" />
+
+      {/* NO branch from existing_check: goes straight down to Phase 1 */}
+      <path d={`M ${BS_CX - DHW - 2},${Y.bs_existing_check} L ${60},${Y.bs_existing_check} L ${60},${Y.bs_phase1} L ${BS_CX - W_P / 2 - 6},${Y.bs_phase1}`}
+        stroke="#0d9488" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-teal)" />
+      <ArrowLabel x={66} y={Math.round((Y.bs_existing_check + Y.bs_phase1) / 2)} text={L.bs_arrow_none} color="#0d9488" align="start" />
+      <path d={`M ${BS_CX + DHW},${Y.bs_existing_check} L ${BS_RX - W_S / 2 - 6},${Y.bs_single_found}`}
+        stroke="#0891b2" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-cyan)" />
+      <ArrowLabel x={BS_CX + DHW + 6} y={Y.bs_existing_check - 8} text={L.bs_arrow_one} color="#0891b2" align="start" />
+
+      {/* ── SINGLE FOUND ── */}
+      <ActionNode {...ns} id="bs_single_found" cx={BS_RX} cy={Y.bs_single_found}
+        label={L.bs_single_found} fill="#ecfeff" stroke="#0891b2" textFill="#0e7490"
+        w={W_S + 20} h={H_SMALL} />
+
+      {/* single_found → status_check */}
+      <path d={`M ${BS_RX},${Y.bs_single_found + H_SMALL / 2} L ${BS_RX},${Y.bs_status_check - DHH - 6}`}
+        stroke="#0891b2" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-cyan)" />
+
+      {/* ── STATUS = DRAFT? ── */}
+      <DiamondNode {...ns} id="bs_status_check" cx={BS_RX} cy={Y.bs_status_check} label={L.bs_status_check} stroke="#0891b2" />
+
+      {/* status: YES (draft) → ask_continue (straight down) */}
+      <path d={`M ${BS_RX},${Y.bs_status_check + DHH} L ${BS_RX},${Y.bs_ask_continue - H_ACTION / 2 - 6}`}
+        stroke="#0891b2" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-cyan)" />
+      <ArrowLabel x={BS_RX + 6} y={(Y.bs_status_check + DHH + Y.bs_ask_continue - H_ACTION / 2) / 2 + 5} text={L.bs_arrow_draft} color="#0891b2" align="start" />
+
+      {/* status: NO → done/other: goes back left to Phase 1 path */}
+      <path d={`M ${BS_RX - DHW},${Y.bs_status_check} C ${BS_CX + 40},${Y.bs_status_check} ${BS_CX + 40},${Y.bs_phase1 - H_PHASE / 2} ${BS_CX + W_P / 2 + 6},${Y.bs_phase1}`}
+        stroke="#64748b" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_RX - DHW - 6} y={Y.bs_status_check - 8} text={L.bs_arrow_done} color="#64748b" align="end" />
+
+      {/* ── ASK CONTINUE ── */}
+      <ActionNode {...ns} id="bs_ask_continue" cx={BS_RX} cy={Y.bs_ask_continue}
+        label={L.bs_ask_continue} fill="#ecfeff" stroke="#0891b2" textFill="#0e7490"
+        w={W_S + 20} h={H_SMALL} />
+
+      {/* CONTINUE → load_brief */}
+      <path d={`M ${BS_RX},${Y.bs_ask_continue + H_SMALL / 2} L ${BS_RX},${Y.bs_load_brief - H_ACTION / 2 - 6}`}
+        stroke="#0891b2" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-cyan)" />
+      <ArrowLabel x={BS_RX + 6} y={(Y.bs_ask_continue + H_SMALL / 2 + Y.bs_load_brief - H_ACTION / 2) / 2 + 5} text={L.bs_arrow_continue} color="#0891b2" align="start" />
+
+      {/* FRESH → Phase 1 (curved back to center) */}
+      <path d={`M ${BS_RX - W_S / 2 - 10},${Y.bs_ask_continue} C ${BS_CX + 60},${Y.bs_ask_continue} ${BS_CX + 60},${Y.bs_phase1 - H_PHASE / 2} ${BS_CX + W_P / 2 + 6},${Y.bs_phase1}`}
+        stroke="#64748b" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_RX - W_S / 2 - 16} y={Y.bs_ask_continue - 8} text={L.bs_arrow_fresh} color="#64748b" align="end" />
+
+      {/* ── LOAD BRIEF ── */}
+      <ActionNode {...ns} id="bs_load_brief" cx={BS_RX} cy={Y.bs_load_brief}
+        label={L.bs_load_brief} fill="#ecfeff" stroke="#0891b2" textFill="#0e7490"
+        w={W_S + 20} h={H_SMALL} />
+
+      {/* load_brief → phase3 (jump ahead, curved) */}
+      <path d={`M ${BS_RX},${Y.bs_load_brief + H_SMALL / 2} C ${BS_RX + 60},${Y.bs_load_brief + 60} ${BS_RX + 60},${Y.bs_phase3 - 60} ${BS_CX + W_P / 2 + 6},${Y.bs_phase3}`}
+        stroke="#0891b2" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-cyan)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_RX + 66} y={(Y.bs_load_brief + Y.bs_phase3) / 2} text="→ Ph.3" color="#0891b2" align="start" />
+
+      {/* MULTIPLE branch from existing_check: goes to multi_found (left branch) */}
+      <path d={`M ${BS_CX - DHW},${Y.bs_existing_check} L ${BS_LX + W_S / 2 + 6},${Y.bs_multi_found}`}
+        stroke="#0891b2" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-cyan)" />
+      <ArrowLabel x={BS_CX - DHW - 6} y={Y.bs_existing_check - 6} text={L.bs_arrow_multiple} color="#0891b2" align="end" />
+
+      {/* ── MULTI FOUND ── */}
+      <ActionNode {...ns} id="bs_multi_found" cx={BS_LX} cy={Y.bs_multi_found}
+        label={L.bs_multi_found} fill="#ecfeff" stroke="#0891b2" textFill="#0e7490"
+        w={W_S + 20} h={H_SMALL} />
+
+      {/* multi: CHOOSE EXISTING → load_brief (curved right + down) */}
+      <path d={`M ${BS_LX + W_S / 2 + 10},${Y.bs_multi_found} C ${BS_CX - 60},${Y.bs_multi_found} ${BS_CX - 60},${Y.bs_load_brief} ${BS_RX - W_S / 2 - 10},${Y.bs_load_brief}`}
+        stroke="#0891b2" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-cyan)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_LX + W_S / 2 + 16} y={Y.bs_multi_found - 10} text={L.bs_arrow_choose} color="#0891b2" align="start" />
+
+      {/* multi: NEW PROJECT → Phase 1 */}
+      <path d={`M ${BS_LX},${Y.bs_multi_found + H_SMALL / 2} C ${BS_LX},${Y.bs_multi_found + 60} ${BS_CX - W_P / 2 - 30},${Y.bs_phase1 - 30} ${BS_CX - W_P / 2 - 6},${Y.bs_phase1}`}
+        stroke="#64748b" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_LX - 4} y={Y.bs_multi_found + H_SMALL / 2 + 14} text={L.bs_arrow_new} color="#64748b" align="middle" />
+
+      {/* ── PHASE 1 — DISCOVERY ── */}
+      <PhaseNode {...ns} id="bs_phase1" cx={BS_CX} cy={Y.bs_phase1} label={L.bs_phase1} fill="#2563eb" />
+
+      <path d={`M ${BS_CX},${Y.bs_phase1 + H_PHASE / 2} L ${BS_CX},${Y.bs_problem_clear - DHH - 6}`}
+        stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" />
+
+      {/* ── PROBLEM CLEAR? ── */}
+      <DiamondNode {...ns} id="bs_problem_clear" cx={BS_CX} cy={Y.bs_problem_clear} label={L.bs_problem_clear} stroke="#2563eb" />
+
+      {/* NO → loop back to Phase 1 */}
+      <path d={`M ${BS_CX - DHW},${Y.bs_problem_clear} L ${50},${Y.bs_problem_clear} L ${50},${Y.bs_phase1} L ${BS_CX - W_P / 2 - 6},${Y.bs_phase1}`}
+        stroke="#dc2626" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-red)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_CX - DHW - 6} y={Y.bs_problem_clear - 8} text={L.bs_arrow_no} color="#dc2626" align="end" />
+
+      {/* YES → Phase 2 */}
+      <path d={`M ${BS_CX},${Y.bs_problem_clear + DHH} L ${BS_CX},${Y.bs_phase2 - H_PHASE / 2 - 6}`}
+        stroke="#2563eb" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-blue)" />
+      <ArrowLabel x={BS_CX + 6} y={(Y.bs_problem_clear + DHH + Y.bs_phase2 - H_PHASE / 2) / 2 + 5} text={L.bs_arrow_yes} color="#2563eb" align="start" />
+
+      {/* ── PHASE 2 — DEEP DIVE ── */}
+      <PhaseNode {...ns} id="bs_phase2" cx={BS_CX} cy={Y.bs_phase2} label={L.bs_phase2} fill="#4f46e5" />
+
+      <path d={`M ${BS_CX},${Y.bs_phase2 + H_PHASE / 2} L ${BS_CX},${Y.bs_adversarial - H_ACTION / 2 - 6}`}
+        stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" />
+
+      {/* ── ADVERSARIAL GATE ── */}
+      <ActionNode {...ns} id="bs_adversarial" cx={BS_CX} cy={Y.bs_adversarial}
+        label={L.bs_adversarial} fill="#ede9fe" stroke="#7c3aed" textFill="#4c1d95"
+        w={W_A} h={H_ACTION} />
+
+      <path d={`M ${BS_CX},${Y.bs_adversarial + H_ACTION / 2} L ${BS_CX},${Y.bs_template_fillable - DHH - 6}`}
+        stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" />
+
+      {/* ── ALL SECTIONS FILLABLE? ── */}
+      <DiamondNode {...ns} id="bs_template_fillable" cx={BS_CX} cy={Y.bs_template_fillable} label={L.bs_template_fillable} stroke="#7c3aed" />
+
+      {/* NO → back to Phase 2 */}
+      <path d={`M ${BS_CX - DHW},${Y.bs_template_fillable} L ${50},${Y.bs_template_fillable} L ${50},${Y.bs_phase2} L ${BS_CX - W_P / 2 - 6},${Y.bs_phase2}`}
+        stroke="#dc2626" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-red)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_CX - DHW - 6} y={Y.bs_template_fillable - 8} text={L.bs_arrow_missing} color="#dc2626" align="end" />
+
+      {/* YES → Phase 3 */}
+      <path d={`M ${BS_CX},${Y.bs_template_fillable + DHH} L ${BS_CX},${Y.bs_phase3 - H_PHASE / 2 - 6}`}
+        stroke="#7c3aed" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-purple)" />
+      <ArrowLabel x={BS_CX + 6} y={(Y.bs_template_fillable + DHH + Y.bs_phase3 - H_PHASE / 2) / 2 + 5} text={L.bs_arrow_all_fillable} color="#7c3aed" align="start" />
+
+      {/* ── PHASE 3 — DRAFT + VALIDATE ── */}
+      <PhaseNode {...ns} id="bs_phase3" cx={BS_CX} cy={Y.bs_phase3} label={L.bs_phase3} fill="#6d28d9" />
+
+      <path d={`M ${BS_CX},${Y.bs_phase3 + H_PHASE / 2} L ${BS_CX},${Y.bs_quality_gate - H_ACTION / 2 - 6}`}
+        stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" />
+
+      {/* ── QUALITY GATE ── */}
+      <ActionNode {...ns} id="bs_quality_gate" cx={BS_CX} cy={Y.bs_quality_gate}
+        label={L.bs_quality_gate} fill="#ede9fe" stroke="#6d28d9" textFill="#3b0764"
+        w={W_A} h={H_ACTION} />
+
+      <path d={`M ${BS_CX},${Y.bs_quality_gate + H_ACTION / 2} L ${BS_CX},${Y.bs_quality_passed - DHH - 6}`}
+        stroke="#94a3b8" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow)" />
+
+      {/* ── QUALITY GATE PASSED? ── */}
+      <DiamondNode {...ns} id="bs_quality_passed" cx={BS_CX} cy={Y.bs_quality_passed} label={L.bs_quality_passed} stroke="#6d28d9" />
+
+      {/* BLOCKED → escalade (right) */}
+      <EscaladeNode {...ns} id="bs_esc_blocked" cx={BS_RX} cy={Y.bs_quality_passed}
+        label={L.bs_esc_blocked_label} sub={L.bs_esc_blocked_sub} w={W_S} />
+      <path d={`M ${BS_CX + DHW},${Y.bs_quality_passed} L ${BS_RX - W_S / 2 - 6},${Y.bs_quality_passed}`}
+        stroke="#dc2626" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-red)" />
+      <ArrowLabel x={BS_CX + DHW + 6} y={Y.bs_quality_passed - 8} text={L.bs_arrow_blocked} color="#dc2626" align="start" />
+
+      {/* TIER 2 → left branch (ask user → re-run gate) */}
+      <path d={`M ${BS_CX - DHW},${Y.bs_quality_passed} L ${60},${Y.bs_quality_passed} L ${60},${Y.bs_quality_gate} L ${BS_CX - W_A / 2 - 6},${Y.bs_quality_gate}`}
+        stroke="#d97706" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-amber)" strokeDasharray="5 3" />
+      <ArrowLabel x={BS_CX - DHW - 6} y={Y.bs_quality_passed - 8} text={L.bs_arrow_tier2} color="#d97706" align="end" />
+
+      {/* PASSED → file_exists */}
+      <path d={`M ${BS_CX},${Y.bs_quality_passed + DHH} L ${BS_CX},${Y.bs_file_exists - DHH - 6}`}
+        stroke="#16a34a" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-green)" />
+      <ArrowLabel x={BS_CX + 6} y={(Y.bs_quality_passed + DHH + Y.bs_file_exists - DHH) / 2 + 5} text={L.bs_arrow_passed} color="#16a34a" align="start" />
+
+      {/* ── FILE ALREADY EXISTS? ── */}
+      <DiamondNode {...ns} id="bs_file_exists" cx={BS_CX} cy={Y.bs_file_exists} label={L.bs_file_exists} stroke="#7c3aed" />
+
+      {/* NO → write directly */}
+      <path d={`M ${BS_CX - DHW},${Y.bs_file_exists} L ${BS_LX + W_S / 2 + 6},${Y_WRITE}`}
+        stroke="#16a34a" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-green)" />
+      <ArrowLabel x={BS_CX - DHW - 6} y={Y.bs_file_exists - 8} text={L.bs_arrow_no} color="#16a34a" align="end" />
+
+      {/* YES → file_conflict */}
+      <path d={`M ${BS_CX},${Y.bs_file_exists + DHH} L ${BS_CX},${Y.bs_file_conflict - H_ACTION / 2 - 6}`}
+        stroke="#7c3aed" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-purple)" />
+      <ArrowLabel x={BS_CX + 6} y={(Y.bs_file_exists + DHH + Y.bs_file_conflict - H_ACTION / 2) / 2 + 5} text={L.bs_arrow_yes} color="#7c3aed" align="start" />
+
+      {/* ── FILE CONFLICT ── */}
+      <ActionNode {...ns} id="bs_file_conflict" cx={BS_CX} cy={Y.bs_file_conflict}
+        label={L.bs_file_conflict} fill="#f5f3ff" stroke="#7c3aed" textFill="#4c1d95"
+        w={W_A + 20} h={H_ACTION} />
+
+      {/* OVERWRITE → write */}
+      <path d={`M ${BS_CX - W_A / 2 - 10},${Y.bs_file_conflict} L ${BS_LX + W_S / 2 + 6},${Y_WRITE}`}
+        stroke="#7c3aed" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-purple)" />
+      <ArrowLabel x={BS_CX - W_A / 2 - 16} y={Y.bs_file_conflict - 8} text={L.bs_arrow_overwrite} color="#7c3aed" align="end" />
+
+      {/* NEW VERSION → write */}
+      <path d={`M ${BS_CX},${Y.bs_file_conflict + H_ACTION / 2} L ${BS_CX},${Y_WRITE - H_SMALL / 2 - 6}`}
+        stroke="#7c3aed" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-purple)" />
+      <ArrowLabel x={BS_CX + 6} y={(Y.bs_file_conflict + H_ACTION / 2 + Y_WRITE - H_SMALL / 2) / 2 + 5} text={L.bs_arrow_version} color="#7c3aed" align="start" />
+
+      {/* RENAME → write (right branch) */}
+      <path d={`M ${BS_CX + W_A / 2 + 10},${Y.bs_file_conflict} L ${BS_RX - W_S / 2 - 6},${Y_WRITE}`}
+        stroke="#7c3aed" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-purple)" />
+      <ArrowLabel x={BS_CX + W_A / 2 + 16} y={Y.bs_file_conflict - 8} text={L.bs_arrow_rename} color="#7c3aed" align="start" />
+
+      {/* ── WRITE FILE (center — from NEW VERSION) ── */}
+      <ActionNode {...ns} id="bs_write_version" cx={BS_CX} cy={Y_WRITE}
+        label={L.bs_write} fill="#dcfce7" stroke="#16a34a" textFill="#166534"
+        w={W_S} h={H_SMALL} />
+
+      {/* Left write (OVERWRITE path): arrow from left */}
+      <ActionNode {...ns} id="bs_write_overwrite" cx={BS_LX} cy={Y_WRITE}
+        label={L.bs_write} fill="#dcfce7" stroke="#16a34a" textFill="#166534"
+        w={W_S} h={H_SMALL} />
+
+      {/* Right write (RENAME path) */}
+      <ActionNode {...ns} id="bs_write_rename" cx={BS_RX} cy={Y_WRITE}
+        label={L.bs_write} fill="#dcfce7" stroke="#16a34a" textFill="#166534"
+        w={W_S} h={H_SMALL} />
+
+      {/* All three write nodes → end */}
+      <path d={`M ${BS_LX},${Y_WRITE + H_SMALL / 2} C ${BS_LX},${Y_WRITE + 50} ${BS_CX - W_PILL / 2 - 20},${Y_END - 10} ${BS_CX - W_PILL / 2 - 6},${Y_END}`}
+        stroke="#16a34a" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-green)" strokeDasharray="5 3" />
+      <path d={`M ${BS_CX},${Y_WRITE + H_SMALL / 2} L ${BS_CX},${Y_END - H_PILL / 2 - 6}`}
+        stroke="#16a34a" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-green)" />
+      <path d={`M ${BS_RX},${Y_WRITE + H_SMALL / 2} C ${BS_RX},${Y_WRITE + 50} ${BS_CX + W_PILL / 2 + 20},${Y_END - 10} ${BS_CX + W_PILL / 2 + 6},${Y_END}`}
+        stroke="#16a34a" strokeWidth={1.5} fill="none" markerEnd="url(#bs-arrow-green)" strokeDasharray="5 3" />
+
+      {/* ── END ── */}
+      <PillNode {...ns} id="bs_end" cx={BS_CX} cy={Y_END} label={L.bs_end} />
+    </svg>
+  );
+}
+
 // ─── Detail Panel ─────────────────────────────────────────────────────────────
 
 function Code({ children }: { children: string }) {
@@ -1146,8 +1934,9 @@ function BulletItem({ item, nodeColor }: { item: string; nodeColor: string }) {
 }
 
 function DetailPanel({ nodeId, lang }: { nodeId: string; lang: Lang }) {
-  const { details: DETAILS } = getFlowchartData(lang);
-  const detail = DETAILS[nodeId];
+  const { details: DETAILS, brainstormDetails: BS_DETAILS } = getFlowchartData(lang);
+  const lookupId = nodeId.startsWith("bs_write_") ? "bs_write" : nodeId;
+  const detail = DETAILS[lookupId] ?? BS_DETAILS[lookupId];
   const placeholder = lang === "fr" ? "Cliquer sur un nœud pour voir ses détails." : "Click a node to see its details.";
   if (!detail) return (
     <div style={{ padding: 40, color: "#94a3b8", fontSize: 15, fontStyle: "italic" }}>
@@ -1281,6 +2070,8 @@ interface Translations {
   col_mode: string;
   col_color: string;
   col_permissions: string;
+  tab_orion: string;
+  tab_brainstorm: string;
 }
 
 const translations: Record<Lang, Translations> = {
@@ -1524,6 +2315,8 @@ const translations: Record<Lang, Translations> = {
     col_mode: "Mode",
     col_color: "Color",
     col_permissions: "Permissions",
+    tab_orion: "Orion workflow",
+    tab_brainstorm: "Brainstorm workflow",
   },
   fr: {
     plugin_label: "OpenCode Plugin",
@@ -1765,6 +2558,8 @@ const translations: Record<Lang, Translations> = {
     col_mode: "Mode",
     col_color: "Couleur",
     col_permissions: "Permissions",
+    tab_orion: "Workflow Orion",
+    tab_brainstorm: "Workflow Brainstorm",
   },
 };
 
@@ -2397,6 +3192,7 @@ export default function App() {
   const [lang, setLang] = useState<Lang>("en");
   const [selected, setSelected] = useState<string>("understand");
   const [zoom, setZoom] = useState<number>(1.0);
+  const [flowchartTab, setFlowchartTab] = useState<"orion" | "brainstorm">("orion");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const zoomIn = () => setZoom(z => Math.min(2.0, Math.round((z + 0.1) * 10) / 10));
@@ -2410,6 +3206,14 @@ export default function App() {
       const targetScroll = nodeY * zoom - container.clientHeight / 2;
       container.scrollTo({ top: Math.max(0, targetScroll), behavior: "smooth" });
     }
+  };
+
+  const handleTabChange = (tab: "orion" | "brainstorm") => {
+    setFlowchartTab(tab);
+    setSelected(tab === "orion" ? "understand" : "bs_start");
+    setZoom(1.0);
+    const container = containerRef.current;
+    if (container) container.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const t = translations[lang];
@@ -2474,9 +3278,33 @@ export default function App() {
               {t.nav_config}
             </button>
             <div style={{ width: 1, height: 16, background: "#e2e8f0" }} />
-            <div>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>team-lead — Workflow</span>
-              <span style={{ fontSize: 12, color: "#94a3b8", marginLeft: 12 }}>{t.flowchart_subtitle}</span>
+            {/* Flowchart tab switcher */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2, background: "#f1f5f9", borderRadius: 8, padding: "3px" }}>
+              {([
+                { key: "orion" as const, label: t.tab_orion, activeColor: "#4f46e5", activeBg: "white" },
+                { key: "brainstorm" as const, label: t.tab_brainstorm, activeColor: "#6d28d9", activeBg: "white" },
+              ]).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => handleTabChange(tab.key)}
+                  style={{
+                    background: flowchartTab === tab.key ? tab.activeBg : "none",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: flowchartTab === tab.key ? 700 : 500,
+                    color: flowchartTab === tab.key ? tab.activeColor : "#64748b",
+                    padding: "4px 12px",
+                    fontFamily: "system-ui, sans-serif",
+                    boxShadow: flowchartTab === tab.key ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -2517,7 +3345,10 @@ export default function App() {
 
             {/* SVG with zoom */}
             <div style={{ transformOrigin: "top center", transform: `scale(${zoom})`, width: "fit-content" }}>
-              <FlowChart selected={selected} onSelect={handleSelect} lang={lang} />
+              {flowchartTab === "orion"
+                ? <FlowChart selected={selected} onSelect={handleSelect} lang={lang} />
+                : <BrainstormFlowChart selected={selected} onSelect={handleSelect} lang={lang} />
+              }
             </div>
           </div>
 

@@ -17,12 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exec-plans now support an optional `brief:` frontmatter field to trace the brainstorm → implementation link bidirectionally.
 
 ### Changed
+- The `brainstorm` agent now challenges your assumptions before drafting — Phase 2 applies Socratic pressure on stated assumptions and constraints, and a mandatory adversarial gate runs before the brief is written: the agent presents the strongest case against building the product and asks what would cause it to fail. Briefs are stronger as a result.
+- The `brainstorm` agent now hard-blocks on incomplete briefs — if the Problem statement, Success Criteria, or Scope In are missing or unresolved, the brief won't be drafted until those gaps are closed. Cosmetic disagreements are noted as open questions; substantive ones block the output entirely.
+- Scope inflation is now flagged throughout the brainstorm session — if the in-scope list grows to 5 or more items, the agent surfaces it once and asks what's truly essential.
 - Harness now operates fully autonomously — it explores the codebase, decides what to encode, and acts without asking for confirmation at each step. It only stops in three explicit cases: the pattern can't be mechanized, encoding requires creating a new workflow file, or the trigger is too vague with no codebase signal to anchor it.
 
 ### Fixed
 - Lifecycle tools (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`) now return valid responses — previously the `execute` functions returned raw objects instead of strings, causing the OpenCode plugin API to silently discard their output
 - Harness agent now has full `bash`, `read`, `write`, `edit`, `glob`, and `grep` permissions — previously it was registered with a restricted command allowlist and scoped file targets, which prevented it from running arbitrary lint commands or writing enforcement artifacts outside the predefined list.
 - The harness agent no longer writes human-facing checklists to `AGENTS.md` — it now correctly identifies them as documentation and routes them to CI checks or `docs/guiding-principles.md` instead. An unwired script in the repo is also no longer treated as a valid enforcement artifact.
+- Brainstorm agent now enforces a hard stop before responding to the user — the `docs/briefs/` scan is mandatory regardless of how much context the user provides at session start, preventing the agent from skipping existing brief detection
 
 ### Removed
 - `memory.md` concept removed — the persistent project memory feature has been deprecated. The `experimental.chat.system.transform` hook and memory.md injections have been removed from the plugin. Only the scratchpad survives compaction.
