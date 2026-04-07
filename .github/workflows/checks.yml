@@ -9,28 +9,37 @@ on:
   push:
   pull_request:
 
+permissions: {}
+
 jobs:
   zero-deps:
     name: Zero dependencies check
     runs-on: ubuntu-latest
-    # Pattern enforced: this project ships zero runtime and dev dependencies by design.
-    # Adding any dependency (even a devDep) breaks the "no npm install" contract and
-    # must be a conscious decision reviewed explicitly. Without this check, a stray
-    # `npm install <pkg>` can silently sneak into package.json.
+    # Pattern enforced: the only allowed runtime dependency is @opencode-ai/plugin.
+    # Any other entry in dependencies is a violation. devDependencies must remain empty.
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assert no dependencies or devDependencies
+      - name: Assert dependencies contains only @opencode-ai/plugin and devDependencies is empty
         run: |
           node -e "
           const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
-          const forbidden = ['dependencies', 'devDependencies'];
-          const found = forbidden.filter(k => pkg[k] && Object.keys(pkg[k]).length > 0);
-          if (found.length > 0) {
-            console.error('Error: This project must have zero dependencies. Found: ' + found.join(', '));
+          const deps = pkg.dependencies ?? {};
+          const devDeps = pkg.devDependencies ?? {};
+          if (!deps['@opencode-ai/plugin']) {
+            console.error('Error: @opencode-ai/plugin must be present in dependencies.');
             process.exit(1);
           }
-          console.log('OK: zero dependencies confirmed');
+          const extraDeps = Object.keys(deps).filter(k => k !== '@opencode-ai/plugin');
+          if (extraDeps.length > 0) {
+            console.error('Error: dependencies may only contain @opencode-ai/plugin. Found unexpected: ' + extraDeps.join(', '));
+            process.exit(1);
+          }
+          if (Object.keys(devDeps).length > 0) {
+            console.error('Error: devDependencies must be empty. Found: ' + Object.keys(devDeps).join(', '));
+            process.exit(1);
+          }
+          console.log('OK: dependency constraints confirmed');
           "
 
   changelog-unreleased:
