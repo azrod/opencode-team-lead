@@ -29,6 +29,22 @@ Plugin OpenCode qui injecte Orion, un orchestrateur team-lead qui planifie, dél
 
 ---
 
+## Custom Tools (Lifecycle)
+
+Cinq tools de bookkeeping injectés directement dans OpenCode — accessibles par Orion sans délégation :
+
+| Tool | Rôle |
+|---|---|
+| `project_state()` | Vue complète des exec-plans, specs et briefs courants |
+| `mark_block_done(plan_file, block_name)` | Coche un bloc dans un exec-plan |
+| `complete_plan(plan_file)` | Passe un exec-plan à `status: completed` |
+| `register_spec(specFile, title)` | Crée un nouveau fichier de spec avec frontmatter minimal |
+| `check_artifacts()` | Scan de consistance transversal — refs mortes, statuts stales |
+
+→ Voir [specs/lifecycle-tools.md](specs/lifecycle-tools.md)
+
+---
+
 ## Liens
 
 - [Architecture](architecture.md)

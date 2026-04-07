@@ -43,6 +43,7 @@ Pour les tâches complexes ou multi-sessions. Produit par l'agent `planning`.
 status: draft | active | completed
 created: {date}
 updated: {date}
+brief: docs/briefs/{nom}.md   # optionnel — brief associé
 ---
 
 ## Goal

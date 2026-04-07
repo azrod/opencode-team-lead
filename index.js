@@ -4,6 +4,14 @@
 import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tool } from "@opencode-ai/plugin/tool";
+import {
+  projectState,
+  markBlockDone,
+  completePlan,
+  registerSpec,
+  checkArtifacts,
+} from "./tools/lifecycle.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -399,6 +407,13 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
 
   const projectRoot = worktree ?? directory ?? ".";
 
+  // Resolved once during the config hook and captured in closure for tool handlers.
+  let paths = {
+    specs: "docs/specs",
+    execPlans: "docs/exec-plans",
+    briefs: "docs/briefs",
+  };
+
   return {
     // ── Config hook: inject the team-lead agent ──────────────────────
     config: async (input) => {
@@ -406,6 +421,14 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
 
       const userConfig = input.agent["team-lead"] ?? {};
       const { soul, ...userConfigRest } = userConfig;
+
+      // Resolve artifact paths from user config (with defaults).
+      const userPaths = userConfig.paths ?? {};
+      paths = {
+        specs: userPaths.specs ?? "docs/specs",
+        execPlans: userPaths.execPlans ?? "docs/exec-plans",
+        briefs: userPaths.briefs ?? "docs/briefs",
+      };
 
       const teamLeadPrompt = soul === false
         ? prompt
@@ -421,6 +444,11 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         distill: "allow",
         prune: "allow",
         compress: "allow",
+        project_state: "allow",
+        mark_block_done: "allow",
+        complete_plan: "allow",
+        register_spec: "allow",
+        check_artifacts: "allow",
         read: {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
@@ -485,6 +513,86 @@ ${content.trim()}
       } catch {
         // Scratchpad doesn't exist or isn't readable — skip silently.
       }
+    },
+
+    // ── Tool hook: lifecycle bookkeeping tools ────────────────────────
+    tool: {
+      project_state: {
+        description:
+          "Return a structured report of the current state of all management artifacts " +
+          "(exec-plans, specs, briefs) in the project. Call at the start of every mission.",
+        args: {},
+        async execute(_args) {
+          try {
+            return JSON.stringify(await projectState(projectRoot, paths));
+          } catch (err) {
+            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
+          }
+        },
+      },
+      mark_block_done: {
+        description:
+          "Check a specific block in an exec-plan ([ ] → [x]). " +
+          "Call after each validated sub-task delivery.",
+        args: {
+          plan_file: tool.schema.string().describe("Relative path to the exec-plan file, e.g. 'docs/exec-plans/auth-system.md'"),
+          block_name: tool.schema.string().describe("Name or unambiguous substring of the block to check, e.g. 'Bloc 2: login flow'"),
+        },
+        async execute({ plan_file, block_name }) {
+          try {
+            return JSON.stringify(await markBlockDone(projectRoot, plan_file, block_name));
+          } catch (err) {
+            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
+          }
+        },
+      },
+      complete_plan: {
+        description:
+          "Set an exec-plan's status to 'completed' in its frontmatter. " +
+          "Refuses if any unchecked blocks remain. " +
+          "Call when all blocks are done and the final review is APPROVED.",
+        args: {
+          plan_file: tool.schema.string().describe("Relative path to the exec-plan file"),
+        },
+        async execute({ plan_file }) {
+          try {
+            return JSON.stringify(await completePlan(projectRoot, plan_file));
+          } catch (err) {
+            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
+          }
+        },
+      },
+      register_spec: {
+        description:
+          "Create a new spec file with minimal frontmatter (title, status: draft, created). " +
+          "Refuses to overwrite existing files. " +
+          "Call when a new spec needs to exist on disk.",
+        args: {
+          spec_file: tool.schema.string().describe("Filename or relative path for the spec, e.g. 'auth.md' or 'docs/specs/auth.md'"),
+          title: tool.schema.string().describe("Human-readable title of the spec, e.g. 'Spec : Authentication System'"),
+        },
+        async execute({ spec_file, title }) {
+          try {
+            return JSON.stringify(await registerSpec(projectRoot, paths, spec_file, title));
+          } catch (err) {
+            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
+          }
+        },
+      },
+      check_artifacts: {
+        description:
+          "Cross-artifact consistency scan — detects dead references, stale statuses, " +
+          "and missing links between exec-plans, specs, and briefs. " +
+          "Call at mission start and after completing each scope.",
+        args: {},
+        async execute(_args) {
+          try {
+            return JSON.stringify(await checkArtifacts(projectRoot, paths));
+          } catch (err) {
+            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
+          }
+        },
+      },
     },
   };
 };
