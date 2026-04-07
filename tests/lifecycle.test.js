@@ -202,7 +202,7 @@ describe("markBlockDone", () => {
     assert.ok(result.hint.length > 0);
   });
 
-  test("block name not found → throws with 'introuvable' and lists available blocks", async () => {
+  test("block name not found → throws with 'not found' and lists available blocks", async () => {
     await writeFile(
       tmpDir,
       "docs/exec-plans/plan-missing.md",
@@ -212,7 +212,7 @@ describe("markBlockDone", () => {
     await assert.rejects(
       () => markBlockDone(tmpDir, "docs/exec-plans/plan-missing.md", "nonexistent block"),
       (err) => {
-        assert.match(err.message, /introuvable/i);
+        assert.match(err.message, /block .+ not found/i);
         assert.match(err.message, /Real task one/);
         assert.match(err.message, /Real task two/);
         return true;
@@ -220,7 +220,7 @@ describe("markBlockDone", () => {
     );
   });
 
-  test("ambiguous name matching multiple blocks → throws with 'plusieurs blocs'", async () => {
+  test("ambiguous name matching multiple blocks → throws with 'multiple blocks'", async () => {
     await writeFile(
       tmpDir,
       "docs/exec-plans/plan-ambiguous.md",
@@ -230,17 +230,17 @@ describe("markBlockDone", () => {
     await assert.rejects(
       () => markBlockDone(tmpDir, "docs/exec-plans/plan-ambiguous.md", "Setup"),
       (err) => {
-        assert.match(err.message, /plusieurs blocs/i);
+        assert.match(err.message, /multiple blocks/i);
         return true;
       }
     );
   });
 
-  test("file not found → throws with 'introuvable'", async () => {
+  test("file not found → throws with 'file not found'", async () => {
     await assert.rejects(
       () => markBlockDone(tmpDir, "docs/exec-plans/does-not-exist.md", "anything"),
       (err) => {
-        assert.match(err.message, /introuvable/i);
+        assert.match(err.message, /file not found/i);
         return true;
       }
     );
@@ -299,7 +299,7 @@ describe("completePlan", () => {
     await assert.rejects(
       () => completePlan(tmpDir, "docs/exec-plans/partial.md"),
       (err) => {
-        assert.match(err.message, /non coché/i);
+        assert.match(err.message, /unchecked/i);
         return true;
       }
     );
@@ -331,17 +331,17 @@ describe("completePlan", () => {
     await assert.rejects(
       () => completePlan(tmpDir, "docs/exec-plans/no-status.md"),
       (err) => {
-        assert.match(err.message, /status/i);
+        assert.match(err.message, /'status' missing/i);
         return true;
       }
     );
   });
 
-  test("file not found → throws", async () => {
+  test("file not found → throws with 'file not found'", async () => {
     await assert.rejects(
       () => completePlan(tmpDir, "docs/exec-plans/ghost.md"),
       (err) => {
-        assert.match(err.message, /introuvable/i);
+        assert.match(err.message, /file not found/i);
         return true;
       }
     );
@@ -383,14 +383,14 @@ describe("registerSpec", () => {
     assert.match(content, /# My Feature/);
   });
 
-  test("file already exists → throws with 'existe déjà'", async () => {
+  test("file already exists → throws with 'already exists'", async () => {
     await mkdir(join(tmpDir, DEFAULT_PATHS.specs), { recursive: true });
     await writeFile(tmpDir, `${DEFAULT_PATHS.specs}/existing.md`, `# Existing\n`);
 
     await assert.rejects(
       () => registerSpec(tmpDir, DEFAULT_PATHS, "existing.md", "Existing"),
       (err) => {
-        assert.match(err.message, /existe déjà/i);
+        assert.match(err.message, /already exists/i);
         return true;
       }
     );
@@ -435,7 +435,7 @@ describe("checkArtifacts", () => {
     try {
       const result = await checkArtifacts(tmpDir, DEFAULT_PATHS);
       assert.deepEqual(result.problems, []);
-      assert.equal(result.summary, "Tous les artefacts sont cohérents.");
+      assert.equal(result.summary, "All artifacts are consistent.");
     } finally {
       await rm(tmpDir, { recursive: true, force: true });
     }

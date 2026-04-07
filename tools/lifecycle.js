@@ -169,7 +169,7 @@ export async function projectState(projectRoot, paths) {
         blocks: { total, checked },
       };
       if (total > 0 && checked === total && fm.status !== "completed") {
-        entry.warning = "tous les blocs sont cochés mais status != completed";
+        entry.warning = "all blocks are checked but status != completed";
       }
       return entry;
     })
@@ -210,7 +210,7 @@ export async function markBlockDone(projectRoot, planFile, blockName) {
   try {
     content = await readFile(absPath, "utf-8");
   } catch {
-    throw new Error(`Fichier introuvable : ${planFile}`);
+    throw new Error(`File not found: ${planFile}`);
   }
 
   const eol = content.includes("\r\n") ? "\r\n" : "\n";
@@ -227,14 +227,14 @@ export async function markBlockDone(projectRoot, planFile, blockName) {
       .filter((l) => blockPattern.test(l))
       .map((l) => l.replace(/^- \[[ x]\] /i, "").trim());
     throw new Error(
-      `Bloc "${blockName}" introuvable dans ${planFile}.\nBlocs disponibles :\n${availableBlocks.map((b) => `  - ${b}`).join("\n")}`
+      `Block "${blockName}" not found in ${planFile}.\nAvailable blocks:\n${availableBlocks.map((b) => `  - ${b}`).join("\n")}`
     );
   }
 
   if (matchingIndices.length > 1) {
     const matches = matchingIndices.map((i) => lines[i].trim());
     throw new Error(
-      `"${blockName}" correspond à plusieurs blocs dans ${planFile} — précisez davantage :\n${matches.map((m) => `  - ${m}`).join("\n")}`
+      `"${blockName}" matches multiple blocks in ${planFile} — be more specific:\n${matches.map((m) => `  - ${m}`).join("\n")}`
     );
   }
 
@@ -258,7 +258,7 @@ export async function markBlockDone(projectRoot, planFile, blockName) {
   };
 
   if (all_done) {
-    result.hint = `Tous les blocs sont done. Appelle complete_plan('${planFile}') pour clore ce scope.`;
+    result.hint = `All blocks are done. Call complete_plan('${planFile}') to close this scope.`;
   }
 
   return result;
@@ -280,18 +280,18 @@ export async function completePlan(projectRoot, planFile) {
   try {
     content = await readFile(absPath, "utf-8");
   } catch {
-    throw new Error(`Fichier introuvable : ${planFile}`);
+    throw new Error(`File not found: ${planFile}`);
   }
 
   const fm = parseFrontmatter(content);
   const hasFrontmatter = /^---\r?\n/.test(content);
-  if (!hasFrontmatter) throw new Error(`Frontmatter absent dans ${planFile}.`);
-  if (fm.status === undefined || fm.status === "") throw new Error(`Champ 'status' manquant dans ${planFile}.`);
+  if (!hasFrontmatter) throw new Error(`Frontmatter missing in ${planFile}.`);
+  if (fm.status === undefined || fm.status === "") throw new Error(`Field 'status' missing in ${planFile}.`);
 
   const { unchecked } = countBlocks(content);
   if (unchecked.length > 0) {
     throw new Error(
-      `${unchecked.length} bloc(s) non coché(s) dans ${planFile}. Utilise mark_block_done avant de compléter le plan :\n${unchecked.map((b) => `  - ${b}`).join("\n")}`
+      `${unchecked.length} unchecked block(s) in ${planFile}. Use mark_block_done before completing the plan:\n${unchecked.map((b) => `  - ${b}`).join("\n")}`
     );
   }
 
@@ -333,7 +333,7 @@ export async function registerSpec(projectRoot, paths, specFile, title) {
   const absPath = resolveArtifact(projectRoot, relPath);
 
   if (existsSync(absPath)) {
-    throw new Error(`Le fichier '${relPath}' existe déjà.`);
+    throw new Error(`File '${relPath}' already exists.`);
   }
 
   await mkdir(dirname(absPath), { recursive: true });
@@ -384,7 +384,7 @@ export async function checkArtifacts(projectRoot, paths) {
         type: "plan_stale_status",
         file,
         severity: "blocking",
-        detail: `tous les blocs sont cochés mais status est '${fm.status}'`,
+        detail: `all blocks are checked but status is '${fm.status}'`,
         suggestion: `complete_plan('${file}')`,
       });
     }
@@ -394,16 +394,16 @@ export async function checkArtifacts(projectRoot, paths) {
         type: "plan_missing_brief",
         file,
         severity: "warning",
-        detail: "champ 'brief' absent ou vide",
-        suggestion: "ajouter brief: <chemin> dans le frontmatter",
+        detail: "field 'brief' absent or empty",
+        suggestion: "add brief: <path> in the frontmatter",
       });
     } else if (!existsSync(resolveArtifact(projectRoot, fm.brief))) {
       problems.push({
         type: "plan_brief_dead",
         file,
         severity: "blocking",
-        detail: `brief '${fm.brief}' n'existe pas sur disque`,
-        suggestion: "corriger le chemin ou créer le brief manquant",
+        detail: `brief '${fm.brief}' does not exist on disk`,
+        suggestion: "fix the path or create the missing brief",
       });
     }
   }
@@ -424,16 +424,16 @@ export async function checkArtifacts(projectRoot, paths) {
         type: "brief_missing_plan",
         file,
         severity: "warning",
-        detail: "champ 'exec_plan' absent ou vide",
-        suggestion: "ajouter exec_plan: <chemin> dans le frontmatter",
+        detail: "field 'exec_plan' absent or empty",
+        suggestion: "add exec_plan: <path> in the frontmatter",
       });
     } else if (!existsSync(resolveArtifact(projectRoot, fm.exec_plan))) {
       problems.push({
         type: "brief_plan_dead",
         file,
         severity: "blocking",
-        detail: `exec_plan '${fm.exec_plan}' n'existe pas sur disque`,
-        suggestion: "corriger le chemin ou créer l'exec-plan manquant",
+        detail: `exec_plan '${fm.exec_plan}' does not exist on disk`,
+        suggestion: "fix the path or create the missing exec-plan",
       });
     }
   }
@@ -457,8 +457,8 @@ export async function checkArtifacts(projectRoot, paths) {
           type: "spec_stale_draft",
           file,
           severity: "warning",
-          detail: `status: draft depuis ${ageDays} jours`,
-          suggestion: "promouvoir en 'active' ou supprimer si abandonné",
+          detail: `status: draft for ${ageDays} days`,
+          suggestion: "promote to 'active' or delete if abandoned",
         });
       }
     }
@@ -469,8 +469,8 @@ export async function checkArtifacts(projectRoot, paths) {
 
   const summary =
     problems.length === 0
-      ? "Tous les artefacts sont cohérents."
-      : `${problems.length} problème(s) détecté(s) (${blocking} bloquant(s), ${warning} warning(s))`;
+      ? "All artifacts are consistent."
+      : `${problems.length} problem(s) detected (${blocking} blocking, ${warning} warning(s))`;
 
   return { problems, summary };
 }
