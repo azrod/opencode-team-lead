@@ -9,8 +9,9 @@ const CARD_WIDTH = 600
 const CARD_X = 60
 const PILL_OFFSET = CARD_X + (CARD_WIDTH - 200) / 2 // 240
 
-// Y positions : gap de 400px entre chaque card (hauteur card ~350px + 50px de respiration)
-const Y_POSITIONS = [80, 500, 920, 1340, 1760, 2180]
+// Y positions : gap de 80px entre chaque card
+// Phase 0: ~420px, Phase 1: ~480px, Phase 2-5: ~420px/380px
+const Y_POSITIONS = [100, 600, 1160, 1660, 2160, 2640]
 
 export const initialNodes: Node[] = [
   {
@@ -35,7 +36,7 @@ export const initialNodes: Node[] = [
   {
     id: 'END',
     type: 'terminal',
-    position: { x: PILL_OFFSET, y: Y_POSITIONS[phaseCards.length - 1] + 420 },
+    position: { x: PILL_OFFSET, y: 3100 },
     data: { label: 'Mission complete', variant: 'end' },
   },
 ]
