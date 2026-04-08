@@ -1,29 +1,49 @@
 import type { Node } from '@xyflow/react'
 import { phaseCards } from './cards'
 
-// Cards font 600px de large. START/END sont des pills (largeur ~200px).
-// Cards sont décalées à x:60 pour laisser ~160px à droite pour l'edge CHANGES_REQUESTED.
-// START/END sont centrés sur la colonne cards : 60 + 600/2 - 100 = 260
+// Layout zigzag sur 2 colonnes.
+// Colonne gauche : x=0, Colonne droite : x=720
+// Card width : 600px, gap horizontal : 120px, gap vertical entre rangées : 100px
+// Hauteur card estimée : ~450px → rangée suivante à y+550
 
-const CARD_WIDTH = 600
-const CARD_X = 60
-const PILL_OFFSET = CARD_X + (CARD_WIDTH - 200) / 2 // 240
+const COL_LEFT  = 0
+const COL_RIGHT = 720
+const ROW_GAP   = 100
+const CARD_HEIGHT = 450
 
-// Y positions : gap de 80px entre chaque card
-// Phase 0: ~420px, Phase 1: ~480px, Phase 2-5: ~420px/380px
-const Y_POSITIONS = [100, 600, 1160, 1660, 2160, 2640]
+const ROW_Y = [
+  120,                              // rangée 0 : PHASE_0 (left) & PHASE_1 (right)
+  120 + CARD_HEIGHT + ROW_GAP,      // rangée 1 : PHASE_2 (left) & PHASE_3 (right)  → 670
+  120 + (CARD_HEIGHT + ROW_GAP) * 2, // rangée 2 : PHASE_4 (left) & PHASE_5 (right) → 1220
+]
+
+// Positions par phase (index 0-5)
+const PHASE_POSITIONS: { x: number; y: number }[] = [
+  { x: COL_LEFT,  y: ROW_Y[0] }, // PHASE_0
+  { x: COL_RIGHT, y: ROW_Y[0] }, // PHASE_1
+  { x: COL_LEFT,  y: ROW_Y[1] }, // PHASE_2
+  { x: COL_RIGHT, y: ROW_Y[1] }, // PHASE_3
+  { x: COL_LEFT,  y: ROW_Y[2] }, // PHASE_4
+  { x: COL_RIGHT, y: ROW_Y[2] }, // PHASE_5
+]
+
+// START centré visuellement entre les 2 colonnes (entre x=0+300 et x=720+300 → milieu=660), pill width ~200 → x=560
+const START_X = 560
+// END centré sous PHASE_4 (x=0, card width=600 → centre=300), pill width~200 → x=200
+const END_X = 200
+const END_Y = ROW_Y[2] + CARD_HEIGHT + ROW_GAP + 100 // 1220+450+100+100=1870
 
 export const initialNodes: Node[] = [
   {
     id: 'START',
     type: 'terminal',
-    position: { x: PILL_OFFSET, y: 0 },
+    position: { x: START_X, y: 0 },
     data: { label: 'User request', variant: 'start' },
   },
   ...phaseCards.map((card, i) => ({
     id: card.id,
     type: 'phaseCard',
-    position: { x: CARD_X, y: Y_POSITIONS[i] },
+    position: PHASE_POSITIONS[i],
     data: {
       phase: card.phase,
       label: card.label,
@@ -36,7 +56,7 @@ export const initialNodes: Node[] = [
   {
     id: 'END',
     type: 'terminal',
-    position: { x: PILL_OFFSET, y: 3100 },
+    position: { x: END_X, y: END_Y },
     data: { label: 'Mission complete', variant: 'end' },
   },
 ]

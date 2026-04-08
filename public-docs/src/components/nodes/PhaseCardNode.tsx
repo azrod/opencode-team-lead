@@ -38,7 +38,9 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
       {/* Handle principal entrée (haut) */}
       <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none' }} />
 
-      {/* Handles droit — edges de retour qui passent à droite des cards */}
+      {/* Handles latéraux — pour les edges horizontaux du layout zigzag */}
+      <Handle id="left-source" type="source" position={Position.Left} style={{ opacity: 0, pointerEvents: 'none' }} />
+      <Handle id="left-target" type="target" position={Position.Left} style={{ opacity: 0, pointerEvents: 'none' }} />
       <Handle id="right-source" type="source" position={Position.Right} style={{ opacity: 0, pointerEvents: 'none' }} />
       <Handle id="right-target" type="target" position={Position.Right} style={{ opacity: 0, pointerEvents: 'none' }} />
 
@@ -150,7 +152,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
       </div>
 
       {/* Handle principal sortie (bas) */}
-      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none' }} />
+      <Handle id="bottom" type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none' }} />
     </div>
   )
 }
