@@ -31,10 +31,10 @@ function EscalationNode({ data, selected }: NodeProps<AppNode>) {
         gap: 6,
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: '#dc2626', opacity: 0.6 }} />
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none' }} />
       <span>⚠️</span>
       <span>{d.label}</span>
-      <Handle type="source" position={Position.Bottom} style={{ background: '#dc2626', opacity: 0.6 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none' }} />
     </div>
   )
 }

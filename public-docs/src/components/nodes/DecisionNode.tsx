@@ -52,10 +52,10 @@ function DecisionNode({ data, selected }: NodeProps<AppNode>) {
         {d.label}
       </span>
 
-      <Handle type="target" position={Position.Top} style={{ background: '#fff', opacity: 0.8, top: 0 }} />
-      <Handle type="source" position={Position.Bottom} style={{ background: '#fff', opacity: 0.8, bottom: 0 }} />
-      <Handle type="source" position={Position.Left} id="left" style={{ background: '#fff', opacity: 0.8, left: 0 }} />
-      <Handle type="source" position={Position.Right} id="right" style={{ background: '#fff', opacity: 0.8, right: 0 }} />
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none', top: 0 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none', bottom: 0 }} />
+      <Handle type="source" position={Position.Left} id="left" style={{ opacity: 0, pointerEvents: 'none', left: 0 }} />
+      <Handle type="source" position={Position.Right} id="right" style={{ opacity: 0, pointerEvents: 'none', right: 0 }} />
     </div>
   )
 }
