@@ -1,0 +1,33 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* React Flow overrides */
+.react-flow__controls button {
+  background: #1f2937 !important;
+  color: #9ca3af !important;
+  border-bottom: 1px solid #374151 !important;
+}
+
+.react-flow__controls button:hover {
+  background: #374151 !important;
+  color: #f9fafb !important;
+}
+
+.react-flow__controls button svg {
+  fill: currentColor !important;
+}
+
+.react-flow__edge-label {
+  background: #1f2937;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
