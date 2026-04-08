@@ -2481,6 +2481,8 @@ function MainFlowChart({ lang, onNodeClick }: MainFlowChartProps) {
         svgEl.style.width = "100%";
         svgEl.style.maxWidth = "100%";
         svgEl.style.height = "auto";
+        svgEl.style.display = "block";
+        svgEl.style.margin = "0 auto";
 
         // Inject a <style> tag into the SVG to force edge label visibility
         const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
@@ -2537,8 +2539,8 @@ function MainFlowChart({ lang, onNodeClick }: MainFlowChartProps) {
   }, [lang, onNodeClick]);
 
   return (
-    <div style={{ width: "100%", overflowX: "auto", padding: "24px" }}>
-      <div ref={containerRef} style={{ minWidth: "800px" }} />
+    <div style={{ width: "100%", overflowX: "auto", padding: "16px 8px", display: "flex", justifyContent: "center" }}>
+      <div ref={containerRef} style={{ width: "100%", margin: "0 auto" }} />
     </div>
   );
 }
@@ -3951,14 +3953,14 @@ export default function App() {
             <button
               onClick={() => setView("intro")}
               style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 12, color: "#64748b", fontWeight: 600,
+                background: "#f1f5f9", border: "1px solid #cbd5e1", cursor: "pointer",
+                fontSize: 13, color: "#1e293b", fontWeight: 500,
                 display: "flex", alignItems: "center", gap: 4,
-                padding: "4px 8px", borderRadius: 5,
+                padding: "8px 16px", borderRadius: 6,
                 fontFamily: "system-ui, sans-serif",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#e2e8f0"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#94a3b8"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#cbd5e1"; }}
             >
               {t.back_to_intro}
             </button>
@@ -3966,13 +3968,13 @@ export default function App() {
             <button
               onClick={() => setView("config")}
               style={{
-                background: "none", border: "none", cursor: "pointer",
-                fontSize: 12, color: "#64748b", fontWeight: 600,
-                padding: "4px 8px", borderRadius: 5,
+                background: "#f1f5f9", border: "1px solid #cbd5e1", cursor: "pointer",
+                fontSize: 13, color: "#1e293b", fontWeight: 500,
+                padding: "8px 16px", borderRadius: 6,
                 fontFamily: "system-ui, sans-serif",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "none"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#e2e8f0"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#94a3b8"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#f1f5f9"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#cbd5e1"; }}
             >
               {t.nav_config}
             </button>
@@ -3980,7 +3982,7 @@ export default function App() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <LangToggle lang={lang} setLang={setLang} />
-            <span style={{ fontSize: 11, color: "#cbd5e1", fontStyle: "italic" }}>{t.click_node_hint}</span>
+            <span style={{ fontSize: 12, color: "#475569", fontWeight: 500 }}>{t.click_node_hint}</span>
           </div>
         </div>
 
@@ -3994,7 +3996,7 @@ export default function App() {
             style={{
               width: "62%", minWidth: 320, background: "#f8f9fa",
               borderRight: "1px solid #e2e8f0",
-              overflowY: "auto", overflowX: "hidden",
+              overflowY: "auto", overflowX: "auto",
               display: "flex", flexDirection: "column", alignItems: "center",
               position: "relative",
             }}
@@ -4002,7 +4004,7 @@ export default function App() {
             {/* Zoom controls */}
             <div style={{
               position: "sticky", top: 10, zIndex: 10,
-              alignSelf: "flex-start", marginLeft: 10,
+              alignSelf: "center",
               display: "flex", alignItems: "center", gap: 4,
               background: "white", border: "1px solid #e2e8f0",
               borderRadius: 8, padding: "4px 8px",
