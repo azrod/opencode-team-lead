@@ -94,10 +94,12 @@ When making changes to the site content or UI:
 1. Edit `team-lead-workflow/src/App.tsx`
 2. Rebuild the bundle — run from `team-lead-workflow/`:
    ```bash
-   bash /Users/mickael/.opencode/skills/ComposioHQ_awesome-claude-skills/artifacts-builder/scripts/bundle-artifact.sh
+   npm run bundle
    ```
 3. Commit both `src/App.tsx` and `bundle.html`
 4. Push — GitHub Actions deploys automatically
+
+> See `team-lead-workflow/README.md` for full development details.
 
 > **Important:** Always commit `bundle.html` along with the source changes. The Pages deployment uses the committed bundle, not a CI build.
 
@@ -107,7 +109,7 @@ All user-facing text is translated via a `translations` object in `App.tsx`. To 
 
 - Find the `translations` constant in `App.tsx`
 - Update both `en` and `fr` keys
-- For the flowchart specifically, update `getFlowchartData(lang)` which returns `{ svgLabels, details }` for the SVG labels and detail panel content
+- For the flowchart specifically, update `getFlowchartData(lang)` which returns `{ svgLabels, details, brainstormSvgLabels, brainstormDetails }` for the SVG labels and detail panel content
 
 ### GitHub Pages setup (one-time)
 
