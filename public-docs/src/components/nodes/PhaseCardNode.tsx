@@ -23,7 +23,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
   return (
     <div
       style={{
-        width: 520,
+        width: 560,
         borderRadius: 16,
         overflow: 'hidden',
         border: selected ? `2px solid ${d.color}` : '1px solid rgba(255,255,255,0.08)',
@@ -35,7 +35,16 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
         cursor: 'pointer',
       }}
     >
+      {/* Handle principal entrée (haut) */}
       <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none' }} />
+
+      {/* Handles gauche — edges optionnels qui passent à gauche des cards */}
+      <Handle id="left-source" type="source" position={Position.Left} style={{ opacity: 0, pointerEvents: 'none' }} />
+      <Handle id="left-target" type="target" position={Position.Left} style={{ opacity: 0, pointerEvents: 'none' }} />
+
+      {/* Handles droit — edges de retour qui passent à droite des cards */}
+      <Handle id="right-source" type="source" position={Position.Right} style={{ opacity: 0, pointerEvents: 'none' }} />
+      <Handle id="right-target" type="target" position={Position.Right} style={{ opacity: 0, pointerEvents: 'none' }} />
 
       {/* Header */}
       <div
@@ -81,7 +90,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
               display: 'flex',
               alignItems: 'flex-start',
               gap: 10,
-              padding: '8px 12px',
+              padding: '10px 14px',
               borderRadius: 8,
               background:
                 step.type === 'decision'
@@ -144,6 +153,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
         </span>
       </div>
 
+      {/* Handle principal sortie (bas) */}
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none' }} />
     </div>
   )

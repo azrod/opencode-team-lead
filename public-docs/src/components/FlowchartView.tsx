@@ -151,8 +151,8 @@ export default function FlowchartView({ lang, onLangChange, onBack }: Props) {
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
           fitView
-          fitViewOptions={{ padding: 0.15 }}
-          minZoom={0.3}
+          fitViewOptions={{ padding: 0.08 }}
+          minZoom={0.2}
           maxZoom={1.5}
           style={{ background: '#0f172a' }}
         >
