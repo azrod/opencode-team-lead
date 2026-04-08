@@ -1,16 +1,14 @@
-import type { Lang } from '../translations'
-import { nodeDetails } from '../data/details'
-import { translations } from '../translations'
+import { phaseCards } from '../data/cards'
 
 type Props = {
   nodeId: string | null
-  lang: Lang
   onClose: () => void
 }
 
-export default function DetailPanel({ nodeId, lang, onClose }: Props) {
-  const t = translations[lang]
-  const detail = nodeId ? nodeDetails[nodeId] : null
+export default function DetailPanel({ nodeId, onClose }: Props) {
+  const card = nodeId ? phaseCards.find(c => c.id === nodeId) ?? null : null
+  const isTerminal = nodeId === 'START' || nodeId === 'END'
+  const isOpen = card !== null || isTerminal
 
   return (
     <div
@@ -19,7 +17,7 @@ export default function DetailPanel({ nodeId, lang, onClose }: Props) {
         top: 48,
         right: 0,
         bottom: 0,
-        width: detail ? 340 : 0,
+        width: isOpen ? 360 : 0,
         background: '#111827',
         borderLeft: '1px solid #1f2937',
         overflow: 'hidden',
@@ -29,7 +27,7 @@ export default function DetailPanel({ nodeId, lang, onClose }: Props) {
         flexDirection: 'column',
       }}
     >
-      {detail && (
+      {isOpen && (
         <>
           {/* Header */}
           <div
@@ -38,21 +36,41 @@ export default function DetailPanel({ nodeId, lang, onClose }: Props) {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '16px 20px 12px',
-              borderBottom: '1px solid #1f2937',
+              borderBottom: card ? `2px solid ${card.color}` : '1px solid #1f2937',
               flexShrink: 0,
+              background: card ? `${card.color}18` : 'transparent',
             }}
           >
-            <h3
-              style={{
-                margin: 0,
-                color: '#f9fafb',
-                fontSize: 15,
-                fontWeight: 700,
-                lineHeight: 1.3,
-              }}
-            >
-              {detail[lang].title}
-            </h3>
+            <div>
+              {card && (
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: card.color,
+                    marginBottom: 4,
+                  }}
+                >
+                  Phase {card.phase}
+                </div>
+              )}
+              <h3
+                style={{
+                  margin: 0,
+                  color: '#f9fafb',
+                  fontSize: 15,
+                  fontWeight: 700,
+                  lineHeight: 1.3,
+                }}
+              >
+                {card ? card.label : nodeId === 'START' ? 'User request' : 'Mission complete'}
+              </h3>
+              {card?.sublabel && (
+                <div style={{ color: '#64748b', fontSize: 12, marginTop: 3 }}>{card.sublabel}</div>
+              )}
+            </div>
             <button
               onClick={onClose}
               style={{
@@ -65,46 +83,78 @@ export default function DetailPanel({ nodeId, lang, onClose }: Props) {
                 borderRadius: 4,
                 lineHeight: 1,
                 transition: 'color 0.15s',
+                flexShrink: 0,
               }}
               onMouseEnter={e => ((e.target as HTMLButtonElement).style.color = '#f9fafb')}
               onMouseLeave={e => ((e.target as HTMLButtonElement).style.color = '#6b7280')}
-              aria-label={t.closePanel}
+              aria-label="Close panel"
             >
-              {t.closePanel}
+              ✕
             </button>
           </div>
 
           {/* Content */}
           <div
             style={{
-              padding: '20px',
+              padding: '16px 20px',
               overflowY: 'auto',
               flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
             }}
           >
-            <p
-              style={{
-                margin: 0,
-                color: '#d1d5db',
-                fontSize: 14,
-                lineHeight: 1.65,
-              }}
-            >
-              {detail[lang].description}
-            </p>
-
-            {/* Node ID chip */}
-            <div
-              style={{
-                marginTop: 24,
-                padding: '6px 10px',
-                background: '#1f2937',
-                borderRadius: 6,
-                display: 'inline-block',
-              }}
-            >
-              <code style={{ color: '#6b7280', fontSize: 11 }}>{nodeId}</code>
-            </div>
+            {card ? (
+              card.steps.map((step, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: '10px 14px',
+                    borderRadius: 10,
+                    background:
+                      step.type === 'decision'
+                        ? `${card.color}12`
+                        : step.type === 'escalation'
+                        ? 'rgba(220,38,38,0.07)'
+                        : 'rgba(255,255,255,0.03)',
+                    border:
+                      step.type === 'decision'
+                        ? `1px solid ${card.color}28`
+                        : step.type === 'escalation'
+                        ? '1px solid rgba(220,38,38,0.18)'
+                        : '1px solid rgba(255,255,255,0.05)',
+                  }}
+                >
+                  <span style={{ fontSize: 18, lineHeight: 1.4, flexShrink: 0 }}>{step.icon}</span>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: step.type === 'decision' ? 600 : 500,
+                        color: step.type === 'escalation' ? '#f87171' : '#e2e8f0',
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {step.text}
+                    </div>
+                    {step.sub && (
+                      <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, lineHeight: 1.5 }}>
+                        {step.sub}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
+                {nodeId === 'START'
+                  ? 'The workflow starts when the user submits a request to Orion.'
+                  : 'All tasks completed. Orion has reported back to the user.'}
+              </p>
+            )}
           </div>
         </>
       )}

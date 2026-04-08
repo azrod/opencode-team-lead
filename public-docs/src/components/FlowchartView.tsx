@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ReactFlow,
   useNodesState,
@@ -11,22 +11,17 @@ import {
 import type { NodeMouseHandler, NodeTypes } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 
-import { initialNodes, type NodeData, type AppNode, getPhaseColor } from '../data/nodes'
+import { initialNodes } from '../data/nodes'
 import { initialEdges } from '../data/edges'
 import { translations, type Lang } from '../translations'
-import PhaseNode from './nodes/PhaseNode'
-import DecisionNode from './nodes/DecisionNode'
-import TerminalNode from './nodes/TerminalNode'
-import EscalationNode from './nodes/EscalationNode'
-import MemoryNode from './nodes/MemoryNode'
+import { PhaseCardNode } from './nodes/PhaseCardNode'
+import { TerminalNode } from './nodes/TerminalNode'
 import DetailPanel from './DetailPanel'
+import { PhaseDetailView } from './PhaseDetailView'
 
 const nodeTypes: NodeTypes = {
-  phaseNode: PhaseNode,
-  decisionNode: DecisionNode,
-  terminalNode: TerminalNode,
-  escalationNode: EscalationNode,
-  memoryNode: MemoryNode,
+  phaseCard: PhaseCardNode,
+  terminal: TerminalNode,
 }
 
 type Props = {
@@ -38,31 +33,32 @@ type Props = {
 export default function FlowchartView({ lang, onLangChange, onBack }: Props) {
   const t = translations[lang]
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [selectedPhase, setSelectedPhase] = useState<string | null>(null)
 
-  // Localise les labels selon la langue
-  const localizedNodes = useMemo((): AppNode[] =>
-    initialNodes.map(n => ({
-      ...n,
-      data: {
-        ...n.data,
-        label: lang === 'fr' ? n.data.labelFr : n.data.label,
-      },
-    })),
-    [lang]
-  )
-
-  const [nodes, , onNodesChange] = useNodesState<AppNode>(localizedNodes)
+  const [nodes, , onNodesChange] = useNodesState(initialNodes)
   const [edges, , onEdgesChange] = useEdgesState(initialEdges)
 
-  const onNodeClick: NodeMouseHandler<AppNode> = useCallback((_evt, node) => {
-    setSelectedNodeId(prev => prev === node.id ? null : node.id)
+  const onNodeClick: NodeMouseHandler = useCallback((_evt, node) => {
+    if (node.type === 'phaseCard') {
+      setSelectedPhase(node.id)
+      return
+    }
+    setSelectedNodeId(prev => (prev === node.id ? null : node.id))
   }, [])
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null)
   }, [])
 
-  const legendItems = t.legendItems
+  if (selectedPhase !== null) {
+    return (
+      <PhaseDetailView
+        phaseId={selectedPhase}
+        onBack={() => setSelectedPhase(null)}
+        lang={lang}
+      />
+    )
+  }
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#0f172a', display: 'flex', flexDirection: 'column' }}>
@@ -155,13 +151,9 @@ export default function FlowchartView({ lang, onLangChange, onBack }: Props) {
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
           fitView
-          fitViewOptions={{ padding: 0.1 }}
-          minZoom={0.05}
-          maxZoom={2}
-          defaultEdgeOptions={{
-            type: 'smoothstep',
-            style: { strokeWidth: 2, stroke: '#475569' },
-          }}
+          fitViewOptions={{ padding: 0.15 }}
+          minZoom={0.3}
+          maxZoom={1.5}
           style={{ background: '#0f172a' }}
         >
           <Background color="#1f2937" gap={24} variant={BackgroundVariant.Dots} />
@@ -178,45 +170,16 @@ export default function FlowchartView({ lang, onLangChange, onBack }: Props) {
               border: '1px solid #374151',
               borderRadius: 8,
             }}
-            nodeColor={(n) => {
-              const d = n.data as NodeData
-              return getPhaseColor(d.phase)
-            }}
             maskColor="rgba(0,0,0,0.5)"
           />
         </ReactFlow>
-
-        {/* Legend */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 12,
-            left: 12,
-            background: '#111827ee',
-            border: '1px solid #1f2937',
-            borderRadius: 10,
-            padding: '10px 14px',
-            zIndex: 5,
-            backdropFilter: 'blur(8px)',
-          }}
-        >
-          <div style={{ color: '#9ca3af', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.05em' }}>
-            {t.legend}
-          </div>
-          {legendItems.map(item => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: item.color, flexShrink: 0 }} />
-              <span style={{ color: '#d1d5db', fontSize: 11 }}>{item.label}</span>
-            </div>
-          ))}
-        </div>
 
         {/* Click hint */}
         {!selectedNodeId && (
           <div
             style={{
               position: 'absolute',
-              bottom: 180,
+              bottom: 160,
               left: '50%',
               transform: 'translateX(-50%)',
               background: '#111827cc',
@@ -236,7 +199,6 @@ export default function FlowchartView({ lang, onLangChange, onBack }: Props) {
       {/* Detail panel */}
       <DetailPanel
         nodeId={selectedNodeId}
-        lang={lang}
         onClose={() => setSelectedNodeId(null)}
       />
     </div>
