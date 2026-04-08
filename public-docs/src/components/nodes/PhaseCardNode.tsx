@@ -23,7 +23,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
   return (
     <div
       style={{
-        width: 560,
+        width: 600,
         borderRadius: 16,
         overflow: 'hidden',
         border: selected ? `2px solid ${d.color}` : '1px solid rgba(255,255,255,0.08)',
@@ -38,10 +38,6 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
       {/* Handle principal entrée (haut) */}
       <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none' }} />
 
-      {/* Handles gauche — edges optionnels qui passent à gauche des cards */}
-      <Handle id="left-source" type="source" position={Position.Left} style={{ opacity: 0, pointerEvents: 'none' }} />
-      <Handle id="left-target" type="target" position={Position.Left} style={{ opacity: 0, pointerEvents: 'none' }} />
-
       {/* Handles droit — edges de retour qui passent à droite des cards */}
       <Handle id="right-source" type="source" position={Position.Right} style={{ opacity: 0, pointerEvents: 'none' }} />
       <Handle id="right-target" type="target" position={Position.Right} style={{ opacity: 0, pointerEvents: 'none' }} />
@@ -50,7 +46,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
       <div
         style={{
           background: d.color,
-          padding: '16px 20px',
+          padding: '20px 24px',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
@@ -63,7 +59,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
               color: '#fff',
               borderRadius: 6,
               padding: '2px 8px',
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
@@ -74,9 +70,9 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
           </span>
         )}
         <div>
-          <div style={{ color: '#fff', fontWeight: 700, fontSize: 16, lineHeight: 1.2 }}>{d.label}</div>
+          <div style={{ color: '#fff', fontWeight: 700, fontSize: 20, lineHeight: 1.2 }}>{d.label}</div>
           {d.sublabel && (
-            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 }}>{d.sublabel}</div>
+            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 2 }}>{d.sublabel}</div>
           )}
         </div>
       </div>
@@ -110,8 +106,8 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
             <div>
               <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: step.type === 'decision' ? 600 : 500,
+                fontSize: 15,
+                fontWeight: step.type === 'decision' ? 600 : 500,
                   color: step.type === 'escalation' ? '#f87171' : '#e2e8f0',
                   lineHeight: 1.3,
                 }}
@@ -119,7 +115,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
                 {step.text}
               </div>
               {step.sub && (
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2, lineHeight: 1.4 }}>
+                <div style={{ fontSize: 13, color: '#64748b', marginTop: 2, lineHeight: 1.4 }}>
                   {step.sub}
                 </div>
               )}
@@ -140,7 +136,7 @@ export function PhaseCardNode({ data, selected }: NodeProps) {
       >
         <span
           style={{
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 600,
             color: `${d.color}99`,
             letterSpacing: '0.04em',
