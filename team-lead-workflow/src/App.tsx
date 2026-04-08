@@ -492,6 +492,81 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
           ],
         },
         // ── Phases du flowchart unifié ──
+        phase0_glob: {
+          title: "glob docs/briefs/",
+          color: "#7c3aed",
+          nodeType: "ACTION OBLIGATOIRE",
+          sections: [
+            { heading: "Règle", items: ["Toujours la première étape — sans exception", "Scanner `docs/briefs/` avant toute autre action", "Résultat : 0 brief, 1 brief, ou plusieurs briefs"] },
+          ],
+        },
+        phase0_count: {
+          title: "Briefs trouvés ?",
+          color: "#7c3aed",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Branches", items: ["0 → Step 1 direct, sans question posée", "1 → vérifier le statut (draft / done / autre)", "N → lister tous les briefs + demander lequel choisir"] },
+          ],
+        },
+        phase0_none: {
+          title: "Step 1 direct",
+          color: "#7c3aed",
+          nodeType: "TRANSITION",
+          sections: [
+            { heading: "Règle", items: ["Aucun brief trouvé → passer directement au brainstorm Step 1, sans poser de question"] },
+          ],
+        },
+        phase0_one: {
+          title: "Statut du brief ?",
+          color: "#7c3aed",
+          nodeType: "DÉCISION",
+          sections: [
+            { heading: "Branches", items: ["draft → demander : continuer ce brief ou repartir de zéro ?", "done/autre → demander : réviser ce brief ou démarrer un nouveau projet ?"] },
+          ],
+        },
+        phase0_draft_ask: {
+          title: "Continuer ou repartir ?",
+          color: "#7c3aed",
+          nodeType: "QUESTION UTILISATEUR",
+          sections: [
+            { heading: "Contexte", items: ["Brief status: draft trouvé (ou brief sélectionné dans une liste)"] },
+            { heading: "Options", items: ["CONTINUER → charger le brief, sauter directement en Step 3", "REPARTIR → ignorer le brief existant → Step 1 normale"] },
+          ],
+        },
+        phase0_done_ask: {
+          title: "Réviser ou nouveau projet ?",
+          color: "#7c3aed",
+          nodeType: "QUESTION UTILISATEUR",
+          sections: [
+            { heading: "Contexte", items: ["Brief status: done ou autre statut trouvé"] },
+            { heading: "Options", items: ["RÉVISER → charger le brief, sauter directement en Step 3", "NOUVEAU PROJET → ignorer le brief existant → Step 1 normale"] },
+          ],
+        },
+        phase0_many: {
+          title: "Lister briefs + choisir",
+          color: "#7c3aed",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "Ce qui se passe", items: ["Lister tous les briefs avec : chemin + statut + nom du projet", "Demander : lequel traiter ? (ou nouveau projet ?)"] },
+            { heading: "Suite", items: ["Choisit un brief existant → même logique que 'un seul brief trouvé'", "Nouveau projet → Step 1 normale"] },
+          ],
+        },
+        phase0_load: {
+          title: "Charger brief → Step 3",
+          color: "#7c3aed",
+          nodeType: "ACTION",
+          sections: [
+            { heading: "Ce qui se passe", items: ["Lire le fichier brief existant dans `docs/briefs/`", "Fournir le contexte complet à Step 3 (mode révision)", "Sauter les Steps 1 et 2 — aller directement en Step 3"] },
+          ],
+        },
+        phase0_step1: {
+          title: "Step 1 normale",
+          color: "#7c3aed",
+          nodeType: "TRANSITION",
+          sections: [
+            { heading: "Chemin", items: ["L'utilisateur a choisi : repartir de zéro / nouveau projet", "Flux normal : Step 1 → Step 2 → Step 3", "Ignorer le(s) brief(s) existant(s)"] },
+          ],
+        },
         phase0_brief_check: {
           title: "Phase 0 — BRAINSTORM (optionnel)",
           color: "#7c3aed",
@@ -675,7 +750,7 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
           color: "#4338ca",
           nodeType: "DÉCISION",
           sections: [
-            { heading: "Branches", items: ["OK → rapport final", "Mineur → fix rapide → sp_capture", "Majeur → retour Phase 2 (loop dashed)", "Scope → demander à l'utilisateur"] },
+            { heading: "Branches", items: ["OK → capture scratchpad → rapport final", "Mineur → fix rapide → capture scratchpad → rapport", "Majeur → retour Phase 2 (boucle pointillée)", "Scope → demander à l'utilisateur avant de livrer"] },
           ],
         },
         phase4_minor: {
@@ -708,6 +783,7 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
           nodeType: "LIVRAISON",
           sections: [
             { heading: "Règles de communication", items: ["Mener avec le résultat, pas le processus", "Mettre en avant succès et échecs honnêtement", "Ne pas édulcorer les échecs d'agents", "Proposer des prochaines étapes concrètes si pertinent"] },
+            { heading: "Post-livraison (optionnel)", items: ["Si un pattern récurrent a émergé → suggérer Harness à l'utilisateur (jamais sans confirmation)", "Si docs/dérive de code → suggérer Gardener à l'utilisateur", "Ne jamais lancer Phase 5 automatiquement"] },
           ],
         },
         phase5_pattern: {
@@ -1432,6 +1508,81 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
         ],
       },
       // ── Unified flowchart phases ──
+      phase0_glob: {
+        title: "glob docs/briefs/",
+        color: "#7c3aed",
+        nodeType: "MANDATORY ACTION",
+        sections: [
+          { heading: "Rule", items: ["Always the first step — no exceptions", "Scan `docs/briefs/` before any other action", "Result: 0 briefs, 1 brief, or multiple briefs"] },
+        ],
+      },
+      phase0_count: {
+        title: "Briefs found?",
+        color: "#7c3aed",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["0 → Step 1 direct, no question asked", "1 → check the status (draft / done / other)", "N → list all briefs + ask which one to choose"] },
+        ],
+      },
+      phase0_none: {
+        title: "Step 1 direct",
+        color: "#7c3aed",
+        nodeType: "TRANSITION",
+        sections: [
+          { heading: "Rule", items: ["No brief found → go directly to brainstorm Step 1, no question asked"] },
+        ],
+      },
+      phase0_one: {
+        title: "Brief status?",
+        color: "#7c3aed",
+        nodeType: "DECISION",
+        sections: [
+          { heading: "Branches", items: ["draft → ask: continue this brief or start fresh?", "done/other → ask: revise this brief or start a new project?"] },
+        ],
+      },
+      phase0_draft_ask: {
+        title: "Continue or fresh start?",
+        color: "#7c3aed",
+        nodeType: "USER QUESTION",
+        sections: [
+          { heading: "Context", items: ["Brief with status: draft found (or brief selected from a list)"] },
+          { heading: "Options", items: ["CONTINUE → load the brief, jump directly to Step 3", "FRESH START → ignore existing brief → normal Step 1"] },
+        ],
+      },
+      phase0_done_ask: {
+        title: "Revise or new project?",
+        color: "#7c3aed",
+        nodeType: "USER QUESTION",
+        sections: [
+          { heading: "Context", items: ["Brief with status: done or other found"] },
+          { heading: "Options", items: ["REVISE → load the brief, jump directly to Step 3", "NEW PROJECT → ignore existing brief → normal Step 1"] },
+        ],
+      },
+      phase0_many: {
+        title: "List briefs + choose",
+        color: "#7c3aed",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "What happens", items: ["List all briefs with: path + status + project name", "Ask: which one to work on? (or new project?)"] },
+          { heading: "After choice", items: ["Chooses an existing brief → same logic as 'one brief found'", "New project → normal Step 1"] },
+        ],
+      },
+      phase0_load: {
+        title: "Load brief → Step 3",
+        color: "#7c3aed",
+        nodeType: "ACTION",
+        sections: [
+          { heading: "What happens", items: ["Read the existing brief file from `docs/briefs/`", "Provide full context to Step 3 (revision mode)", "Skip Steps 1 and 2 — go directly to Step 3"] },
+        ],
+      },
+      phase0_step1: {
+        title: "Normal Step 1",
+        color: "#7c3aed",
+        nodeType: "TRANSITION",
+        sections: [
+          { heading: "Path", items: ["User chose: fresh start / new project", "Normal flow: Step 1 → Step 2 → Step 3", "Ignore existing brief(s)"] },
+        ],
+      },
       phase0_brief_check: {
         title: "Phase 0 — BRAINSTORM (optional)",
         color: "#7c3aed",
@@ -1615,7 +1766,7 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
         color: "#4338ca",
         nodeType: "DECISION",
         sections: [
-          { heading: "Branches", items: ["OK → final report", "Minor → quick fix → sp_capture", "Major → back to Phase 2 (dashed loop)", "Scope → ask user"] },
+          { heading: "Branches", items: ["OK → scratchpad capture → final report", "Minor → quick fix → scratchpad capture → report", "Major → loop back to Phase 2 (dashed arrow)", "Scope → ask user before delivering a wrong answer"] },
         ],
       },
       phase4_minor: {
@@ -1648,6 +1799,7 @@ function getFlowchartData(lang: "en" | "fr"): FlowchartData {
         nodeType: "DELIVERY",
         sections: [
           { heading: "Communication rules", items: ["Lead with the outcome, not the process", "Highlight what succeeded and what failed", "Be honest about issues — don't sugarcoat agent failures", "Propose concrete next steps if applicable"] },
+          { heading: "Post-delivery (optional)", items: ["If a recurring pattern emerged → suggest Harness to user (never without confirmation)", "If docs/code drift detected → suggest Gardener to user", "Never trigger Phase 5 automatically"] },
         ],
       },
       phase5_pattern: {
@@ -2040,7 +2192,28 @@ function buildMainDiagram(lang: "en" | "fr"): string {
     p3_label: isEn ? "Phase 3 — REVIEW" : "Phase 3 — REVIEW",
     p4_label: isEn ? "Phase 4 — SYNTHESIZE" : "Phase 4 — SYNTHESIZE",
     p5_label: isEn ? "Phase 5 — MAINTENANCE" : "Phase 5 — MAINTENANCE",
-    brief_check: isEn ? "Brief exist?" : "Brief existe ?",
+    // Phase 0 nodes
+    p0_glob: "glob docs/briefs/",
+    p0_count: isEn ? "Briefs found?" : "Briefs trouvés ?",
+    p0_none: isEn ? "Step 1 direct" : "Step 1 direct",
+    p0_one: isEn ? "Brief status?" : "Statut du brief ?",
+    p0_draft_ask: isEn ? "Continue or fresh start?" : "Continuer ou repartir ?",
+    p0_done_ask: isEn ? "Revise or new project?" : "Réviser ou nouveau projet ?",
+    p0_many: isEn ? "List briefs + choose" : "Lister briefs + choisir",
+    p0_load: isEn ? "Load brief → Step 3" : "Charger brief → Step 3",
+    p0_step1: isEn ? "Step 1 normal" : "Step 1 normale",
+    p0_run: isEn ? "Run brainstorm agent" : "Lancer agent brainstorm",
+    p0_brief: isEn ? "Brief written → verbal suggestion" : "Brief écrit → suggestion verbale",
+    // Phase 0 edge labels
+    p0_arrow_0: isEn ? "0" : "0",
+    p0_arrow_1: isEn ? "1" : "1",
+    p0_arrow_n: isEn ? "N" : "N",
+    p0_arrow_draft: isEn ? "draft" : "draft",
+    p0_arrow_done: isEn ? "done/other" : "done/autre",
+    p0_arrow_continue: isEn ? "Continue" : "Continuer",
+    p0_arrow_fresh: isEn ? "Fresh start" : "Repartir",
+    p0_arrow_revise: isEn ? "Revise" : "Réviser",
+    p0_arrow_new: isEn ? "New project" : "Nouveau projet",
     yes: isEn ? "YES" : "OUI",
     no: isEn ? "NO" : "NON",
     fast_path: isEn ? "fast path" : "chemin rapide",
@@ -2079,15 +2252,24 @@ function buildMainDiagram(lang: "en" | "fr"): string {
     end: isEn ? "Report to user" : "Rapport à l'utilisateur",
     enforcement: isEn ? "needs enforcement" : "enforcement requis",
     docs_drift: isEn ? "docs / drift" : "docs / dérive",
+    optional: isEn ? "optional" : "optionnel",
   };
 
   return `flowchart TD
     START(["${L.start}"])
 
     subgraph P0["${L.p0_label}"]
-        P0_CHECK{"${L.brief_check}"}
-        P0_RUN["${L.run_brainstorm}"]
-        P0_BRIEF["${L.produce_brief}"]
+        P0_GLOB["${L.p0_glob}"]
+        P0_COUNT{"${L.p0_count}"}
+        P0_NONE["${L.p0_none}"]
+        P0_ONE{"${L.p0_one}"}
+        P0_DRAFT_ASK["${L.p0_draft_ask}"]
+        P0_DONE_ASK["${L.p0_done_ask}"]
+        P0_MANY["${L.p0_many}"]
+        P0_LOAD["${L.p0_load}"]
+        P0_STEP1["${L.p0_step1}"]
+        P0_RUN["${L.p0_run}"]
+        P0_BRIEF["${L.p0_brief}"]
     end
 
     subgraph P1["${L.p1_label}"]
@@ -2134,12 +2316,24 @@ function buildMainDiagram(lang: "en" | "fr"): string {
 
     END(["${L.end}"])
 
-    START --> P0_CHECK
-    P0_CHECK -- "${L.no}" --> P0_RUN
+    START --> P0_GLOB
+    P0_GLOB --> P0_COUNT
+    P0_COUNT -- "${L.p0_arrow_0}" --> P0_NONE
+    P0_COUNT -- "${L.p0_arrow_1}" --> P0_ONE
+    P0_COUNT -- "${L.p0_arrow_n}" --> P0_MANY
+    P0_ONE -- "${L.p0_arrow_draft}" --> P0_DRAFT_ASK
+    P0_ONE -- "${L.p0_arrow_done}" --> P0_DONE_ASK
+    P0_DRAFT_ASK -- "${L.p0_arrow_continue}" --> P0_LOAD
+    P0_DRAFT_ASK -- "${L.p0_arrow_fresh}" --> P0_STEP1
+    P0_DONE_ASK -- "${L.p0_arrow_revise}" --> P0_LOAD
+    P0_DONE_ASK -- "${L.p0_arrow_new}" --> P0_STEP1
+    P0_MANY --> P0_DRAFT_ASK
+    P0_NONE --> P0_RUN
+    P0_STEP1 --> P0_RUN
+    P0_LOAD --> P0_RUN
     P0_RUN --> P0_BRIEF
     P0_BRIEF --> P1_READ
-    P0_CHECK -- "${L.yes}" --> P1_READ
-    P0_CHECK -. "${L.fast_path}" .-> P2_SELECT
+    P0_GLOB -. "${L.fast_path}" .-> P2_SELECT
 
     P1_READ --> P1_STATE
     P1_STATE --> P1_INTENT
@@ -2164,13 +2358,15 @@ function buildMainDiagram(lang: "en" | "fr"): string {
     P3_VERDICT -- "${L.blocked}" --> P3_BLOCKED
 
     P4_EVAL --> P4_GAP
+    P4_GAP -- "OK" --> P4_SP
     P4_GAP -- "minor" --> P4_MINOR
     P4_GAP -- "${L.major}" --> P2_SELECT
     P4_GAP -- "scope?" --> P4_SCOPE
     P4_MINOR --> P4_SP
     P4_SCOPE --> P4_SP
     P4_SP --> P4_REPORT
-    P4_REPORT --> P5_PAT
+    P4_REPORT --> END
+    P4_REPORT -. "${L.optional}" .-> P5_PAT
 
     P5_PAT -- "${L.enforcement}" --> P5_HARNESS
     P5_PAT -- "${L.docs_drift}" --> P5_GARDENER
@@ -2189,7 +2385,7 @@ function buildMainDiagram(lang: "en" | "fr"): string {
     classDef escalade fill:#fff,color:#dc2626,stroke:#dc2626,stroke-width:2px
     classDef terminal fill:#f0fdf4,color:#166534,stroke:#166534,stroke-width:2px
 
-    class P0_CHECK,P0_RUN,P0_BRIEF phase0
+    class P0_GLOB,P0_COUNT,P0_NONE,P0_ONE,P0_DRAFT_ASK,P0_DONE_ASK,P0_MANY,P0_LOAD,P0_STEP1,P0_RUN,P0_BRIEF phase0
     class P1_READ,P1_STATE,P1_INTENT,P1_TODO,P1_COMPRESS phase1
     class P2_BUG,P2_BUGFINDER,P2_SELECT,P2_HANDOFF,P2_SUCCESS,P2_RETRY phase2
     class P2_ESC escalade
@@ -2204,7 +2400,15 @@ function buildMainDiagram(lang: "en" | "fr"): string {
 const MERMAID_NODE_MAP: Record<string, string> = {
   START: "phase_start",
   END: "phase_end",
-  P0_CHECK: "phase0_brief_check",
+  P0_GLOB: "phase0_glob",
+  P0_COUNT: "phase0_count",
+  P0_NONE: "phase0_none",
+  P0_ONE: "phase0_one",
+  P0_DRAFT_ASK: "phase0_draft_ask",
+  P0_DONE_ASK: "phase0_done_ask",
+  P0_MANY: "phase0_many",
+  P0_LOAD: "phase0_load",
+  P0_STEP1: "phase0_step1",
   P0_RUN: "phase0_run_brainstorm",
   P0_BRIEF: "phase0_produce_brief",
   P1_READ: "phase1_read_sp",
@@ -2256,7 +2460,7 @@ function MainFlowChart({ lang, onNodeClick }: MainFlowChartProps) {
         primaryColor: "#1d4ed8",
         primaryTextColor: "#ffffff",
         primaryBorderColor: "#1e40af",
-        lineColor: "#64748b",
+        lineColor: "#475569",
         secondaryColor: "#f1f5f9",
         tertiaryColor: "#e2e8f0",
         fontFamily: "system-ui, -apple-system, sans-serif",
@@ -2277,6 +2481,29 @@ function MainFlowChart({ lang, onNodeClick }: MainFlowChartProps) {
         svgEl.style.width = "100%";
         svgEl.style.maxWidth = "100%";
         svgEl.style.height = "auto";
+
+        // Inject a <style> tag into the SVG to force edge label visibility
+        const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
+        styleEl.textContent = `
+  .edgeLabel {
+    background-color: #1e293b !important;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .edgeLabel span, .edgeLabel p, .edgeLabel foreignObject div {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    background-color: #1e293b !important;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .edgeLabel rect {
+    fill: #1e293b !important;
+    stroke: #334155 !important;
+  }
+`;
+        svgEl.insertBefore(styleEl, svgEl.firstChild);
 
         // Mermaid renders nodes as <g class="node"> with an id like "flowchart-P0_CHECK-N"
         svgEl.querySelectorAll("g.node").forEach((el) => {

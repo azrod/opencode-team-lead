@@ -92,21 +92,21 @@
 - Sortie : `docs/briefs/{project-name}.md`
 
 #### Logique d'entrée (toujours exécutée — glob obligatoire)
-- **Aucun brief trouvé** → Phase 1 directement, sans question
+- **Aucun brief trouvé** → Step 1 directement, sans question
 - **Un brief trouvé (status: draft)** → demande : "Continuer ce brief ou repartir de zéro ?"
-  - Continuer → charge le brief, saute directement en Phase 3
-  - Repartir → Phase 1 normale
+  - Continuer → charge le brief, saute directement en Step 3
+  - Repartir → Step 1 normale
 - **Un brief trouvé (status: done ou autre)** → demande : "Réviser ce brief ou nouveau projet ?"
-  - Réviser → charge le brief, saute directement en Phase 3
-  - Nouveau projet → Phase 1 normale
+  - Réviser → charge le brief, saute directement en Step 3
+  - Nouveau projet → Step 1 normale
 - **Plusieurs briefs trouvés** → liste les briefs (path + status + nom) + demande lequel choisir
   - Choisit un brief existant → même logique que "un brief trouvé"
-  - Nouveau projet → Phase 1 normale
+  - Nouveau projet → Step 1 normale
 
-#### Fast path (Phase 1 → Phase 3 direct)
+#### Fast path (Step 1 → Step 3 direct)
 - Si le message d'ouverture de l'utilisateur fournit déjà problème + scope suffisants :
-  l'agent propose de sauter directement en Phase 3 (draft immédiat)
-- Si l'utilisateur dit explicitement vouloir sauter l'exploration → Phase 3 directement
+  l'agent propose de sauter directement en Step 3 (draft immédiat)
+- Si l'utilisateur dit explicitement vouloir sauter l'exploration → Step 3 directement
 
 #### Fin du brainstorm
 - Après écriture du brief, l'agent dit :
