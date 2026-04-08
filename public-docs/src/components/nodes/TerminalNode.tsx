@@ -26,9 +26,9 @@ function TerminalNode({ data, selected }: NodeProps<AppNode>) {
         userSelect: 'none',
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: '#166534', opacity: 0.6 }} />
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none' }} />
       {d.label}
-      <Handle type="source" position={Position.Bottom} style={{ background: '#166534', opacity: 0.6 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none' }} />
     </div>
   )
 }

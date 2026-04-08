@@ -160,7 +160,7 @@ export default function FlowchartView({ lang, onLangChange, onBack }: Props) {
           maxZoom={2}
           defaultEdgeOptions={{
             type: 'smoothstep',
-            style: { strokeWidth: 2, stroke: '#4b5563' },
+            style: { strokeWidth: 2, stroke: '#475569' },
           }}
           style={{ background: '#0f172a' }}
         >

@@ -33,10 +33,10 @@ function MemoryNode({ data, selected }: NodeProps<AppNode>) {
         gap: 6,
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: '#fff', opacity: 0.7 }} />
+      <Handle type="target" position={Position.Top} style={{ opacity: 0, pointerEvents: 'none' }} />
       <span style={{ fontSize: 14 }}>💾</span>
       <span>{d.label}</span>
-      <Handle type="source" position={Position.Bottom} style={{ background: '#fff', opacity: 0.7 }} />
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0, pointerEvents: 'none' }} />
     </div>
   )
 }
