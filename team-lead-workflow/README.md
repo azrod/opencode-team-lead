@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# team-lead-workflow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Single-page React app documenting the [opencode-team-lead](https://github.com/azrod/opencode-team-lead) plugin's workflow and philosophy. Deployed to GitHub Pages.
 
-Currently, two official plugins are available:
+## Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+team-lead-workflow/
+├── src/
+│   └── App.tsx        # All application code — two views, FR/EN i18n
+├── bundle.html        # Pre-built self-contained bundle — what GitHub Pages serves
+├── dist/              # Vite build output (not deployed directly)
+├── index.html         # Vite dev server entry point
+├── vite.config.ts
+└── package.json
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Views
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The app has two views navigable via a CTA button:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| View | Description |
+|------|-------------|
+| Intro screen | Presents Orion: concept, philosophy, available agents, typical use cases |
+| Flowchart | Interactive SVG diagram of the 5-phase workflow with a detail panel |
+
+Both views support FR/EN language toggle (default: EN).
+
+## Local development
+
+```bash
+npm install
+npm run dev       # Vite dev server at http://localhost:5173
+npm run build     # TypeScript check + Vite build to dist/
+npm run preview   # Preview the dist/ build locally
 ```
+
+## Updating content
+
+All user-facing text lives in `src/App.tsx`. Always update both `en` and `fr` entries.
+
+### Translations
+
+Find the `translations` object near the top of `App.tsx`. Add or update keys in both language branches:
+
+```ts
+const translations: Record<Lang, Translations> = {
+  en: { /* ... */ },
+  fr: { /* ... */ },
+};
+```
+
+### Flowchart data
+
+The flowchart content is returned by `getFlowchartData(lang)`. It contains two parts:
+
+| Key | What it controls |
+|-----|-----------------|
+| `svgLabels` | Text labels rendered inside the SVG diagram nodes and arrows |
+| `details` | Content shown in the right-panel when a node is clicked |
+| `brainstormSvgLabels` | Labels for the brainstorm sub-flowchart |
+| `brainstormDetails` | Detail panel content for the brainstorm flowchart |
+
+Update both the `"fr"` branch and the `"en"` branch (returned as the default).
+
+## Deployment
+
+GitHub Pages is deployed automatically by `.github/workflows/pages.yml` on every push to `main` that modifies `bundle.html`.
+
+The workflow does not run a build — it copies `bundle.html` directly to the served `_site/index.html`. **You must commit `bundle.html` along with any source changes.**
+
+## bundle.html
+
+`bundle.html` is a self-contained single HTML file: all JavaScript and CSS from the Vite build are inlined directly into `<script>` and `<style>` tags. No external assets are required.
+
+`dist/index.html` (Vite's default output) references separate asset files under `dist/assets/` and cannot be deployed standalone.
+
+### Rebuilding bundle.html
+
+```bash
+npm run bundle
+```
+
+Then commit both `src/App.tsx` and `bundle.html`.
