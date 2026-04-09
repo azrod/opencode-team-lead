@@ -461,6 +461,10 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
         },
+        write: {
+          "*": "deny",
+          ".opencode/scratchpad.md": "allow",
+        },
         bash: {
           "*": "deny",
           "git status*": "allow",
