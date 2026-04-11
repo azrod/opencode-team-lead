@@ -21,12 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `brainstorm` agent now hard-blocks on incomplete briefs — if the Problem statement, Success Criteria, or Scope In are missing or unresolved, the brief won't be drafted until those gaps are closed. Cosmetic disagreements are noted as open questions; substantive ones block the output entirely.
 - Scope inflation is now flagged throughout the brainstorm session — if the in-scope list grows to 5 or more items, the agent surfaces it once and asks what's truly essential.
 - Harness now operates fully autonomously — it explores the codebase, decides what to encode, and acts without asking for confirmation at each step. It only stops in three explicit cases: the pattern can't be mechanized, encoding requires creating a new workflow file, or the trigger is too vague with no codebase signal to anchor it.
+- The soul personality layer now applies to all agents with `mode: "all"` (brainstorm, planning, bug-finder, harness, gardener) — previously only Orion benefited from it
 
 ### Fixed
 - Lifecycle tools (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`) now return valid responses — previously the `execute` functions returned raw objects instead of strings, causing the OpenCode plugin API to silently discard their output
 - Harness agent now has full `bash`, `read`, `write`, `edit`, `glob`, and `grep` permissions — previously it was registered with a restricted command allowlist and scoped file targets, which prevented it from running arbitrary lint commands or writing enforcement artifacts outside the predefined list.
 - The harness agent no longer writes human-facing checklists to `AGENTS.md` — it now correctly identifies them as documentation and routes them to CI checks or `docs/guiding-principles.md` instead. An unwired script in the repo is also no longer treated as a valid enforcement artifact.
 - Brainstorm agent now enforces a hard stop before responding to the user — the `docs/briefs/` scan is mandatory regardless of how much context the user provides at session start, preventing the agent from skipping existing brief detection
+- Planning agent write/edit permissions now correctly allow files directly in `docs/exec-plans/` (not just subdirectories)
+- Planning agent can now read `AGENTS.md`, `README.md`, and `docs/**` — the `"*": "deny"` in the `read` sub-object was blocking all file reads
+- Lifecycle tools (`project_state`, `register_spec`, `mark_block_done`, `complete_plan`, `check_artifacts`) now work correctly when OpenCode passes `worktree="/"` — the plugin falls back to `directory` instead of treating the filesystem root as the project root
+- Planning agent can now read project files and create exec-plans — permission rules were blocking `read` access and missing `glob`/`grep` tools needed for codebase exploration
 
 ### Removed
 - `memory.md` concept removed — the persistent project memory feature has been deprecated. The `experimental.chat.system.transform` hook and memory.md injections have been removed from the plugin. Only the scratchpad survives compaction.

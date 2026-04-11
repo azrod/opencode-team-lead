@@ -243,12 +243,9 @@ const SUBAGENT_DEFS = [
       "*": "deny",
       task: "allow",
       question: "allow",
-      read: {
-        "*": "deny",
-        "AGENTS.md": "allow",
-        "README.md": "allow",
-        "docs/**": "allow",
-      },
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
       edit: {
         "*": "deny",
         "docs/exec-plans/**": "allow",
@@ -378,7 +375,10 @@ async function loadAgentPrompt(agentId, fileName, silent = false) {
 
 function registerSubagent(input, def, prompt, userConfig) {
   const { id, description, temperature, variant, mode, color, permission: defaultPermission } = def;
-  const { soul, ...agentUserConfig } = userConfig ?? {}; // soul is team-lead-only — silently ignored for sub-agents
+  const { soul, ...agentUserConfig } = userConfig ?? {}; // soul is stripped here — not forwarded to OpenCode which doesn't know it
+  const agentPrompt = (mode === "all" && soul !== false)
+    ? `${prompt}\n\nInstructions from: ~/.config/opencode/AGENTS.md\n${GLOBAL_AGENTS_CONTENT}`
+    : prompt;
   input.agent[id] = {
     description,
     temperature,
@@ -386,7 +386,7 @@ function registerSubagent(input, def, prompt, userConfig) {
     mode,
     color,
     ...agentUserConfig,
-    prompt,
+    prompt: agentPrompt,
     permission: mergePermissions(defaultPermission, agentUserConfig.permission),
   };
 }
@@ -409,7 +409,9 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     SUBAGENT_DEFS.map((def) => loadAgentPrompt(def.id, def.file, def.silent ?? false)),
   );
 
-  const projectRoot = worktree ?? directory ?? ".";
+  // OpenCode sometimes passes worktree="/" (filesystem root) when no git worktree is detected.
+  // In that case, fall back to directory which is always the actual project path.
+  const projectRoot = (worktree && worktree !== "/") ? worktree : (directory ?? ".");
 
   // Resolved once during the config hook and captured in closure for tool handlers.
   let paths = {
@@ -491,7 +493,8 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         permission: mergePermissions(defaultPermission, userConfigRest.permission),
       };
 
-      const subagentUserConfigs = SUBAGENT_DEFS.map((def) => input.agent[def.id] ?? {});      for (let i = 0; i < SUBAGENT_DEFS.length; i++) {
+      const subagentUserConfigs = SUBAGENT_DEFS.map((def) => input.agent[def.id] ?? {});
+      for (let i = 0; i < SUBAGENT_DEFS.length; i++) {
         if (subagentPrompts[i]) {
           registerSubagent(input, SUBAGENT_DEFS[i], subagentPrompts[i], subagentUserConfigs[i]);
         }
