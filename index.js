@@ -225,7 +225,6 @@ const SUBAGENT_DEFS = [
       bash: "allow",
       read: "allow",
       edit: "allow",
-      write: "allow",
     },
   },
   {
@@ -247,10 +246,6 @@ const SUBAGENT_DEFS = [
       glob: "allow",
       grep: "allow",
       edit: {
-        "*": "deny",
-        "docs/exec-plans/**": "allow",
-      },
-      write: {
         "*": "deny",
         "docs/exec-plans/**": "allow",
       },
@@ -283,10 +278,6 @@ const SUBAGENT_DEFS = [
         "*": "deny",
         "QUALITY_SCORE.md": "allow",
       },
-      write: {
-        "*": "deny",
-        "QUALITY_SCORE.md": "allow",
-      },
     },
   },
   {
@@ -305,10 +296,6 @@ const SUBAGENT_DEFS = [
       question: "allow",
       webfetch: "allow",
       read: { "*": "allow" },
-      write: {
-        "*": "deny",
-        "docs/briefs/**": "allow",
-      },
       edit: {
         "*": "deny",
         "docs/briefs/**": "allow",

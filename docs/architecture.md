@@ -82,7 +82,7 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 
 **bug-finder** : `task` + `question` uniquement.
 
-**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `write` (`docs/briefs/**` uniquement). Pas de bash.
+**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `edit` (`docs/briefs/**` uniquement). Pas de bash.
 
 La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
 
