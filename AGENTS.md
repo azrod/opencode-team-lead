@@ -301,9 +301,9 @@ For the principles behind these rules, see [`docs/guiding-principles.md`](docs/g
 | `eslint.config.js` + `npm run lint` | `node:` protocol prefix on all built-in imports in `*.js` files | Manually / pre-PR |
 | `.github/workflows/checks.yml` job `zero-deps` | No `dependencies` or `devDependencies` in `package.json` | Every push + PR |
 | `.github/workflows/checks.yml` job `changelog-unreleased` | `## [Unreleased]` section must exist in `CHANGELOG.md` | Every push + PR |
-| `.github/workflows/checks.yml` job `agent-write-dirs-exist` | Every `write`/`edit` permission target directory declared in `index.js` must exist in the repo | Every push + PR |
+| `.github/workflows/checks.yml` job `agent-write-dirs-exist` | Every `edit` permission target directory declared in `index.js` must exist in the repo | Every push + PR |
 | `.git-hooks/commit-msg` | Commit message is non-empty (guards against `git commit` without `-m`) | On commit (after `sh .git-hooks/install.sh`) |
-| `docs/guiding-principles.md` | Non-interactive git, zero deps, user-facing CHANGELOG, default-deny permissions, external prompts, write/edit target dirs | Human + Gardener review |
+| `docs/guiding-principles.md` | Non-interactive git, zero deps, user-facing CHANGELOG, default-deny permissions, external prompts, edit target dirs | Human + Gardener review |
 | `tests/lifecycle.test.js` + `npm test` | Correctness of the 5 lifecycle tool functions | Manually / pre-PR |
 
 ### Installing the git hook

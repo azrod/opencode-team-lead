@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Planning agent can now read `AGENTS.md`, `README.md`, and `docs/**` — the `"*": "deny"` in the `read` sub-object was blocking all file reads
 - Lifecycle tools (`project_state`, `register_spec`, `mark_block_done`, `complete_plan`, `check_artifacts`) now work correctly when OpenCode passes `worktree="/"` — the plugin falls back to `directory` instead of treating the filesystem root as the project root
 - Planning agent can now read project files and create exec-plans — permission rules were blocking `read` access and missing `glob`/`grep` tools needed for codebase exploration
+- Removed invalid `write` permission key from all agent configs — OpenCode's permission system uses `edit` to govern all file modifications (write, edit, patch); the separate `write` key was silently ignored, causing new file creation to be blocked by the top-level `"*": "deny"` rule
 
 ### Removed
 - `memory.md` concept removed — the persistent project memory feature has been deprecated. The `experimental.chat.system.transform` hook and memory.md injections have been removed from the plugin. Only the scratchpad survives compaction.
