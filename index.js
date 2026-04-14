@@ -163,7 +163,7 @@ const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "info",
     silent: true,
-    permission: { "*": "deny", task: "allow" },
+    permission: { "*": "deny", task: "allow", read: "allow" },
   },
   {
     id: "code-reviewer",
@@ -176,7 +176,7 @@ const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "info",
     silent: true,
-    permission: { "*": "deny", task: "allow" },
+    permission: { "*": "deny", task: "allow", read: "allow" },
   },
   {
     id: "security-reviewer",
@@ -189,7 +189,7 @@ const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "error",
     silent: true,
-    permission: { "*": "deny", task: "allow" },
+    permission: { "*": "deny", task: "allow", read: "allow" },
   },
   {
     id: "bug-finder",
@@ -264,16 +264,19 @@ const SUBAGENT_DEFS = [
     color: "success",
     permission: {
       "*": "deny",
-      task: "allow",
       question: "allow",
       bash: {
         "*": "deny",
         "git log*": "allow",
         "git diff*": "allow",
         "git status*": "allow",
+        "git show*": "allow",
+        "git blame*": "allow",
+        "git shortlog*": "allow",
         "gh pr create*": "allow",
       },
       read: { "*": "allow" },
+      grep: "allow",
       edit: {
         "*": "deny",
         "QUALITY_SCORE.md": "allow",
