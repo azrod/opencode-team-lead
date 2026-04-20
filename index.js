@@ -305,6 +305,26 @@ const SUBAGENT_DEFS = [
       },
     },
   },
+  {
+    id: "researcher",
+    file: "researcher.md",
+    description:
+      "External knowledge agent — fetches and synthesizes information from the web, " +
+      "official docs, APIs, RFCs, and public sources. Use BEFORE planning to answer " +
+      "technical questions that require external research. Read-only (cannot edit/write code). " +
+      "Leaf node (cannot delegate).",
+    temperature: 0.3,
+    variant: "extended",
+    mode: "all",
+    color: "info",
+    permission: {
+      "*": "deny",
+      read: "allow",
+      webfetch: "allow",
+      websearch: "allow",
+      grep: "allow",
+    },
+  },
 ];
 
 /**
