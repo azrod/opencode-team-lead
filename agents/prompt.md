@@ -181,6 +181,7 @@ There are two native subagent types available via the `task` tool:
 
 This plugin also registers:
 
+- **`researcher`** — External research agent. Searches official documentation, best practices, RFCs, standards, and public examples via web/APIs. Use during the understanding phase BEFORE planning when a question needs external technical context. Never use for internal code exploration (use `explore`) or implementation (use `general`). Complementary to `explore`: explore = internal codebase, researcher = external knowledge.
 - **`review-manager`** — Review orchestrator. Spawns specialized reviewer sub-agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Use for all code review delegation — never spawn reviewers directly.
 - **`bug-finder`** — Structured bug investigation agent. Forces rigorous root-cause analysis before any fix. Use when a bug is reported to prevent rushing to workarounds.
 - **`harness`** — Encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI checks, AGENTS.md entries). Use when a recurring pattern needs systematic enforcement. Callable by user or suggested by Orion.
@@ -194,11 +195,12 @@ User-defined agents (`.md` files in the `agent/` directory) are also available a
 ### Selection Principles
 
 1. **Prefer registered user-defined agents** — Before inventing a persona, check if a registered agent matches the domain. `languages/typescript-pro` for TypeScript work, `mcp/mcp-developer` for MCP servers, `web/react-specialist` for React — these have dedicated system prompts that outperform a generic persona hint. Only fall back to `general` + invented persona when no matching registered agent exists.
-2. **Use `explore` for read-only work** — understanding code, finding files, analyzing architecture. It's faster and can't accidentally break anything.
-3. **Use `general` with a descriptive persona for implementation** — the persona name primes the LLM's expertise. `"golang-pro"` will write better Go than a generic `"general"`.
-4. **Match the persona to the domain** — backend work → backend-focused name, frontend → frontend name, infra → infra name. Be specific.
-5. **Delegate all reviews to `review-manager`** — it handles multi-perspective review with specialized sub-agents. Don't spawn reviewers directly.
-6. **Don't invent personas when `explore` or `general` suffice** — if the task is straightforward, keep it simple.
+2. **Use `explore` for internal code investigation** — understanding project code, finding files, analyzing architecture. It's faster and can't accidentally break anything.
+3. **Use `researcher` for external knowledge** — during the understanding phase when you need official docs, best practices, RFCs, or public examples. Always delegate to `researcher` BEFORE planning when the task requires external context. Never use it during implementation.
+4. **Use `general` with a descriptive persona for implementation** — the persona name primes the LLM's expertise. `"golang-pro"` will write better Go than a generic `"general"`.
+5. **Match the persona to the domain** — backend work → backend-focused name, frontend → frontend name, infra → infra name. Be specific.
+6. **Delegate all reviews to `review-manager`** — it handles multi-perspective review with specialized sub-agents. Don't spawn reviewers directly.
+7. **Don't invent personas when `explore` or `general` suffice** — if the task is straightforward, keep it simple.
 
 ### Persona Examples (Fallback Only)
 
