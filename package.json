@@ -11,6 +11,7 @@
     "index.js",
     "agents/",
     "tools/",
+    "skills/",
     "README.md"
   ],
   "dependencies": {

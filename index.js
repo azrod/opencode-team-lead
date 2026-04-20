@@ -15,6 +15,8 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const SPEC_WRITER_REQUIRED_KEYS = ['guide', 'template', 'checklist'];
+
 const GLOBAL_AGENTS_CONTENT = `---
 name: human-tone
 description: >
@@ -419,6 +421,44 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     SUBAGENT_DEFS.map((def) => loadAgentPrompt(def.id, def.file, def.silent ?? false)),
   );
 
+  // Load skill content with completeness tracking
+  const specWriterSkill = { available: [] };
+  const skillBasePath = join(__dirname, "skills", "spec-writer");
+  const skillResources = {
+    template: join(skillBasePath, "template.md"),
+    checklist: join(skillBasePath, "checklist.md"),
+    examples: join(skillBasePath, "examples"),
+  };
+
+  try {
+    specWriterSkill.guide = await readFile(join(skillBasePath, "SKILL.md"), "utf-8");
+    specWriterSkill.available.push('guide');
+  } catch (err) {
+    console.warn(`[opencode-team-lead] Failed to load spec-writer SKILL.md:`, err.message);
+  }
+
+  try {
+    specWriterSkill.template = await readFile(join(skillBasePath, "template.md"), "utf-8");
+    specWriterSkill.available.push('template');
+  } catch (err) {
+    console.warn(`[opencode-team-lead] Failed to load spec-writer template.md:`, err.message);
+  }
+
+  try {
+    specWriterSkill.checklist = await readFile(join(skillBasePath, "checklist.md"), "utf-8");
+    specWriterSkill.available.push('checklist');
+  } catch (err) {
+    console.warn(`[opencode-team-lead] Failed to load spec-writer checklist.md:`, err.message);
+  }
+
+  // Warn if skill is incomplete
+  const missing = SPEC_WRITER_REQUIRED_KEYS.filter(k => !specWriterSkill.available.includes(k));
+  if (missing.length > 0) {
+    const fileMap = { guide: 'SKILL.md', template: 'template.md', checklist: 'checklist.md' };
+    const missingFiles = missing.map(k => fileMap[k]);
+    console.warn(`[opencode-team-lead] spec-writer skill incomplete — missing files: ${missingFiles.join(', ')}`);
+  }
+
   // OpenCode sometimes passes worktree="/" (filesystem root) when no git worktree is detected.
   // In that case, fall back to directory which is always the actual project path.
   const projectRoot = (worktree && worktree !== "/") ? worktree : (directory ?? ".");
@@ -613,6 +653,22 @@ ${content.trim()}
             return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
           }
         },
+      },
+    },
+
+    // ── Skill hook: register bundled skills ──────────────────────────
+    skill: {
+      "spec-writer": {
+        name: "spec-writer",
+        description: "Provides templates, examples, and validation checklists for writing agent specification files in the opencode-team-lead project. Use when creating or updating agent specs in docs/specs/.",
+        get content() {
+          const missing = SPEC_WRITER_REQUIRED_KEYS.filter(k => !specWriterSkill?.available?.includes(k));
+          if (missing.length > 0) {
+            throw new Error(`spec-writer skill incomplete — missing: ${missing.join(', ')}. Check plugin initialization logs.`);
+          }
+          return specWriterSkill;
+        },
+        resources: skillResources,
       },
     },
   };
