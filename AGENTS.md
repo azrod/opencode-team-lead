@@ -42,6 +42,7 @@ This is a tiny project — zero dependencies, pure ESM, no build step. Tests run
 | `agents/planning.md` | System prompt for the planning agent — transforms complex or ambiguous requests into structured exec-plans on disk. |
 | `agents/gardener.md` | System prompt for the gardener agent — periodic maintenance agent that fixes stale docs and detects code drift, then escalates recurring patterns to harness. |
 | `agents/brainstorm.md` | System prompt for the brainstorm agent — helps users discover and articulate what they want to build. Produces a product brief at docs/briefs/{project-name}.md. |
+| `skills/spec-writer/` | Bundled skill for writing agent specifications — loaded at init, registered via `skill` hook. Provides templates, examples, and validation checklists. |
 | `package.json` | Standard npm config. Ships `index.js`, the `agents/` directory (all agent prompts), and `README.md`. |
 | `.github/workflows/publish.yml` | CI: OIDC trusted publishing to npm on `v*` tags, plus GitHub release creation. |
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
