@@ -505,27 +505,21 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         complete_plan: "allow",
         register_spec: "allow",
         check_artifacts: "allow",
-        read: {
-          "*": "deny",
-          ".opencode/scratchpad.md": "allow",
-        },
+        read: "allow",
         edit: {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
+          "docs/**": "allow",
         },
         write: {
           "*": "deny",
           ".opencode/scratchpad.md": "allow",
+          "docs/**": "allow",
         },
         bash: {
           "*": "deny",
-          "git status*": "allow",
-          "git diff*": "allow",
-          "git log*": "allow",
-          "git add*": "allow",
-          "git commit*": "allow",
-          "git push*": "allow",
-          "git tag*": "allow",
+          "git *": "allow",
+          "git push *": "ask",
         },
       };
 
