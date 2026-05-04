@@ -8,7 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- New `spec-writer` skill bundled with the plugin — agents can load templates, real-world examples, and validation checklists when writing agent specs. Load with `skill(name="spec-writer")` to access structured workflow and all resources.
 - New `researcher` agent for external knowledge research — fetches and synthesizes information from the web, official docs, APIs, and public sources during the comprehension phase (before planning)
 - New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before Orion to produce a structured product brief at `docs/briefs/{project-name}.md`.
 - New `harness` agent — encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI workflows, AGENTS.md entries, guiding principles). Triggered by the user, Orion post-feature, or the Gardener on recurring drift.
