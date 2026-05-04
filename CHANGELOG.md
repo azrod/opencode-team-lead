@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-05-04
+
 ### Added
 - New `researcher` agent for external knowledge research — fetches and synthesizes information from the web, official docs, APIs, and public sources during the comprehension phase (before planning)
 - New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before Orion to produce a structured product brief at `docs/briefs/{project-name}.md`.
@@ -144,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode
 - npm package with installation docs
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/azrod/opencode-team-lead/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/azrod/opencode-team-lead/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/azrod/opencode-team-lead/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/azrod/opencode-team-lead/compare/v0.6.1...v0.6.2
