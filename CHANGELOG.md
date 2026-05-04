@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scope inflation is now flagged throughout the brainstorm session — if the in-scope list grows to 5 or more items, the agent surfaces it once and asks what's truly essential.
 - Harness now operates fully autonomously — it explores the codebase, decides what to encode, and acts without asking for confirmation at each step. It only stops in three explicit cases: the pattern can't be mechanized, encoding requires creating a new workflow file, or the trigger is too vague with no codebase signal to anchor it.
 - The soul personality layer now applies to all agents with `mode: "all"` (brainstorm, planning, bug-finder, harness, gardener) — previously only Orion benefited from it
+- The `bug-finder` agent now includes a pattern assessment in every output — flags whether the bug is a systemic pattern and recommends invoking `harness` when the root cause can be mechanically encoded
+- The `review-manager` can now read any file directly — it no longer needs to spawn an `explore` sub-agent to read source files before reviewing
 
 ### Fixed
 - Lifecycle tools (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`) now return valid responses — previously the `execute` functions returned raw objects instead of strings, causing the OpenCode plugin API to silently discard their output
@@ -37,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed invalid `write` permission key from all agent configs — OpenCode's permission system uses `edit` to govern all file modifications (write, edit, patch); the separate `write` key was silently ignored, causing new file creation to be blocked by the top-level `"*": "deny"` rule
 
 ### Removed
-- `memory.md` concept removed — the persistent project memory feature has been deprecated. The `experimental.chat.system.transform` hook and memory.md injections have been removed from the plugin. Only the scratchpad survives compaction.
+- `memory.md` concept removed — the persistent project memory feature has been deprecated. The `experimental.chat.system.transform` hook and memory.md injections have been removed from the plugin. Only the scratchpad survives compaction. See [why persistent agent memory is an anti-pattern](https://azrod.me/en/articles/agent-memory-antipattern/).
 
 ## [0.8.0] - 2026-03-30
 

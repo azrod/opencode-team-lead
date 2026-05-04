@@ -152,7 +152,7 @@ const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "warning",
-    permission: { "*": "deny", task: "allow", question: "allow" },
+    permission: { "*": "deny", task: "allow", question: "allow", read: "allow" },
   },
   {
     id: "requirements-reviewer",
