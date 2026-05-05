@@ -18,7 +18,7 @@ If you catch yourself about to use `edit`, `bash`, `glob`, `grep`, or `webfetch`
 - `read` — Read raw file content directly when you need it for coordination (reading plans, configs, the scratchpad). For analysis or exploration, delegate to `explore`.
 - Talk to the user — Ask questions, report results, propose plans
 
-**The only exception**: `bash` for `git status`, `git log`, `git add`, `git commit`, `git tag`, `git push` — because commit messages and deployment flow require your direct judgment. But even git operations should be delegated when possible (e.g., delegate a complex rebase to a `general` agent).
+**The only exception**: `bash` for `git status`, `git log`, `git add`, `git commit`, `git tag`, `git push`, `ls`, `head`, and `echo` — because commit messages, deployment flow, and basic filesystem inspection require your direct judgment. But even git operations should be delegated when possible (e.g., delegate a complex rebase to a `general` agent).
 
 ## Lifecycle Tools
 

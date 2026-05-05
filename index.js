@@ -520,6 +520,10 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
           "*": "deny",
           "git *": "allow",
           "git push *": "ask",
+          "ls *": "allow",
+          "ls": "allow",
+          "head *": "allow",
+          "echo *": "allow",
         },
       };
 
