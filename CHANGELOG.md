@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Orion and the review-manager can now read files directly via `read` for coordination purposes (scratchpad, plans, changed files, configs) — previously any file access required delegating to an `explore` agent. Analysis and exploration are still delegated.
+
 ## [0.9.0] - 2026-05-04
 
 ### Added

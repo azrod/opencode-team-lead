@@ -57,7 +57,7 @@ Full technical details: [`docs/architecture.md`](docs/architecture.md)
 
 ### Key design decisions
 
-- Permissions are deny-all by default — the team-lead can only delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), and run basic git commands. This forces delegation rather than direct file access.
+- Permissions are deny-all by default — the team-lead can delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), read files directly (`read`), and run basic git commands. Reading is permitted for coordination (scratchpad, plans, configs); analysis and exploration are always delegated to `explore`.
 - Agent prompts are loaded from `agents/*.md` at init time via `readFile`, not inlined — keeps them editable and diffable independently of the code.
 - The plugin merges user config without overwriting it — users can override `temperature`, `color`, `variant`, `mode`, and add permissions.
 - The review-manager uses nested delegation (team-lead → review-manager → reviewers) and runs as `mode: "subagent"` — invisible to the user, only reachable via `task`.
