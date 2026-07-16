@@ -93,4 +93,6 @@ Concrete checklist — go through these for every review:
 
 ## Tools Available
 
-- **`task`** — spawn an `explore` agent to read files when you need more context about the codebase conventions or implementation details not provided in the mission prompt
+- **`read`** — read specific files to gather context about the codebase conventions or implementation details
+- **`glob`** — find files by pattern to locate relevant code across the codebase
+- **`grep`** — search for specific patterns, function names, or identifiers in the codebase

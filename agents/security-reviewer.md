@@ -140,4 +140,6 @@ Absence of a finding must be explicit, not silent. This prevents reviewers downs
 
 ## Tools Available
 
-- **`task`** — spawn an `explore` agent to read files when you need more context about the implementation, surrounding code, or project configuration not provided in the mission prompt
+- **`read`** — read specific files to gather context about the implementation, surrounding code, or project configuration
+- **`glob`** — find files by pattern to locate relevant code, configs, or infrastructure definitions
+- **`grep`** — search for specific patterns, function names, or security-relevant identifiers across the codebase

@@ -1,7 +1,7 @@
 // opencode-team-lead plugin
 // Installs the team-lead orchestrator agent and scratchpad compaction hook.
 
-import { readFile } from "node:fs/promises";
+import { readFile, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tool } from "@opencode-ai/plugin/tool";
@@ -152,7 +152,14 @@ const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "warning",
-    permission: { "*": "deny", task: "allow", question: "allow", read: "allow" },
+    permission: {
+      "*": "deny",
+      task: { "*": "deny", "*-reviewer": "allow" },
+      question: "allow",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+    },
   },
   {
     id: "requirements-reviewer",
@@ -165,7 +172,7 @@ const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "info",
     silent: true,
-    permission: { "*": "deny", task: "allow", read: "allow" },
+    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
   },
   {
     id: "code-reviewer",
@@ -178,7 +185,7 @@ const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "info",
     silent: true,
-    permission: { "*": "deny", task: "allow", read: "allow" },
+    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
   },
   {
     id: "security-reviewer",
@@ -191,7 +198,7 @@ const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "error",
     silent: true,
-    permission: { "*": "deny", task: "allow", read: "allow" },
+    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
   },
   {
     id: "bug-finder",
@@ -203,7 +210,7 @@ const SUBAGENT_DEFS = [
     variant: "max",
     mode: "all",
     color: "warning",
-    permission: { "*": "deny", task: "allow", question: "allow" },
+    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow", question: "allow" },
   },
   {
     id: "harness",
@@ -218,7 +225,7 @@ const SUBAGENT_DEFS = [
     color: "success",
     permission: {
       "*": "deny",
-      task: "allow",
+      task: "ask",
       question: "allow",
       todowrite: "allow",
       todoread: "allow",
@@ -242,7 +249,7 @@ const SUBAGENT_DEFS = [
     color: "info",
     permission: {
       "*": "deny",
-      task: "allow",
+      task: "ask",
       question: "allow",
       read: "allow",
       glob: "allow",
@@ -277,7 +284,7 @@ const SUBAGENT_DEFS = [
         "git shortlog*": "allow",
         "gh pr create*": "allow",
       },
-      read: { "*": "allow" },
+      read: "allow",
       grep: "allow",
       edit: {
         "*": "deny",
@@ -300,7 +307,7 @@ const SUBAGENT_DEFS = [
       task: "allow",
       question: "allow",
       webfetch: "allow",
-      read: { "*": "allow" },
+      read: "allow",
       edit: {
         "*": "deny",
         "docs/briefs/**": "allow",
@@ -571,6 +578,19 @@ ${content.trim()}
         }
       } catch {
         // Scratchpad doesn't exist or isn't readable — skip silently.
+      }
+    },
+
+    // ── Event hook: ensure required directories exist ─────────────────
+    event: async ({ event }) => {
+      if (event.type === "session.created") {
+        await Promise.all([
+          mkdir(join(projectRoot, paths.execPlans), { recursive: true }),
+          mkdir(join(projectRoot, paths.briefs), { recursive: true }),
+          mkdir(join(projectRoot, paths.specs), { recursive: true }),
+        ]).catch(() => {
+          // Directory creation is best-effort — never block session startup.
+        });
       }
     },
 

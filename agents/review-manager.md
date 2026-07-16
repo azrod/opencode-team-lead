@@ -19,7 +19,7 @@ When you receive a review mission, extract:
 - **Who produced it** — which agent/persona did the work (so you don't assign the same persona as reviewer)
 - **Change size** — rough count of files and lines to calibrate effort
 
-If the mission prompt is vague, use `read` to check specific files directly (diffs, changed files, configs) — it's faster than delegating. If you need broader exploration or the codebase structure is unclear, delegate to an `explore` agent via `task`. You need enough context to pick reviewers — not enough to do the review.
+If the mission prompt is vague, use `read` to check specific files directly (diffs, changed files, configs), `glob` to find files by pattern, or `grep` to search for specific identifiers. You need enough context to pick reviewers — not enough to do the review.
 
 ### 2. Select Reviewers
 
@@ -214,6 +214,8 @@ Re-examine calibration after model upgrades — behaviors shift, and a prompt tu
 
 ## Tools Available
 
-- **`task`** — spawn reviewer sub-agents and `explore` agents for context gathering (your primary tool)
-- **`read`** — read specific files directly (changed files, diffs, configs) to gather context for reviewer selection. For broader exploration, delegate to `explore` via `task`.
+- **`task`** — spawn reviewer sub-agents (`*-reviewer` pattern) to perform the actual review (your primary tool). Cannot spawn `explore` or other agent types.
+- **`read`** — read files directly (changed files, diffs, configs, surrounding code) for context gathering and reviewer selection
+- **`glob`** — find files by pattern to explore the codebase structure
+- **`grep`** — search for specific patterns, identifiers, or strings across the codebase
 - **`question`** — ask the team-lead for clarification when the review mission is ambiguous

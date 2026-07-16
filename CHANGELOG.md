@@ -8,7 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Orion and the review-manager can now read files directly via `read` for coordination purposes (scratchpad, plans, changed files, configs) — previously any file access required delegating to an `explore` agent. Analysis and exploration are still delegated.
+- Reviewer agents (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) now access files directly via `read`, `glob`, and `grep` — sub-agent spawning is blocked by the default `"*": "deny"` rule.
+- The `review-manager` now accesses files directly via `read`, `glob`, and `grep` instead of delegating to an `explore` sub-agent. Its `task` permission is constrained to `*-reviewer` agents only.
+- The `bug-finder` agent now investigates directly via `read`, `glob`, and `grep` — sub-agent delegation via `task` has been removed. The agent reports its findings back to the caller instead of applying fixes itself.
+- The `harness` and `planning` agents now require user confirmation before spawning any sub-agent (`task: ask`).
+
+### Fixed
+- The `planning` and `brainstorm` agents no longer fail with permission errors when their target directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) don't exist in the user's project — the plugin now creates them automatically on session start via a `session.created` event hook.
 
 ## [0.9.0] - 2026-05-04
 

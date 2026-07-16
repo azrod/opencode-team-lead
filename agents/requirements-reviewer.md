@@ -105,4 +105,6 @@ Scope creep is a real issue. If the user asked to change X and the implementatio
 
 ## Tools Available
 
-- **`task`** — spawn an `explore` agent to read files when you need implementation evidence not provided in the mission prompt
+- **`read`** — read specific files to gather implementation evidence
+- **`glob`** — find files by pattern when you need to locate implementation across the codebase
+- **`grep`** — search for specific patterns or identifiers in the codebase
