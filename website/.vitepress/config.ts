@@ -21,6 +21,17 @@ export default defineConfig({
 
   description: "Team-lead orchestrator agent for OpenCode",
   base: "/opencode-team-lead/",
+  head: [
+    [
+      "link",
+      {
+        rel: "alternate",
+        type: "text/plain",
+        title: "LLM-friendly documentation",
+        href: "https://azrod.github.io/opencode-team-lead/llms.txt",
+      },
+    ],
+  ],
   cleanUrls: true,
 
   markdown: {
@@ -73,7 +84,10 @@ export default defineConfig({
       },
       {
         text: "About",
-        items: [{ text: "Changelog", link: "/changelog" }],
+        items: [
+          { text: "Changelog", link: "/changelog" },
+          { text: "LLM-friendly docs", link: "https://azrod.github.io/opencode-team-lead/llms.txt" },
+        ],
       },
     ],
 
