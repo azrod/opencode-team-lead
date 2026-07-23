@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Documentation portal (`website/`) — VitePress static site with marketing homepage, per-agent pages, lifecycle tools reference, architecture, decisions, principles, and changelog. Deployed automatically to GitHub Pages on push to `main`.
+- Documentation website now generates LLM-friendly artifacts (`llms.txt`, `llms-full.txt`, per-page `.md` files) via `vitepress-plugin-llms`, making the docs easily ingested by AI agents.
+
 ### Changed
+- Orion's context management instructions now reference only `compress` — `distill` and `prune` were removed since they don't exist in OpenCode's toolset.
 - Reviewer agents (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) now access files directly via `read`, `glob`, and `grep` — sub-agent spawning is blocked by the default `"*": "deny"` rule.
 - The `review-manager` now accesses files directly via `read`, `glob`, and `grep` instead of delegating to an `explore` sub-agent. Its `task` permission is constrained to `*-reviewer` agents only.
 - The `bug-finder` agent now investigates directly via `read`, `glob`, and `grep` — sub-agent delegation via `task` has been removed. The agent reports its findings back to the caller instead of applying fixes itself.
@@ -15,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The `planning` and `brainstorm` agents no longer fail with permission errors when their target directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) don't exist in the user's project — the plugin now creates them automatically on session start via a `session.created` event hook.
+
+### Removed
+- The scratchpad working-memory file (`.opencode/scratchpad.md`) has been removed. The team-lead now tracks session progress via `todowrite` and resumes work by re-reading exec-plans and specs, rather than maintaining a separate persistent memory file.
 
 ## [0.9.0] - 2026-05-04
 
