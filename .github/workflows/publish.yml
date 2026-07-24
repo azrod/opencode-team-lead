@@ -102,6 +102,7 @@ jobs:
             RESOLVED="$INPUT_VERSION"
           fi
 
+          echo "Resolved version: $RESOLVED"
           echo "resolved=$RESOLVED" >> "$GITHUB_OUTPUT"
 
       - name: Set version and detect prerelease
@@ -155,7 +156,7 @@ jobs:
         if: env.IS_PRERELEASE == 'true'
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            TAG="v${{ steps.version.outputs.number }}"
+            TAG="v${{ steps.resolve.outputs.resolved }}"
             git tag "$TAG"
             git push origin "$TAG"
           else
