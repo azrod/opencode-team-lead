@@ -4,6 +4,26 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Base version (without 'v' prefix, e.g. 0.10.0). Leave empty to auto-calculate from last stable tag."
+        required: false
+        default: ""
+      bump:
+        description: "Version bump type (used only when version is empty)"
+        required: false
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      beta:
+        description: "Append -beta.x suffix (auto-incremented from existing tags)"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   publish:
@@ -23,10 +43,75 @@ jobs:
       - name: Configure npm registry
         run: echo "registry=https://registry.npmjs.org/" > ~/.npmrc
 
+      - name: Resolve version (workflow_dispatch only)
+        id: resolve
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          INPUT_VERSION="${{ github.event.inputs.version }}"
+          BUMP="${{ github.event.inputs.bump }}"
+          BETA="${{ github.event.inputs.beta }}"
+
+          # --- Determine base version ---
+          if [[ -z "$INPUT_VERSION" ]]; then
+            # Find the last stable tag (vX.Y.Z with no suffix)
+            LAST_STABLE=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+            if [[ -z "$LAST_STABLE" ]]; then
+              echo "Error: no stable tag found and version is empty."
+              exit 1
+            fi
+            # Strip leading 'v'
+            BASE="${LAST_STABLE#v}"
+            # Split into major.minor.patch
+            MAJOR=$(echo "$BASE" | cut -d. -f1)
+            MINOR=$(echo "$BASE" | cut -d. -f2)
+            PATCH=$(echo "$BASE" | cut -d. -f3)
+            # Apply bump
+            case "$BUMP" in
+              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH + 1)) ;;
+            esac
+            BASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          else
+            BASE_VERSION="$INPUT_VERSION"
+          fi
+
+          # --- Append beta suffix or validate ---
+          if [[ "$BETA" == "true" ]]; then
+            # Find existing beta tags for this base version and increment
+            MAX_BETA=$(git tag --list "v${BASE_VERSION}-beta.*" \
+              | sed "s/v${BASE_VERSION}-beta\.//" \
+              | sort -n \
+              | tail -1)
+            if [[ -z "$MAX_BETA" ]]; then
+              NEXT_BETA=1
+            else
+              NEXT_BETA=$((MAX_BETA + 1))
+            fi
+            RESOLVED="${BASE_VERSION}-beta.${NEXT_BETA}"
+          else
+            # beta=false: only allowed when a version with '-' is explicitly provided
+            if [[ -z "$INPUT_VERSION" ]]; then
+              echo "Error: cannot publish a stable release via workflow_dispatch. Push a tag instead."
+              exit 1
+            fi
+            if [[ "$INPUT_VERSION" != *-* ]]; then
+              echo "Error: workflow_dispatch is reserved for pre-releases. Version must contain '-' (e.g. 0.10.0-rc.1)."
+              exit 1
+            fi
+            RESOLVED="$INPUT_VERSION"
+          fi
+
+          echo "resolved=$RESOLVED" >> "$GITHUB_OUTPUT"
+
       - name: Set version and detect prerelease
         id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ steps.resolve.outputs.resolved }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
           npm version "$VERSION" --no-git-tag-version --allow-same-version
           echo "number=$VERSION" >> "$GITHUB_OUTPUT"
           if [[ "$VERSION" == *-* ]]; then
@@ -69,8 +154,15 @@ jobs:
       - name: Create prerelease GitHub Release
         if: env.IS_PRERELEASE == 'true'
         run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="v${{ steps.version.outputs.number }}"
+            CREATE_TAG="--create-tag"
+          else
+            TAG="$GITHUB_REF_NAME"
+            CREATE_TAG=""
+          fi
           echo "$NOTES" > /tmp/release-notes.md
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --prerelease --notes-file /tmp/release-notes.md
+          gh release create "$TAG" --title "$TAG" --prerelease $CREATE_TAG --notes-file /tmp/release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
           NOTES: ${{ steps.changelog_beta.outputs.changes }}
