@@ -156,13 +156,13 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             TAG="v${{ steps.version.outputs.number }}"
-            CREATE_TAG="--create-tag"
+            git tag "$TAG"
+            git push origin "$TAG"
           else
             TAG="$GITHUB_REF_NAME"
-            CREATE_TAG=""
           fi
           echo "$NOTES" > /tmp/release-notes.md
-          gh release create "$TAG" --title "$TAG" --prerelease $CREATE_TAG --notes-file /tmp/release-notes.md
+          gh release create "$TAG" --title "$TAG" --prerelease --notes-file /tmp/release-notes.md
         env:
           GH_TOKEN: ${{ github.token }}
           NOTES: ${{ steps.changelog_beta.outputs.changes }}
