@@ -1,0 +1,177 @@
+/* Brand colors */
+:root {
+  --vp-c-brand-1: #646cff;
+  --vp-c-brand-2: #747bff;
+  --vp-c-brand-3: #9499ff;
+  --vp-c-brand-soft: rgba(100, 108, 255, 0.14);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    135deg,
+    #646cff 0%,
+    #9499ff 50%,
+    #bd34fe 100%
+  );
+
+  --vp-home-hero-image-background-image: radial-gradient(
+    ellipse 80% 80% at 50% -20%,
+    rgba(100, 108, 255, 0.3),
+    transparent
+  );
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+.dark {
+  --vp-c-brand-1: #9499ff;
+  --vp-c-brand-2: #747bff;
+  --vp-c-brand-soft: rgba(148, 153, 255, 0.14);
+}
+
+/* Hero section enhancements */
+.VPHero .name {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.VPHero .tagline {
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.VPHero .actions {
+  gap: 12px;
+}
+
+/* Feature card improvements */
+.VPFeature {
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.VPFeature:hover {
+  box-shadow: 0 4px 24px rgba(100, 108, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.VPFeature .icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+/* Agent badges — use inline as :badge[agent-name] or in custom markup */
+.agent-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--vp-font-family-mono);
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  border: 1px solid var(--vp-c-brand-1);
+  white-space: nowrap;
+}
+
+.agent-badge.subagent {
+  background: rgba(82, 196, 26, 0.1);
+  color: #52c41a;
+  border-color: #52c41a;
+}
+
+.agent-badge.all {
+  background: rgba(100, 108, 255, 0.1);
+  color: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+}
+
+/* Mode badges in tables */
+.mode-all {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  font-family: var(--vp-font-family-mono);
+  text-transform: uppercase;
+}
+
+.mode-subagent {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(82, 196, 26, 0.1);
+  color: #52c41a;
+  font-family: var(--vp-font-family-mono);
+  text-transform: uppercase;
+}
+
+/* Quick install block on home page */
+.quick-install {
+  margin: 48px auto;
+  max-width: 640px;
+  text-align: center;
+}
+
+.quick-install h3 {
+  margin-bottom: 16px;
+  font-size: 18px;
+  color: var(--vp-c-text-1);
+}
+
+/* Workflow steps */
+.workflow-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.workflow-step-number {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--vp-c-brand-1);
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom container tweaks */
+.custom-block.tip {
+  border-color: var(--vp-c-brand-1);
+}
+
+/* Ensure code blocks look clean */
+div[class*="language-"] {
+  border-radius: 8px;
+}
+
+/* Table styling */
+.vp-doc table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vp-doc th {
+  background: var(--vp-c-bg-soft);
+  font-weight: 700;
+}
+
+.vp-doc td code,
+.vp-doc th code {
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 13px;
+}

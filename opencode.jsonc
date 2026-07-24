@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "team-lead": {
+      "permission": {
+        "deepwiki*": "allow",
+        "external_directory": {
+          "*": "ask"
+        },
+        "read": {
+          "*": "allow"
+        },
+        "skill": {
+          "*": "allow"
+        },
+	"team_lead*": "allow"
+      }
+    }
+  }
+}

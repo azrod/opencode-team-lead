@@ -1,0 +1,35 @@
+# opencode-team-lead
+
+> The AI team lead for OpenCode
+
+Plans, delegates, reviews, and synthesizes — so your AI agents actually work as a team.
+
+## Table of Contents
+
+### Guide
+
+- [Getting Started](https://azrod.github.io/opencode-team-lead/getting-started.md)
+
+### Agents
+
+- [Agents Overview](https://azrod.github.io/opencode-team-lead/agents.md)
+- [team-lead — The Orchestrator Agent](https://azrod.github.io/opencode-team-lead/agents/orion.md)
+- [Review Cluster](https://azrod.github.io/opencode-team-lead/agents/review-cluster.md)
+- [Brainstorm — Phase 0 Discovery](https://azrod.github.io/opencode-team-lead/agents/brainstorm.md)
+- [Bug-Finder — Root Cause Before Fix](https://azrod.github.io/opencode-team-lead/agents/bug-finder.md)
+- [Harness — Pattern Enforcement](https://azrod.github.io/opencode-team-lead/agents/harness.md)
+- [Planning — Work Contracts on Disk](https://azrod.github.io/opencode-team-lead/agents/planning.md)
+- [Gardener — Periodic Maintenance](https://azrod.github.io/opencode-team-lead/agents/gardener.md)
+- [Researcher — External Knowledge](https://azrod.github.io/opencode-team-lead/agents/researcher.md)
+
+### Reference
+
+- [Lifecycle Tools](https://azrod.github.io/opencode-team-lead/lifecycle-tools.md)
+- [Architecture](https://azrod.github.io/opencode-team-lead/architecture.md)
+- [Decisions & ADRs](https://azrod.github.io/opencode-team-lead/decisions.md)
+- [Guiding Principles](https://azrod.github.io/opencode-team-lead/principles.md)
+
+### About
+
+- [Changelog](https://azrod.github.io/opencode-team-lead/changelog.md)
+

@@ -7,10 +7,9 @@ An [OpenCode](https://opencode.ai) plugin that installs **Orion**, a team-lead o
 
 ## What it does
 
-Two hooks power the plugin:
+One hook powers the plugin:
 
 - **`config`** — registers all agents into OpenCode's config, merging your overrides from `opencode.json` on top of plugin defaults
-- **`experimental.session.compacting`** — injects `.opencode/scratchpad.md` into the compaction context so Orion's working state survives context resets
 
 ## Agents
 
@@ -77,14 +76,6 @@ Use `opencode-team-lead@beta` to track the beta channel.
 
 Restart OpenCode — the plugin loads and registers all agents automatically.
 
-## Scratchpad
-
-Orion maintains `.opencode/scratchpad.md` in the project root. It contains the current mission, plan, delegated tasks, agent results, decisions, and enough context to resume after a crash or reset.
-
-The `experimental.session.compacting` hook injects this file into compaction so its content survives context resets. Orion reads it on resume — no re-briefing needed.
-
-The scratchpad is ephemeral: overwritten at the start of each new mission. It's not a journal.
-
 ## Lifecycle Tools
 
 Orion has direct access to five bookkeeping tools that enforce consistency at zero LLM cost — no delegation, no sub-agent:
@@ -103,7 +94,7 @@ These are not visible in the OpenCode UI. They run automatically as part of Orio
 
 | Agent | Permissions |
 |-------|-------------|
-| `team-lead` | `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `bash` (git: status, diff, log, add, commit, push, tag), `read`/`edit` (`.opencode/scratchpad.md` only) |
+| `team-lead` | `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `bash` (git: status, diff, log, add, commit, push, tag), `read` (all), `edit`/`write` (`docs/**` only) |
 | `review-manager` | `task`, `question` |
 | `requirements-reviewer` / `code-reviewer` / `security-reviewer` | `task` |
 | `bug-finder` | `task`, `question` |

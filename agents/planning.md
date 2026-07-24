@@ -126,15 +126,6 @@ Exec-plans are living artifacts, not one-time documents:
 
 **Planning only writes at creation.** After that, the exec-plan belongs to Orion.
 
-## Relationship with Orion's Scratchpad
+## Relationship with Orion's Session Tracking
 
-The exec-plan and the scratchpad operate at different levels and must not duplicate information.
-
-When an exec-plan exists, the scratchpad should point to it:
-
-```markdown
-# Current Mission
-See exec-plan: docs/exec-plans/<feature>.md
-```
-
-The scratchpad handles session-level state (what's in flight right now, agent results, resume context). The exec-plan handles mission-level structure (what the whole thing is, what's been decided, what's done). They complement each other — they don't replicate each other.
+The exec-plan is the single source of truth for the mission — permanent, versioned in git, shared across all agents. Orion does not duplicate its task list elsewhere; it references the exec-plan file path directly in `todowrite` items and in responses to the user, and updates the exec-plan's decision log and status directly during implementation.

@@ -105,7 +105,7 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 | Type | Chemin | Usage |
 |------|--------|-------|
 | Exec-plan | `docs/exec-plans/<feature>.md` | Tâches complexes / multi-sessions |
-| Plan simple | Inline dans le scratchpad Orion | Tâches simples — pas de fichier dédié |
+| Plan simple | Inline dans la réponse d'Orion / todowrite | Tâches simples — pas de fichier dédié |
 
 Les exec-plans complétés restent dans `docs/exec-plans/` avec `status: completed` — ils servent de référence historique pour les agents futurs.
 
@@ -145,37 +145,9 @@ Orion est responsable de la mise à jour du decision log et du status pendant l'
 
 ---
 
-## Relation avec le scratchpad d'Orion
+## Relation avec le suivi de session d'Orion
 
-L'exec-plan et le scratchpad d'Orion opèrent à des niveaux différents et ne doivent pas dupliquer d'information.
-
-| | Exec-plan | Scratchpad |
-|---|---|---|
-| Contenu | Quoi, done-when, décisions, open questions | État d'orchestration session — délégations en vol, résultats agents, fichiers modifiés |
-| Durée de vie | Permanent — versionné dans git | Éphémère — réinitialisé à chaque mission |
-| Audience | Tous les agents du repo | Orion uniquement |
-| Mis à jour par | Planning agent (création) + Orion (decision log, status) | Orion en continu |
-
-**Règle :** quand un exec-plan existe, le scratchpad pointe vers lui plutôt que de dupliquer les tâches. Le scratchpad ne garde que ce que l'exec-plan ne peut pas contenir : état des délégations actives, résultats des agents, contexte de reprise.
-
-Exemple de scratchpad avec exec-plan actif :
-
-```markdown
-# Current Mission
-Voir exec-plan : docs/exec-plans/auth-system.md
-
-## Active Task
-Bloc 2 (login flow) — en cours
-
-### Sub-tasks
-- [x] General agent — impl login endpoint → auth/login.ts, auth/middleware.ts
-- [ ] Review-manager — en attente
-
-### Context for Resume
-[état de la délégation en cours, pas les tâches du plan]
-```
-
-Les open questions et le decision log vont dans l'exec-plan, pas dans le scratchpad.
+L'exec-plan est la source de vérité unique pour la mission — permanent, versionné dans git, partagé par tous les agents. Orion ne duplique pas sa liste de tâches ailleurs : il référence le chemin du fichier exec-plan directement dans ses items `todowrite` et dans ses réponses à l'utilisateur, et met à jour le decision log et le status directement dans le fichier exec-plan pendant l'implémentation.
 
 ---
 

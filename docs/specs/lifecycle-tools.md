@@ -332,7 +332,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
   return {
     config: async (input) => { /* ... */ },
 
-    "experimental.session.compacting": async (_input, output) => { /* ... */ },
+    event: async ({ event }) => { /* ... */ },
 
     tool: {
       project_state: tool({
@@ -473,7 +473,7 @@ Tu as accès à des tools de bookkeeping directs — pas de délégation, pas de
 
 - **Création d'exec-plans** — c'est le rôle de l'agent `planning`. Les tools lifecycle ne créent pas d'exec-plans.
 - **Création de briefs** — c'est le rôle de l'agent `brainstorm`.
-- **Mise à jour du decision log** — Orion le fait via ses permissions `edit` sur le scratchpad ; le decision log reste dans l'exec-plan, édité par Orion directement (via sous-agent si besoin).
+- **Mise à jour du decision log** — Orion le fait directement dans le fichier exec-plan (via sous-agent si besoin) ; le decision log reste dans l'exec-plan.
 - **Suppression d'artefacts** — les tools lifecycle ne suppriment rien.
 - **Validation du contenu** des specs ou briefs — `check_artifacts` vérifie l'existence et la cohérence des références, pas la qualité du contenu.
 - **Sync git** — les tools écrivent sur disque mais ne commitent pas. Le commit reste sous contrôle de l'utilisateur ou d'Orion via ses permissions git.

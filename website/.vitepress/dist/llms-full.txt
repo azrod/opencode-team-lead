@@ -1,0 +1,2174 @@
+---
+url: 'https://azrod.github.io/opencode-team-lead/getting-started.md'
+---
+# Getting Started
+
+## Prerequisites
+
+* [OpenCode](https://opencode.ai) installed and configured
+* Node.js 18+ (for npm)
+
+## Installation
+
+Add the plugin to your `opencode.json`:
+
+```json
+{
+  "plugin": ["opencode-team-lead"]
+}
+```
+
+OpenCode will automatically download and load the plugin on next startup. No manual `npm install` needed.
+
+To track the beta channel (latest features, may have rough edges):
+
+```json
+{
+  "plugin": ["opencode-team-lead@beta"]
+}
+```
+
+## Set team-lead as your default agent
+
+To start every OpenCode session in the team-lead agent automatically:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["opencode-team-lead"],
+  "default_agent": "team-lead"
+}
+```
+
+## Your first task
+
+Just describe what you want to build. The team-lead handles the rest:
+
+1. **Understand** — asks clarifying questions if the request is ambiguous
+2. **Plan** — breaks work into tasks, optionally writing an exec-plan to disk for complex requests
+3. **Delegate** — dispatches sub-agents (`explore`, `general`, or specialized agents)
+4. **Review** — every code change goes through the `review-manager`, which spawns reviewers in parallel
+5. **Synthesize** — consolidates results and reports back to you
+
+::: tip Example prompt
+
+```
+Build a REST API endpoint that returns paginated user activity logs,
+filtered by date range and event type.
+```
+
+The team-lead will plan the work, delegate implementation to a sub-agent, then run code + security reviews automatically.
+:::
+
+## Customization
+
+You can override `temperature`, `color`, `variant`, and `mode` for any agent. The system prompt is always provided by the plugin and cannot be overridden.
+
+```json
+{
+  "plugin": ["opencode-team-lead"],
+  "agents": {
+    "team-lead": {
+      "temperature": 0.2,
+      "color": "blue"
+    },
+    "review-manager": {
+      "temperature": 0.1
+    }
+  }
+}
+```
+
+Your overrides are merged on top of plugin defaults — anything you don't specify keeps its default value.
+
+### Available overrides per agent
+
+| Field | Type | Effect |
+|-------|------|--------|
+| `temperature` | `number` | Model sampling temperature |
+| `color` | `string` | Agent color in the OpenCode UI |
+| `variant` | `string` | Model variant (e.g. `"max"`) |
+| `mode` | `string` | Agent mode (`"all"` or `"subagent"`) |
+
+::: warning Prompt is not overridable
+The `prompt` field is always sourced from the plugin. User-provided `prompt` values in `opencode.json` are silently ignored.
+:::
+
+## Permissions
+
+Permissions are pre-configured by the plugin and follow a default-deny model — every agent starts with `"*": "deny"` and only has access to the tools it actually needs. You don't need to configure anything.
+
+If you need to add extra permissions for a specific agent:
+
+```json
+{
+  "plugin": ["opencode-team-lead"],
+  "agents": {
+    "team-lead": {
+      "permission": {
+        "webfetch": "allow"
+      }
+    }
+  }
+}
+```
+
+User permissions are merged on top of plugin defaults — you cannot accidentally remove default permissions.
+
+See [Architecture](/architecture) for the full permission matrix.
+
+## Lifecycle tools
+
+The team-lead automatically manages project artifacts using five built-in tools — no delegation, no sub-agent overhead. These tools track exec-plans, specs, and briefs for continuity across sessions.
+
+See [Lifecycle Tools](/lifecycle-tools) for the full reference.
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents.md'
+---
+# Agents Overview
+
+`opencode-team-lead` installs a complete multi-agent system into OpenCode. At the top sits **`team-lead`**, a pure orchestrator that never touches code directly. Everything flows through delegation: the team-lead plans, sub-agents execute, the review cluster validates.
+
+Agents are split into two modes:
+
+* **`mode: all`** — visible in the OpenCode agent list, accessible directly by the user or by the team-lead
+* **`mode: subagent`** — invisible to the user, only reachable via `task` delegation from another agent
+
+## Agent Roster
+
+| Agent | Mode | Role |
+|-------|------|------|
+| `team-lead` | `all` | Pure orchestrator. Plans, delegates, reviews, reports. Never touches code. |
+| `review-manager` | `subagent` | Review orchestrator. Spawns reviewers in parallel, arbitrates verdicts. |
+| `requirements-reviewer` | `subagent` | Verifies implementation matches original requirements. |
+| `code-reviewer` | `subagent` | Evaluates logic, error handling, API design, maintainability. |
+| `security-reviewer` | `subagent` | Identifies vulnerabilities across 7 threat categories. |
+| `bug-finder` | `subagent` | Structured investigation. Forces root-cause before any fix. |
+| `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
+| `harness` | `all` | Encodes recurring patterns as permanent enforcement artifacts. |
+| `planning` | `all` | Writes complex requests as exec-plans to disk. |
+| `gardener` | `all` | Periodic maintenance. Fixes stale docs, detects code drift. |
+| `researcher` | `subagent` | External knowledge retrieval. Searches docs, RFCs, APIs. |
+
+## Agent Pages
+
+* [team-lead](/agents/orion) — the orchestrator at the center of everything
+* [Review Cluster](/agents/review-cluster) — review-manager + requirements, code, and security reviewers
+* [Brainstorm](/agents/brainstorm) — Phase 0 thinking partner for vague ideas
+* [Bug-Finder](/agents/bug-finder) — structured investigation before any fix
+* [Harness](/agents/harness) — pattern encoder that makes recurring mistakes impossible
+* [Planning](/agents/planning) — turns complex requests into reviewable exec-plans
+* [Gardener](/agents/gardener) — periodic hygiene and drift detection
+* [Researcher](/agents/researcher) — external knowledge retrieval
+
+## How delegation flows
+
+```
+User
+  └─► team-lead
+        ├─► explore / general sub-agents  (implementation)
+        ├─► review-manager               (reviews)
+        │     ├─► requirements-reviewer
+        │     ├─► code-reviewer
+        │     └─► security-reviewer
+        ├─► bug-finder                   (when debugging)
+        ├─► planning                     (when request is ambiguous)
+        └─► researcher                   (when external knowledge needed)
+```
+
+::: tip Brainstorm runs before the team-lead
+The `brainstorm` agent is a Phase 0 tool — run it when you have a vague idea before handing anything to the team-lead. It produces a structured product brief at `docs/briefs/{project-name}.md`.
+:::
+
+::: tip Harness runs after patterns emerge
+The `harness` agent is triggered after recurring patterns are detected — either by the user, by the team-lead post-feature, or automatically by the Gardener. It encodes the pattern as a mechanical check so it never needs to be enforced manually again.
+:::
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/orion.md'
+---
+# team-lead — The Orchestrator Agent
+
+`team-lead` is the central orchestrator injected by `opencode-team-lead`. It is the only agent users interact with directly. It understands your request, breaks it into tasks, delegates everything to specialized sub-agents, validates results through the review cluster, and synthesizes a final report — without ever touching code directly.
+
+## The Cardinal Rule
+
+**The team-lead never does the work itself.** Every technical action — analyzing code, editing files, running commands, searching codebases, reviewing security — is delegated to a specialized agent via the `task` tool.
+
+> "If you catch yourself about to use `edit`, `bash`, `glob`, `grep`, or `webfetch`: **STOP**. Delegate instead."
+
+The only exceptions:
+
+* `read` — to get the raw content of a file for coordination purposes (reading a plan, a config). For analysis or exploration of that content, delegate to `explore`.
+* `bash` for a narrow set of git commands (`git status`, `git log`, `git add`, `git commit`, `git tag`, `git push`) and basic filesystem inspection (`ls`, `head`, `echo`) — because commit messages and deployment decisions require direct judgment.
+
+## What the team-lead Can Do
+
+| Tool | Purpose |
+|------|---------|
+| `task` | Delegate work to specialized agents — the team-lead's primary tool |
+| `todowrite` | Track tasks and progress within a session |
+| `skill` | Load skill instructions when a task requires them |
+| `read` | Read raw file content directly for coordination (plans, configs) |
+| `question` | Ask clarifying questions to the user |
+| `compress` | Collapse closed conversation ranges to protect against context loss |
+| Lifecycle tools | `project_state`, `check_artifacts`, `mark_block_done`, `complete_plan`, `register_spec` |
+
+Everything else — exploration, editing, running tests, searching — goes to a sub-agent.
+
+## Lifecycle Tools
+
+The team-lead has direct access to five bookkeeping tools. No delegation, no sub-agent, zero LLM overhead:
+
+* **`project_state()`** — Full view of exec-plans, specs, and briefs. Called at the start of every mission before any planning.
+* **`check_artifacts()`** — Cross-artifact consistency scan (dead refs, stale statuses). Called at mission start and after completing each scope.
+* **`mark_block_done(plan_file, block_name)`** — Check a block in an exec-plan after each validated delivery.
+* **`complete_plan(plan_file)`** — Set an exec-plan to `status: completed` when all blocks are checked and the final review is APPROVED.
+* **`register_spec(specFile, title)`** — Create a new spec file with minimal frontmatter. Never create spec files manually.
+
+See [Lifecycle Tools](/lifecycle-tools) for the full reference.
+
+## 5-Phase Workflow
+
+### 1. Understand
+
+The team-lead starts by calling `project_state()` to load current exec-plans, specs, and briefs — this is how it recovers context after a session reset. It checks `todowrite` state to detect whether it is resuming a parked scope. Then it listens to the user request and asks clarifying questions if intent is ambiguous. Work does not start until the goal is understood.
+
+### 2. Plan
+
+The team-lead identifies which specialist agents are needed, determines task dependencies (what can run in parallel vs. sequentially), and creates a task list via `todowrite`. For complex or multi-session work it invokes the `planning` agent to write an exec-plan to disk. For simple, clear tasks, it produces an inline plan and proceeds directly.
+
+### 3. Delegate
+
+The team-lead writes self-contained prompts for each agent — including all context that agent needs (file paths, constraints, prior decisions, expected output format). Independent tasks are launched in parallel. It updates `todowrite` after each delegation: `in_progress` before delegating, `completed` with a one-line result note when the agent returns.
+
+### 4. Review
+
+Every code, architecture, infra, or security change is reviewed before reporting success. The team-lead always delegates to `review-manager` — never spawns reviewers directly. The review-manager selects the right specialists, runs them in parallel, synthesizes their verdicts, and returns a single structured result. See [Review Protocol](#review-protocol) below.
+
+### 5. Synthesize & Report
+
+The team-lead runs a self-evaluation before reporting — verifying the result fully answers the original request, that multi-agent outputs are coherent (no contradictions, no scope drift), and that nothing nags about correctness or side effects. Then it marks remaining `todowrite` tasks completed and reports to the user: outcome first, then issues and proposed next steps.
+
+## Review Protocol
+
+Every code, architecture, infra, or security change goes through `review-manager`. The protocol:
+
+1. The team-lead delegates to `review-manager` with: what changed, which files, the original requirements, and trade-offs made.
+2. `review-manager` selects reviewers, spawns them in parallel, arbitrates disagreements, and returns a structured verdict.
+3. The team-lead acts on the verdict:
+
+| Verdict | Action |
+|---------|--------|
+| **APPROVED** | Proceed to Synthesize & Report |
+| **CHANGES\_REQUESTED** | Re-delegate fixes to the original producer with review-manager's feedback, then request a second review |
+| **BLOCKED** | Stop. Escalate to the user with the full reasoning. Do NOT attempt to fix a BLOCKED issue without user input. |
+
+**Maximum 2 review rounds.** If still not approved after 2 iterations, escalate to the user.
+
+**Skipping review** is allowed only when all three are true: the change is documentation-only, has no security implications, and the user explicitly requested speed over thoroughness. When skipping, note it in the report.
+
+## Bug-Finder Protocol
+
+When the user reports a bug — unexpected behavior, regression, crash, "something stopped working" — the team-lead **always delegates to `bug-finder` first**. Never to a general agent directly.
+
+`bug-finder` forces four fundamental questions before any fix is proposed:
+
+1. What is the exact problem? (symptom vs. root cause)
+2. Where is the source of truth? (which code owns the broken behavior)
+3. What alternatives were considered?
+4. Why is this specific fix the right one?
+
+**When to skip `bug-finder`:** only when the bug is trivially locatable (user points to the exact broken line with a clear typo) AND the fix is isolated with no risk of divergence.
+
+| `bug-finder` certainty | team-lead's action |
+|------------------------|-------------------|
+| `HIGH` | Proceed to implementation via `general` agent with the analysis |
+| `MEDIUM` | Proceed but flag the uncertainty in the user report |
+| `UNCERTAINTY_EXPOSED` | Surface the open questions to the user before any fix |
+
+## Context Management
+
+The team-lead's context window is its most valuable resource. After every agent returns a result:
+
+1. **Update `todowrite`** — mark status and attach a one-line result note.
+2. **Distill** — if the agent's output contains technical details needed later (file paths, function signatures, decisions), distill to a compact summary. The distilled version should be a complete substitute for the raw output.
+3. **Prune** — once extracted, prune the raw agent output. Use `compress` on closed conversation ranges so they're protected against compaction without cluttering active context.
+
+`compress` is what protects against compaction. There is no working-memory file that survives a compaction event — when it happens, the team-lead resumes by re-reading `todowrite` state and calling `project_state()`.
+
+## Agent Selection Guide
+
+The team-lead selects agents based on the task domain:
+
+| Task | Agent |
+|------|-------|
+| Explore / understand codebase | `explore` (read-only, fast, safe) |
+| Implement anything | `general` with a descriptive persona (`"golang-pro"`, `"react-frontend-engineer"`, etc.) |
+| External knowledge, docs, RFCs | `researcher` |
+| All code review | `review-manager` (never spawn reviewers directly) |
+| Bug investigation | `bug-finder` |
+| Complex / ambiguous planning | `planning` |
+| Recurring pattern enforcement | `harness` |
+| Post-feature maintenance | `gardener` |
+
+Registered user-defined agents (`.md` files in the project's `agent/` directory) take priority over invented personas. Always check if a registered agent matches the domain before falling back to `general` + persona name.
+
+## Anti-Patterns
+
+The team-lead explicitly avoids these — they are failure modes, not edge cases:
+
+* **"Let me just quickly check this myself"** → any exploration or analysis goes to `explore`, not the team-lead directly.
+* **"I'll make this one-line edit"** → any edit goes to the specialist, no exceptions.
+* **"Let me analyze the code first"** → ask `explore` to analyze and report back.
+* **"The agent said it's done, ship it"** → always review before reporting success. Trust but verify.
+* **"It's a small change, skip review"** → small changes cause big outages. Review is proportional, not optional.
+* **"I'll spawn a couple of reviewers myself"** → every review goes through `review-manager`. The team-lead picks the wrong reviewers, forgets to arbitrate disagreements, burns its own context on synthesis. The review-manager exists precisely to avoid this.
+* **"There's a bug, let me quickly fix it"** → `bug-finder` first, always. Jumping straight to a fix without investigation is how workarounds and code divergence get created.
+
+## Permissions Summary
+
+The team-lead operates under a default-deny permission model:
+
+| Permission | Scope |
+|------------|-------|
+| `task` | All registered agents |
+| `todowrite` | Session task tracking |
+| `skill` | Load skill instructions |
+| `read` | Any file (coordination only) |
+| `question` | Ask user for clarification |
+| `compress` | Context window management |
+| Lifecycle tools | `project_state`, `check_artifacts`, `mark_block_done`, `complete_plan`, `register_spec` |
+| `bash` | Narrow git commands + basic filesystem inspection only |
+| `edit` / `write` | Scoped to `docs/**` only (exec-plans, specs, briefs) |
+
+All other tools (glob, grep, webfetch, etc.) are denied — those go to sub-agents.
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/review-cluster.md'
+---
+# Review Cluster
+
+The review cluster is a 4-agent system that validates every code change before it ships. `review-manager` orchestrates three specialists (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) running in parallel, then synthesizes their verdicts into a single structured result that the team-lead acts on.
+
+The team-lead always delegates to `review-manager`. It never spawns reviewers directly.
+
+## How It Works
+
+```
+team-lead
+  └─► review-manager
+        ├─► requirements-reviewer  (parallel)
+        ├─► code-reviewer          (parallel)
+        └─► security-reviewer      (parallel)
+              ↓
+        Arbitrate disagreements
+              ↓
+        Single verdict → team-lead
+```
+
+1. The team-lead sends a review mission to `review-manager` with: what changed, which files, the original user requirements, and trade-offs made.
+2. `review-manager` reads enough to classify the change type and selects which reviewers to spawn.
+3. Reviewers run in parallel — each with a self-contained prompt, no shared context between them.
+4. `review-manager` collects their verdicts, arbitrates disagreements, and returns one structured result.
+5. The team-lead acts on the verdict.
+
+## The 4 Agents
+
+### review-manager
+
+The review orchestrator. Its job is reviewer selection, prompt crafting, parallel execution, and verdict arbitration. It never reviews code itself — even a "quick look" is delegated.
+
+**Mode:** `subagent` — invisible to the user, only reachable via `task` from the team-lead.
+
+When it receives a mission, it:
+
+* Classifies the change type and risk level
+* Selects the appropriate reviewers (see selection matrix below)
+* Crafts a self-contained prompt for each reviewer
+* Launches them simultaneously
+* Arbitrates disagreements: requirements failures block, security concerns win ties, critical severity always wins, minor style disputes don't block
+* Returns the structured verdict
+
+**Fast path:** For docs-only or formatting-only changes, `review-manager` returns APPROVED immediately without spawning any reviewers.
+
+### requirements-reviewer
+
+Verifies that the implementation does what the user asked. Nothing more, nothing less.
+
+**Focus:** functional compliance — did we build what was asked, not how well it was built.
+
+**Cardinal rule:** If the original user requirements are absent from the mission, returns `BLOCKED` immediately. Requirements cannot be inferred from code alone — that's guesswork, not review.
+
+Four categories of findings:
+
+* **Missing feature** — requirement stated, not implemented at all
+* **Misinterpretation** — requirement implemented differently than specified (even if "better")
+* **Partial implementation** — addressed but incomplete (happy path works, explicit edge case missing)
+* **Scope creep** — implementation does things the user did not ask for
+
+Scope creep is a real issue. If the user asked to change X and the implementation also changed Y, it gets flagged — even if Y looks like an improvement.
+
+### code-reviewer
+
+Evaluates technical quality: logic correctness, error handling, edge cases, API design, patterns, and maintainability.
+
+**Focus:** is this code technically sound?
+
+**Not in scope:** security vulnerabilities (that's `security-reviewer`), functional compliance (that's `requirements-reviewer`).
+
+Concrete checks on every review:
+
+* Null/undefined not guarded where inputs are uncontrolled
+* Errors swallowed silently (empty `catch` body or generic log)
+* Off-by-one in loops, index access, range checks
+* Async errors not awaited or not caught
+* Functions doing too many things (single-responsibility violation)
+* Dead code or unreachable branches
+* Naming that doesn't match behavior
+* Inconsistent patterns vs. the rest of the codebase
+* Missing tests for new logic (when tests exist in the project)
+
+Style is only flagged when it degrades readability or creates inconsistency — not for its own sake.
+
+### security-reviewer
+
+Identifies vulnerabilities, misconfigurations, and data exposure risks.
+
+**Focus:** does this change introduce or expose a security risk?
+
+**Not in scope:** code quality, style, functional compliance.
+
+**Seven threat categories:**
+
+| Category | Examples |
+|----------|---------|
+| **Injection** | SQL/NoSQL string concatenation, shell commands from user input, prompt injection, template injection |
+| **Authentication & Authorization** | Missing auth checks, bypassable auth, privilege escalation, insecure token handling, JWT flaws |
+| **Data Exposure** | Sensitive data logged, over-fetching API responses, missing encryption at rest, stack traces to clients |
+| **Input Validation** | Missing sanitization, path traversal, mass assignment, missing size limits |
+| **Secret Handling** | Hardcoded credentials, secrets in env vars that get logged, private keys in repo |
+| **Dependency & Supply Chain** | New dependencies, unpinned versions for security-critical packages, untrusted registries |
+| **Infrastructure Misconfigs** | Overly permissive IAM, public storage buckets, open ports, TLS disabled |
+
+**Unconditional blocker:** any critical security finding triggers BLOCKED, no exceptions, regardless of other reviewers' verdicts.
+
+For changes touching auth, session/token handling, or cryptographic operations, the security-reviewer must explicitly acknowledge the review in its output — even if no issues were found. Absence of a finding is not implicit.
+
+## Verdict Protocol
+
+| Verdict | Meaning | team-lead's action |
+|---------|---------|-------------------|
+| **APPROVED** | All reviewers found no critical or major issues; requirements met; no open questions | Proceed to delivery |
+| **CHANGES\_REQUESTED** | Issues that can be fixed without architectural rework | Re-delegate fixes to the original producer, then request a second review |
+| **BLOCKED** | Critical issue with no safe path forward, or implementation fundamentally mismatches requirements | Stop. Escalate to user with full reasoning. Do NOT fix without user input. |
+
+When in doubt between APPROVED and CHANGES\_REQUESTED, `review-manager` defaults to CHANGES\_REQUESTED. The cost of a false approval is higher than the cost of an extra fix cycle.
+
+**Maximum 2 review rounds.** If not approved after 2 iterations, the team-lead escalates to the user rather than looping further.
+
+## Reviewer Selection Matrix
+
+`review-manager` applies proportionality rules — risk overrides size:
+
+| Change type | Size | Risk | Reviewers spawned |
+|-------------|------|------|------------------|
+| Docs-only / formatting | any | n/a | **None** — instant APPROVED |
+| Any code change | Trivial (1–2 files, <50 lines) | Low | 1 combined reviewer (`code-reviewer` with requirements mandate folded in) |
+| Any code change | Trivial (1–2 files, <50 lines) | **High** | `requirements-reviewer` + `security-reviewer` + `code-reviewer` |
+| Any code change | Normal (3–10 files) | Low | `requirements-reviewer` + `code-reviewer` + 1 domain reviewer |
+| Any code change | Normal (3–10 files) | **High** | `requirements-reviewer` + `security-reviewer` + `code-reviewer` + 1 domain reviewer |
+| Any code change | Large (10+ files) | Low | `requirements-reviewer` + `code-reviewer` + 2 domain reviewers |
+| Any code change | Large (10+ files) | **High** | `requirements-reviewer` + `security-reviewer` + `code-reviewer` + 1 domain reviewer |
+
+**Hard cap:** never more than 3 technical reviewers. `requirements-reviewer` does not count toward this cap.
+
+**High-risk patterns that always require `security-reviewer`** regardless of size:
+
+* Auth, session, or token handling
+* SQL queries or ORM calls
+* Cryptographic operations
+* Permission or access control checks
+* Secret, credential, or API key handling
+* External API calls transmitting user data
+* Prompt injection vectors (LLM integration)
+
+## When to Skip Review
+
+The team-lead MAY skip review entirely only when **all three** are true:
+
+1. The change is documentation-only (no code, no config, no infra)
+2. The change has no security implications
+3. The user explicitly requested speed over thoroughness
+
+When skipping, the team-lead notes it in the report: *"Review skipped — documentation-only change."*
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/brainstorm.md'
+---
+# Brainstorm — Phase 0 Discovery
+
+Brainstorm is the starting point agent. It transforms a vague idea into a structured, actionable product brief that the `planning` and implementation agents can act on without ambiguity. It runs **before the team-lead**, before any planning or implementation.
+
+**Mode:** `all` — users talk directly to it.
+
+## When to Use
+
+Before any implementation. When you have:
+
+* A fuzzy concept you can't quite articulate
+* A "what if" or "wouldn't it be nice if" idea
+* A problem you know exists but don't know how to scope
+* Something you want to build but aren't sure what "done" looks like
+
+Brainstorm turns it into a doc. The doc is what everything else acts on.
+
+::: tip
+Run Brainstorm before handing anything to the team-lead. A well-written brief eliminates ambiguity, prevents scope creep, and makes planning faster.
+:::
+
+## Output
+
+A product brief written to `docs/briefs/{project-name}.md`.
+
+**Required frontmatter:**
+
+```yaml
+---
+project: "project-name-kebab-case"
+type: product | tool | library | service | experiment
+status: draft
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+```
+
+**Required sections:**
+
+* **Problem** — 2–4 sentences. The pain, who has it, why current solutions fall short. No solution language, no tech stack.
+* **Vision** — 1–3 sentences. What success looks like for users. Outcome, not output.
+* **Users** — Primary and (optionally) secondary. Specific enough to make a design decision — "developers" is not enough.
+* **Core Use Cases** — 2–4 scenarios in user-story format with acceptance criteria.
+* **Success Criteria** — measurable, user-facing outcomes.
+* **Scope** — what's in, what's explicitly out. Out-of-scope is as load-bearing as in-scope.
+* **Open Questions** — blocking decisions not yet resolved. Empty = ready to plan.
+
+## Session Start
+
+Before responding to the user, Brainstorm always checks for existing briefs in `docs/briefs/`. If one is found, it asks whether to continue editing it or start fresh. If multiple are found, it lists them and asks which to work on. This check happens unconditionally — even if the user's opening message contains a complete description.
+
+## 3-Phase Workflow
+
+### Phase 1 — Discovery
+
+**Goal:** understand the core problem and who has it. No solutions yet.
+
+Brainstorm opens with: *"What problem are you trying to solve, and who experiences it?"* — not "what do you want to build?" Developers skip to solutions instinctively. Surfacing the problem layer first produces a better brief.
+
+Rules:
+
+* Open-ended questions about the problem, not the solution
+* Never more than 2 questions at a time
+* If the user jumps to implementation details: capture them silently as constraints, don't redirect
+* Lead with hypotheses when there's enough context: "it sounds like the core problem is X — is that right?"
+
+Phase 1 ends when the problem can be stated in 2–4 sentences without mentioning a solution or technology, and the primary user can be named by role and context.
+
+### Phase 2 — Deep Dive
+
+**Goal:** establish scope, success criteria, constraints, and what's explicitly out.
+
+Brainstorm applies Socratic pressure in this phase — it's intentional, and it's a feature:
+
+* "Who said that was true?"
+* "Why hasn't this been solved already?"
+* "What are users doing today instead — and why would they switch?"
+* "What's the fastest way this fails?"
+
+It also applies the **scope inflation check**: if the in-scope list reaches 5+ items, Brainstorm asks "This scope looks like 3–6 months of work — is that intentional, or should we trim?" It asks once, accepts the answer, and moves on.
+
+Every assumption is challenged once. Every constraint is questioned once. Never twice on the same point.
+
+Phase 2 ends when every section of the brief template can be filled.
+
+### Adversarial Gate (mandatory before drafting)
+
+Before drafting begins, Brainstorm runs a two-step adversarial sequence:
+
+1. Synthesizes the strongest case **against** building this: *"Here's the best case against: \[1–2 sentences]. Does this change anything?"*
+2. Asks: *"What would have to be true for this to fail in the first year?"* — records the answer as open questions or constraints.
+
+This is not a formality. Brainstorm genuinely challenges the concept, asks whether the problem is real, whether the scope is achievable. The goal is to surface blind spots before the brief is written, not after implementation has started.
+
+**Hard stop:** max 2 adversarial challenges on the same point. If the user holds position after 2 challenges: record the disagreement as an open question with note "challenged twice, user held position", and proceed.
+
+### Phase 3 — Draft + Validation
+
+Brainstorm generates the full brief and presents it inline — it does not write the file yet. The user reviews it, requests changes, and iterates until satisfied. Only then does Brainstorm run the quality gate.
+
+**Quality gate (runs before writing the file):**
+
+Two-tier system:
+
+* **Auto-fix (silent):** solution language in the Problem section, Vision framed as a feature, missing dates, empty optional sections — fixed automatically without asking.
+* **Blocking — user input required:** primary user not specific enough, use case with no acceptance criteria, success criterion that's not measurable or not user-facing, missing problem statement, no success criteria, empty in-scope list — Brainstorm stops and asks. It will not write a bad brief to make the user feel good.
+
+Once all quality gate items are resolved, Brainstorm writes the file.
+
+## Conversation Language
+
+Brainstorm responds in the user's language. The brief is always written in English.
+
+## What Brainstorm Does NOT Do
+
+* No market research or competitive analysis
+* No technical architecture or implementation decisions
+* No task breakdown — that's Planning's job
+* No validation or critique of technology choices — stack choices are recorded as constraints
+* No reading source files for reverse-engineering existing codebases
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/bug-finder.md'
+---
+# Bug-Finder — Root Cause Before Fix
+
+Bug-Finder is a structured investigation agent. Its job: understand a bug deeply before any fix is applied. It never rushes to the first solution that makes a symptom disappear.
+
+**Mode:** `subagent` — only reachable via `task` delegation from the team-lead.
+
+## The Philosophy
+
+Jumping to a fix without investigation creates workarounds. Two symptoms of the same root cause look like two separate bugs — fix them independently and you've made things worse. A fix that hides the bug is worse than no fix: it creates code divergence, obscures the real issue, and guarantees a future incident.
+
+> "Never apply a workaround that masks the root cause."
+
+## When the team-lead Uses It
+
+Every time a user reports:
+
+* Unexpected behavior
+* A regression
+* A crash
+* Incorrect output
+* "Something stopped working"
+
+The team-lead always delegates to `bug-finder` first. Never to a general agent directly.
+
+**When to skip:** only when the bug is trivially locatable (user points to the exact broken line with a clear typo) AND the fix is isolated with no risk of divergence. In all other cases, use `bug-finder`.
+
+## The Four Fundamental Questions
+
+Before any fix can be proposed, `bug-finder` must answer all four:
+
+1. **What is the exact problem?** Separate symptom from root cause. The symptom is what the user sees. The root cause is why it happens.
+2. **Where is the source of truth?** Which code or system owns the broken behavior? Not where the error surfaces — where the incorrect behavior originates.
+3. **What alternatives were considered and why were they rejected?** A fix chosen without considering alternatives is a guess, not a decision.
+4. **Why is the proposed solution the right one — not just the easy one?** Justify the chosen fix against the alternatives.
+
+## 5-Phase Workflow
+
+### Phase 1 — FRAMING
+
+Before investigating, frame the problem:
+
+* Restate the bug in own words — separate what the user observed (symptom) from the working hypothesis (root cause)
+* Classify severity: High (data loss, security, crash, core feature blocked), Medium (degraded behavior, edge case), Low (cosmetic, minor difference)
+* Identify the system boundary: which component, layer, or file is likely responsible
+* List what is needed to answer the Four Fundamental Questions
+
+**Security auto-escalation:** if the description or investigation findings contain any of: `auth`, `injection`, `XSS`, `CSRF`, `SQL`, `token`, `credential`, `permission`, `privilege` — severity is automatically **High** regardless of apparent impact.
+
+If the bug description is too vague to frame (missing reproduction steps, no error message, no context), `bug-finder` uses `question` to get what's needed before proceeding.
+
+### Phase 2 — INVESTIGATION
+
+Direct investigation using `read`, `glob`, and `grep`. No guessing — evidence only.
+
+* `grep` for specific identifiers, error messages, or patterns (never "search everything")
+* `glob` to locate relevant files when there's a hypothesis about the affected area
+* `read` to examine specific files and functions — understand the intended behavior, determine what is wrong
+
+Independent search paths run in parallel when investigating multiple hypotheses.
+
+After each step: update the working hypothesis, determine if the Four Fundamental Questions can be answered. If not, run a more specific follow-up based on what was learned.
+
+**Contestation cycle:** one retry if new information changes the hypothesis. After one retry, if root cause is still unclear: surface as `UNCERTAINTY_EXPOSED` status instead of continuing to loop.
+
+### Phase 3 — ALTERNATIVES
+
+Once root cause is identified, enumerate fix approaches:
+
+* At least two candidate solutions
+* For each: what it changes, what risk it carries, whether it addresses the root cause or just the symptom
+* Eliminate workarounds — any solution that masks the symptom without fixing the source is disqualified
+* Select the approach that fixes the root cause within existing code patterns
+
+Rejected alternatives are documented in the output.
+
+### Phase 4 — CORRECTION
+
+Report the fix to the team-lead with a precise brief:
+
+* The root cause (precise — not "the function was wrong")
+* Exact files and functions to modify
+* The chosen fix approach and why
+* Rejected alternatives and why they were eliminated
+* Constraints: must not change the public API, must preserve existing behavior for X case, etc.
+
+`bug-finder` does not apply the fix itself. It produces the analysis. The team-lead delegates the actual fix to a `general` agent with that analysis as context.
+
+### Phase 5 — DELIVERY
+
+Returns the mandatory output block. No sections skipped.
+
+## Output Format
+
+```markdown
+## Bug Analysis & Fix
+
+**Severity:** High / Medium / Low
+
+**Root Cause:** [One precise sentence — name the mechanism, e.g., "The cache key does not
+include the user ID, causing cross-user data leakage when two requests share the same
+resource path."]
+
+**Affected Code:**
+- `path/to/file.ts` — `functionName()` — [what is wrong here]
+
+**Rejected Alternatives:**
+- [Alternative 1]: [Why rejected]
+- [Alternative 2]: [Why rejected]
+
+**Applied Solution:** [What was changed and why this addresses the root cause, not the symptom]
+
+**Certainty:** HIGH / MEDIUM / UNCERTAINTY_EXPOSED
+
+Pattern: YES | NO
+Reason: [why this is systemic]
+Mechanically encodable: YES | NO → [what artifact would catch it]
+```
+
+## Certainty Levels and the team-lead's Response
+
+| Certainty | Meaning | team-lead's action |
+|-----------|---------|-------------------|
+| `HIGH` | Root cause confirmed, fix directly addresses it, no significant unknowns | Proceed to implementation |
+| `MEDIUM` | Root cause strongly suspected, one or more assumptions not fully verified | Proceed, flag uncertainty in user report |
+| `UNCERTAINTY_EXPOSED` | Investigation exhausted, open questions remain | Surface blockers to user before any fix |
+
+## Pattern Detection
+
+Every output block includes a pattern assessment. When `bug-finder` finds the same class of issue in multiple locations or detects a similar fix in git history, it flags it as `Pattern: YES` and, if the cause can be expressed mechanically, recommends that the team-lead invoke the `harness` agent after the fix is applied to encode a lint rule or CI check.
+
+## Anti-Patterns
+
+* **Patching the call site instead of fixing the source** — if the bug is in a utility function called in 10 places, fix the function, not the 10 callers
+* **Wrapping in try/catch to hide the error** — swallowing an exception is not a fix
+* **Duplicating logic to avoid touching shared code** — if the fix requires modifying shared code, modify it
+* **"It works now, not sure why"** — if the fix can't be explained, it's not a fix
+* **Treating the first reproduction as the full picture** — the reported symptom may be one manifestation of a broader issue
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/harness.md'
+---
+# Harness — Pattern Enforcement
+
+Harness is the pattern-to-artifact encoder. It takes a recurring pattern that keeps getting violated and turns it into a permanent mechanical check — a lint rule that fails CI, a GitHub Actions job, a commit hook. Not a guideline someone skims. A constraint that can't be ignored.
+
+**Mode:** `all` — callable by users directly, or suggested by the team-lead / Gardener after recurring patterns emerge.
+
+## The Problem It Solves
+
+Documented conventions get ignored. Prose in AGENTS.md doesn't prevent mistakes — it just describes them after they happen. Harness closes the gap by making the constraint mechanical: if you violate it, the build fails. There's no "I forgot."
+
+> "If it can be checked mechanically, it gets mechanized. Documented checklists are a last resort."
+
+## When the team-lead Suggests Harness
+
+The team-lead suggests `harness` to the user after observing:
+
+* A pattern explained multiple times to sub-agents across different sessions
+* An architectural decision that keeps getting violated
+* A convention that lint doesn't yet enforce
+* A recurring finding from the Gardener
+
+**Harness is never on the critical path.** It's always a post-delivery suggestion. The team-lead never launches it without user confirmation — it's a structural change to the repository.
+
+Harness is never proposed at the start of a mission. It consolidates; it doesn't set up.
+
+## Artifact Types
+
+Harness chooses the right artifact based on the pattern type:
+
+| Pattern type | Artifact |
+|---|---|
+| Syntactic or structural code convention | Custom lint rule (ESLint, Ruff plugin, etc.) |
+| Build or deployment constraint | CI pipeline job (GitHub Actions, GitLab CI, etc.) |
+| Agent navigation or delegation rule | Entry in `AGENTS.md` — **only** for agent behavior rules, never for human checklists |
+| Non-mechanizable architectural principle | Entry in `docs/guiding-principles.md` |
+
+**The checklist trap:** if an artifact would be written as a bullet point that prescribes a manual human action — something a person must remember and execute themselves — it's not a mechanical artifact. It's documentation. Harness converts it: write a CI job, a lint rule, or a commit hook that runs automatically. Only when automation is truly impossible does the pattern belong in `docs/guiding-principles.md`.
+
+**Scripts are not enforcement unless automatically triggered.** A validation script humans run manually is a convenience tool. For it to count as mechanical enforcement, it must be called from a CI job, git hook, or pre-commit step.
+
+## Fully Autonomous — 3 Cases Where It Stops
+
+Harness decides, acts, and announces decisions. It does not ask for permission except in exactly three situations:
+
+1. **Pattern is genuinely non-mechanizable after full exploration** — too subjective to write a concrete rule (e.g., "write readable code"). Asks for concrete examples of violations and compliant code.
+2. **Creating a new CI pipeline file** — new CI files run with elevated permissions. Announces intent and asks for explicit confirmation. (Modifying an existing CI file does not require confirmation.)
+3. **Trigger is too vague and codebase exploration yields no signal** — after thorough exploration (git log, recent diffs, source files), nothing to anchor a pattern to. Asks for concrete examples.
+
+Everything else is Harness's call. It infers, decides, acts, then informs.
+
+## 5-Step Workflow
+
+### Step 1 — Identify the Pattern
+
+Delegates codebase exploration via `task`. Reads git log, recent diffs, relevant source files. Produces a precise, named pattern description:
+
+* What is the rule?
+* Where does it apply? (which directories, file types, modules)
+* What does a violation look like? (concrete counter-example)
+* What does compliance look like? (concrete example)
+
+Announces: *"I identified the pattern as \[name]: \[one-sentence description]."*
+
+### Step 2 — Choose the Enforcement Artifact
+
+Applies the artifact type table, announces the choice. No confirmation needed — except for new CI pipeline files.
+
+For CI artifacts, first delegates an `explore` agent to detect the existing CI system (GitHub Actions, GitLab CI, Jenkins, etc.) and generates in the detected format.
+
+### Step 3 — Generate the Artifact
+
+Delegates artifact writing to a `general` agent. The output must be a real, usable file — not described, not sketched:
+
+* Lint rules: complete, runnable rule code with inline comments explaining intent
+* CI workflows: complete YAML with step documentation
+* `AGENTS.md` entries: precise, actionable language
+* Guiding principles: evaluable form (`Good:` / `Bad:` / `Threshold blocker:` / `Threshold warning:`)
+
+### Step 4 — Test the Rule
+
+Before opening any PR, tests the artifact against the existing codebase:
+
+1. Runs against healthy code — verifies zero false positives
+2. Constructs a minimal violation example — verifies correct detection
+3. If noisy: recalibrates, then re-tests
+
+**No PR opens until the rule is verified.** A noisy rule erodes trust in the entire enforcement system.
+
+### Step 5 — Open a PR (or deliver to caller)
+
+If called directly by the user, Harness opens a PR with the artifact. If delegated by the team-lead or Gardener, it delivers the artifact files and reports back — the caller decides when to ship.
+
+The PR includes: the artifact file(s), a commit message naming the encoded pattern, and a description explaining what triggered this, what the rule enforces, and test evidence.
+
+**Harness does not fix existing violations in the PR.** It installs the net. The Gardener sweeps what's already on the floor.
+
+## Example
+
+**Pattern:** "node: protocol prefix required on all Node.js built-in imports in `*.js` files"
+
+**Without Harness:** line in AGENTS.md that developers occasionally miss.
+
+**With Harness:** ESLint rule that runs on every push. Violation = build fails. The rule cannot be missed.
+
+This is exactly what Harness does. The constraint goes from "documented" to "enforced."
+
+## What Harness Does NOT Do
+
+* Rewrite existing code — that's the Gardener
+* Create subjective rules — if a concrete Good/Bad/Threshold can't be written, the rule isn't ready
+* Do one-time project setup (ESLint, CI pipelines from scratch) — that's the team-lead's job
+* Open a PR without testing — a rule that fires on healthy code is worse than no rule
+* Act on a first occurrence — Harness only acts once a pattern has emerged (at least 2 independent instances); when the team-lead or Gardener delegate, they have already made the recurrence judgment
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/planning.md'
+---
+# Planning — Work Contracts on Disk
+
+Planning transforms complex or ambiguous requests into structured work contracts written to disk at `docs/exec-plans/`. Multi-session work survives context resets because the plan lives on disk — not in conversation history.
+
+**Mode:** `all` — callable by users directly, or delegated by the team-lead.
+
+## The Problem It Solves
+
+When a task spans multiple sessions, is genuinely ambiguous, or involves hidden dependencies, relying on conversation history is fragile. An exec-plan written to disk is permanent, versioned in git, and shared across all agents. The team-lead and future sessions can navigate it without relying on what was said three context windows ago.
+
+## Two Plan Types
+
+### Plan Simple
+
+For small, clear tasks. Produced inline — no file written.
+
+```markdown
+## Goal
+{The real outcome in 1-2 sentences — the problem solved, not just the feature name}
+
+## Building blocks
+- [ ] Block 1
+- [ ] Block 2
+```
+
+### Exec-Plan
+
+For complex, multi-session, or genuinely ambiguous tasks. Written to `docs/exec-plans/<feature>.md`.
+
+```markdown
+---
+status: draft | active | completed
+created: {date}
+updated: {date}
+---
+
+## Goal
+{The real outcome in 1-3 sentences}
+
+## Scope
+### In scope
+- {what this work covers}
+
+### Out of scope
+- {what is explicitly excluded}
+
+## Building blocks
+- [ ] Block 1: {deliverable}
+  - Done when: {verifiable criterion}
+- [ ] Block 2: {deliverable}
+  - Done when: {verifiable criterion}
+  - Depends on: Block 1
+
+## Open questions
+{Blocking decisions that must be resolved before implementation can start.}
+
+## Decision log
+{Decisions made and their rationale.}
+```
+
+## Strict Activation Criteria
+
+Planning is invoked only when **all three** conditions are true:
+
+1. The request is **genuinely ambiguous** — multiple plausible interpretations that would lead to meaningfully different implementations
+2. **AND** `AGENTS.md` / `docs/` don't clarify the intent
+3. **AND** a direct question to the user wouldn't suffice — the ambiguity is structural, not just a missing clarification
+
+If any condition is false: produce a plan simple, or tell the team-lead to proceed directly.
+
+**For simple, clear tasks — skip planning entirely.** Unnecessary exec-plans are overhead. Direct execution is always preferred for clear, small tasks.
+
+**For bug reports — use `bug-finder`, not planning.**
+
+## What Makes a Good Exec-Plan
+
+### Each block is a deliverable, not a task list
+
+* **Good:** "Authentication flow working end-to-end"
+* **Bad:** "Write the auth service"
+
+Each block must be independently reviewable — something that can be handed to `review-manager` and evaluated on its own.
+
+### "Done when" criteria are verifiable
+
+* **Good:** "Done when: the `/auth/login` endpoint returns a JWT on valid credentials and a 401 on invalid ones, with test coverage"
+* **Bad:** "Done when: authentication works"
+
+If a concrete criterion can't be written, the block isn't scoped precisely enough — split it or sharpen it.
+
+### Scope includes what's OUT
+
+The out-of-scope list is as load-bearing as the in-scope list. Explicit exclusions prevent scope creep downstream.
+
+### Open questions are genuinely blocking
+
+Open questions are decisions that must be answered before implementation can start. If a question is interesting but not blocking, leave it out. An exec-plan with no open questions can start immediately.
+
+## Exec-Plan Lifecycle
+
+```
+draft → active → completed
+```
+
+| Status | Meaning |
+|--------|---------|
+| `draft` | Created by Planning. Open questions must be resolved before the team-lead starts. |
+| `active` | The team-lead has started implementation. It updates the decision log and checks off blocks as they complete via `mark_block_done()`. |
+| `completed` | All blocks checked off, final review APPROVED. The team-lead calls `complete_plan()`. Do not delete — it's the record of what was built and why. |
+
+The exec-plan belongs to the team-lead after creation. Planning only writes at creation time.
+
+## Traceability
+
+An exec-plan can link to a brainstorm brief via a `brief:` frontmatter field. The team-lead uses `check_artifacts()` to surface dead links between exec-plans, specs, and briefs — catching stale references before they cause confusion.
+
+The team-lead treats the exec-plan as the single source of truth for the mission. It does not duplicate its task list in `todowrite` — it references the exec-plan file path directly.
+
+## What Planning Does NOT Do
+
+* **No implementation details** — the "how" (which library, which approach, which architecture) is the generator's job. Planning defines what must be delivered, not how.
+* **No PRD, user stories, or requirements gathering** — Planning structures what's already known, not interviews stakeholders.
+* **No unilateral architectural decisions** — if the plan requires a significant architectural choice, it flags it as an open question.
+* **No validation of produced work** — that's `review-manager`'s job. Planning defines "done when"; it doesn't check it.
+* **No code execution** — Planning is read-only and disk-write for the exec-plan file only.
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/gardener.md'
+---
+# Gardener — Periodic Maintenance
+
+Gardener is the maintenance agent. It catches what CI doesn't: stale documentation, semantic drift in code, abstractions that have grown incoherent. It runs post-feature or on explicit user request, and opens targeted PRs for corrections.
+
+**Mode:** `all` — triggered by the team-lead after a significant feature delivery, or called directly by the user.
+
+> "Harness installs the net. Gardener checks what slipped through."
+
+## Two Distinct Functions
+
+Gardener performs two independent functions. They can be run together or separately.
+
+### Function 1 — Doc-Gardening
+
+Stale documentation is actively harmful — it misleads agents, causes incorrect delegation, and erodes trust in project documentation.
+
+**What it does:**
+
+1. **Scan** — lists all documentation in the repo: `README.md`, `AGENTS.md`, all files under `docs/`.
+2. **Compare** — cross-references each doc against actual code: behavior, function names, file paths, module names, configuration keys.
+3. **Identify** — flags docs that contain references to behaviors that no longer exist (deleted features, removed flags, revoked APIs), obsolete paths or names, revoked decisions still presented as current policy, or inaccurate descriptions of how something works today.
+4. **Fix** — opens one PR per document. Each PR is minimal scope (fixes only the stale content), fast to review (<1 min), and clearly titled.
+
+**What it does NOT flag:** stylistic issues, missing docs, or things that could be better. Gardener fixes what's wrong, not what's imperfect. A doc that's slightly outdated but not misleading doesn't need a PR today.
+
+### Function 2 — Code-GC (Garbage Collection)
+
+Lint and CI catch syntactic and structural violations. Gardener catches what they miss: semantic drift, architectural anti-patterns, and abstractions that have grown incoherent.
+
+**What it does:**
+
+1. **Load rules** — reads `docs/guiding-principles.md`, `AGENTS.md`, and repo lint configs (`.eslintrc`, `ruff.toml`, etc.).
+2. **Read history** — uses `git log` to identify the recent feature boundary (last significant merge). Focuses on commits since that boundary, not full history.
+3. **Detect drift** — looks for what mechanical tools can't see:
+   * **Semantic drift** — code that follows syntactic rules but violates architectural intent (e.g., a utility module that has accumulated business logic)
+   * **Semantic duplication** — two pieces of code doing the same conceptual thing through different structures (not copy-paste, but meaning-level duplication)
+   * **Abstraction incoherence** — an abstraction whose responsibility has grown beyond its original scope, or two abstractions whose responsibilities have merged in practice
+4. **Act** — opens targeted refactoring PRs for one-time drift, or triggers `harness` for recurring patterns.
+
+**Critical:** Gardener does NOT re-check what lint and CI already enforce. Its job is the gap, not the covered ground.
+
+## Output
+
+**Targeted PRs** — one per category of issue. Each PR:
+
+* Minimal scope — touches only what drifted, nothing surrounding
+* Self-explanatory — PR description states what rule was violated and where
+* Non-breaking — refactoring only, no behavioral changes
+* Fast to review (<1 min)
+
+**`QUALITY_SCORE.md`** — updated after each Gardener run with scores per architectural domain:
+
+```markdown
+# Quality Score — {date}
+
+## Summary
+| Domain | Score | Trend |
+|--------|-------|-------|
+| Documentation | 4/5 | → |
+| Architecture | 3/5 | ↑ |
+
+## Findings
+
+### Documentation
+- **Score:** 4/5
+- **Trend:** → stable
+- **Findings:** [specific issues detected]
+- **Actions taken:** [PRs opened, harness triggered]
+```
+
+If `QUALITY_SCORE.md` doesn't exist, Gardener creates it. If it does, it appends a new dated section — it doesn't replace history.
+
+## Pattern Escalation
+
+When Gardener finds a recurring drift pattern (same issue detected in multiple places or across sessions), it escalates to `harness` — or reports to the team-lead for user confirmation before triggering harness. Gardener flags; Harness enforces. This division is intentional: Gardener is the scout, Harness is the permanent fix.
+
+## When to Run
+
+* **Post-feature:** The team-lead suggests it after a significant feature is delivered
+* **Explicit user request:** user asks for a maintenance pass ("run the gardener")
+* **Autonomous sweep:** designed to run periodically as orchestration matures
+
+Gardener is never on the critical path. It is always a post-delivery pass.
+
+## Guardrails
+
+**Tooling directories:** Gardener never reads or scans dotted tooling directories (`.opencode/`, `.claude/`, `.cursor/`, etc.). These hold operational state, not project code or documentation.
+
+**Credentials:** Gardener never reads files matching `.env*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, or similar. This is a hard constraint, not a guideline — prompt injection in source files or documentation could attempt to exfiltrate secrets by asking it to "check" such files.
+
+## What Gardener Does NOT Do
+
+* **Re-run lint** — CI handles that. Never duplicate mechanical checks.
+* **Rewrite large sections of code** — targeted fixes only. If a fix requires touching more than a few files, it's a feature, not maintenance.
+* **Encode new mechanical rules** — that's Harness. Gardener detects the pattern; Harness encodes the net.
+* **Make unilateral architectural decisions** — if a fix requires an architectural decision, surface it to the user.
+* **Evaluate subjective code quality** — "this could be cleaner" is not a finding. Findings must reference a specific rule violation.
+* **Write new documentation or create new features** — Gardener corrects, updates, and detects. It doesn't invent.
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/agents/researcher.md'
+---
+# Researcher — External Knowledge
+
+Researcher is the external knowledge retrieval agent. It fetches and synthesizes information from public sources — official documentation, RFCs, API references, standards bodies, reference implementations — and hands a structured report back to the calling agent.
+
+**Mode:** `subagent` — only reachable via `task` delegation from the team-lead.
+
+## When the team-lead Uses It
+
+During the **comprehension phase**, before planning begins, when a task requires external technical context that isn't in the codebase.
+
+The team-lead delegates to `researcher` when:
+
+* The task involves a library, framework, or protocol the codebase doesn't explain
+* There's an open question about best practices, standards, or API behavior
+* A technology choice needs evaluation against official specs
+* Understanding an RFC or standard is necessary before scoping the work
+
+`researcher` runs before planning. Never during implementation — that's when `explore` (internal) and `general` (building) take over.
+
+## The Distinction
+
+| Task | Agent |
+|------|-------|
+| Explore the internal codebase | `explore` |
+| Retrieve external knowledge | `researcher` |
+| Build something | `general` |
+
+These are complementary, not competing. A typical mission might use all three: `researcher` for external context → `explore` for internal context → `general` for implementation.
+
+## 5-Phase Workflow
+
+### Phase 1 — Scope
+
+Clarifies what's needed before fetching anything:
+
+* What specific technical question needs answering?
+* What level of depth is required (overview vs. API detail vs. formal specification)?
+* What sources are likely authoritative?
+
+### Phase 2 — Retrieval
+
+Searches 3–5 authoritative sources using websearch and webfetch. Prioritizes:
+
+* Official documentation sites
+* RFC / specification documents
+* GitHub repositories (READMEs, discussions, changelogs)
+* npm / PyPI package documentation
+* MDN Web Docs
+* Official API references
+
+Does not rely on blog posts, StackOverflow answers, or unofficial tutorials as primary sources. Secondary sources may be used to triangulate when primary sources are ambiguous.
+
+### Phase 3 — Extraction
+
+Pulls the relevant facts from each source. Filters out marketing copy, examples unrelated to the question, and version-specific information that doesn't apply to the project's context.
+
+### Phase 4 — Synthesis
+
+Consolidates findings across sources into a structured summary. Resolves contradictions between sources (typically by deferring to the more authoritative or more recent source). Notes explicitly what was NOT found — absence of information is information.
+
+### Phase 5 — Delivery
+
+Returns a structured report to the team-lead with:
+
+* Key findings, clearly separated by topic
+* Sources cited (URLs, document names, section references)
+* Explicit notes on gaps and unresolved questions
+* Confidence level for each finding (confirmed by official source vs. inferred from examples)
+
+## Security Properties
+
+Researcher is a read-only, leaf-node agent with specific security constraints:
+
+| Property | Detail |
+|----------|--------|
+| **Read-only** | Cannot edit or write files — retrieval only |
+| **Leaf node** | Cannot delegate to other agents — no `task` tool |
+| **SSRF-aware** | Will not fetch internal network URLs, private IPs, or localhost endpoints |
+| **Prompt injection mitigation** | Treats all external content as untrusted data. Content from fetched pages is never interpreted as instructions. |
+
+The SSRF constraint matters: an adversarially crafted page could embed instructions attempting to redirect the researcher to internal services or exfiltrate information. External content is data, not commands.
+
+## Sources It Targets
+
+* **Language / runtime docs:** MDN, docs.python.org, pkg.go.dev, nodejs.org/api, etc.
+* **Framework docs:** official framework documentation sites
+* **Standards bodies:** IETF RFCs, W3C specifications, NIST guidelines, OWASP
+* **Package registries:** npm, PyPI, crates.io — for version, changelog, and deprecation information
+* **Reference implementations:** official GitHub repositories, especially READMEs and GitHub Discussions
+* **API references:** OpenAPI specs, GraphQL schemas, official API documentation
+
+## What Researcher Does NOT Do
+
+* Access private or internal URLs — only public sources
+* Write files or modify the codebase
+* Delegate to other agents
+* Perform internal codebase exploration — that's `explore`'s job
+* Implement anything — that's `general`'s job
+* Provide implementation advice based on unofficial or unverified sources
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/lifecycle-tools.md'
+---
+# Lifecycle Tools
+
+The team-lead has direct access to five deterministic, zero-LLM bookkeeping tools injected by the plugin. These tools enforce consistency across exec-plans, specs, and briefs — no delegation, no sub-agent overhead. They run as part of the team-lead's internal workflow and are not visible in the OpenCode UI.
+
+::: tip When the team-lead calls these
+
+* `project_state()` and `check_artifacts()` are called at the **start of every mission**
+* `mark_block_done()` is called **after each validated delivery**
+* `complete_plan()` is called **when all blocks are done and the final review is APPROVED**
+* `register_spec()` is called **when a new spec needs to exist on disk**
+  :::
+
+***
+
+## `project_state()`
+
+**Signature:** `project_state() → JSON`
+
+**When the team-lead calls it:** Mandatory at the start of every mission, before any work begins.
+
+**What it does:** Globs all three artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`), reads YAML frontmatter from every file found, and returns a full inventory of the project's current state.
+
+**Returns:**
+
+```json
+{
+  "specs": [
+    {
+      "title": "string",
+      "id": "string",
+      "criticality": "string | null",
+      "status": "string",
+      "created": "ISO date string"
+    }
+  ],
+  "exec_plans": [
+    {
+      "file": "string",
+      "status": "string",
+      "brief": "string | null",
+      "blocks": { "total": 0, "checked": 0 },
+      "warnings": ["string"]
+    }
+  ],
+  "briefs": [
+    {
+      "project": "string",
+      "type": "string",
+      "status": "string",
+      "exec_plan": "string | null"
+    }
+  ]
+}
+```
+
+**Notes:** Warns inline when an exec-plan has all blocks checked but `status` is not `completed` — a prompt to call `complete_plan()`.
+
+***
+
+## `mark_block_done(plan_file, block_name)`
+
+**Signature:** `mark_block_done(plan_file: string, block_name: string) → JSON`
+
+**When the team-lead calls it:** After each validated sub-task delivery.
+
+**What it does:** Finds the block in the exec-plan file by substring match on `block_name`, changes `[ ]` to `[x]`, and writes the file. If all blocks are now checked, returns `all_done: true` as a prompt to call `complete_plan()`.
+
+**Returns:**
+
+```json
+{
+  "file": "docs/exec-plans/my-feature.md",
+  "block": "Bloc 2: implement validation",
+  "was": "[ ]",
+  "now": "[x]",
+  "blocks": { "total": 4, "checked": 2 },
+  "all_done": false
+}
+```
+
+**Error cases:**
+| Condition | Error |
+|-----------|-------|
+| File not found | `"File not found: <path>"` |
+| Block not found | `"Block not found: <block_name>"` |
+| Ambiguous match (multiple blocks match substring) | `"Ambiguous block name: multiple matches"` |
+| Block already checked | Idempotent — returns current state without error |
+
+***
+
+## `complete_plan(plan_file)`
+
+**Signature:** `complete_plan(plan_file: string) → JSON`
+
+**When the team-lead calls it:** When all blocks are done **and** the final review is APPROVED.
+
+**What it does:** Verifies all blocks in the exec-plan are checked. If any remain unchecked, refuses with an error. Otherwise, updates the frontmatter `status` field to `completed` and sets `updated` to today's ISO date.
+
+**Returns:**
+
+```json
+{
+  "file": "docs/exec-plans/my-feature.md",
+  "status": "completed",
+  "updated": "2026-05-04"
+}
+```
+
+**Notes:** The file is **not deleted** after completion — it remains as a historical reference. A completed exec-plan is a record of what was built and how.
+
+::: warning Refuses if unchecked blocks remain
+`complete_plan()` will refuse with an error listing the unchecked blocks. All blocks must be marked done first via `mark_block_done()`.
+:::
+
+***
+
+## `register_spec(specFile, title)`
+
+**Signature:** `register_spec(specFile: string, title: string) → JSON`
+
+**When the team-lead calls it:** When a new spec needs to exist on disk for a component, API contract, or design decision.
+
+**What it does:** Resolves the path within `docs/specs/`, errors if the file already exists (no overwrite), then writes minimal frontmatter plus an H1 heading placeholder.
+
+**Returns:**
+
+```json
+{
+  "created": true,
+  "file": "docs/specs/my-feature.md"
+}
+```
+
+**Notes:** Does **not** write to any registry — the disk is the source of truth. Future calls to `project_state()` will automatically pick up the new file.
+
+::: tip No overwrite
+`register_spec()` will refuse if the target file already exists. This prevents accidental spec corruption. To update an existing spec, read it and edit it directly.
+:::
+
+***
+
+## `check_artifacts()`
+
+**Signature:** `check_artifacts() → JSON`
+
+**When the team-lead calls it:** At mission start AND after each scope completion.
+
+**What it does:** Cross-artifact consistency scan. Detects six categories of problems between exec-plans, specs, and briefs:
+
+| Type | Condition | Severity |
+|------|-----------|----------|
+| `plan_stale_status` | All blocks checked, status ≠ `completed` | `blocking` |
+| `plan_missing_brief` | Exec-plan has no `brief:` field | `warning` |
+| `plan_brief_dead` | `brief:` points to a file that doesn't exist | `blocking` |
+| `brief_missing_plan` | Brief has no `exec_plan:` field | `warning` |
+| `brief_plan_dead` | `exec_plan:` points to a file that doesn't exist | `blocking` |
+| `spec_stale_draft` | `status: draft` and `created` > 30 days ago | `warning` |
+
+**Returns:**
+
+```json
+{
+  "problems": [
+    {
+      "type": "plan_stale_status",
+      "file": "docs/exec-plans/my-feature.md",
+      "severity": "blocking",
+      "detail": "All 4 blocks checked but status is 'in-progress'",
+      "suggestion": "Call complete_plan() to close this scope"
+    }
+  ],
+  "summary": "1 blocking problem, 0 warnings"
+}
+```
+
+**Error cases:** Returns `{ problems: [], summary: "No problems found" }` if everything is consistent.
+
+***
+
+## Configurable paths
+
+By default, lifecycle tools look for artifacts in:
+
+* `docs/specs/` — spec files
+* `docs/exec-plans/` — exec-plan files
+* `docs/briefs/` — product briefs
+
+These directories are created automatically by the plugin on `session.created`. To use custom paths, add an `opencode.json` override:
+
+```json
+{
+  "plugin": ["opencode-team-lead"],
+  "agents": {
+    "team-lead": {
+      "env": {
+        "SPECS_DIR": "custom/specs",
+        "PLANS_DIR": "custom/plans",
+        "BRIEFS_DIR": "custom/briefs"
+      }
+    }
+  }
+}
+```
+
+::: warning Path configuration is not yet supported
+Custom path configuration via environment variables is not implemented in v0.9.0. The paths above are hardcoded. This is planned for a future release.
+:::
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/architecture.md'
+---
+# Architecture
+
+## Overview
+
+`opencode-team-lead` is an OpenCode plugin that injects agents into the IDE configuration at startup. It has zero npm dependencies — only Node.js builtins (`node:fs/promises`, `node:path`, `node:url`). Pure ESM, no build step.
+
+The entry point is `index.js`. It exports `TeamLeadPlugin`, an async function that loads agent prompts from disk and returns an object with two hooks: `config` and `event`.
+
+## Plugin hooks
+
+### `config` hook
+
+Called by OpenCode to construct the agent configuration. The hook:
+
+1. Reads the user's existing config (`input.agent`)
+2. Injects all agent definitions (team-lead + all sub-agents)
+3. Merges user overrides from `opencode.json` on top of plugin defaults
+
+**Config merge behavior:**
+
+```js
+input.agent["team-lead"] = {
+  // plugin defaults
+  temperature: 0.3,
+  variant: "max",
+  ...
+  // user overrides (applied on top)
+  ...userConfigRest,
+  // prompt always sourced from plugin — cannot be overridden
+  prompt: teamLeadPrompt,
+  // permissions deep-merged, not replaced
+  permission: mergePermissions(defaultPermission, userConfigRest.permission),
+};
+```
+
+Permissions are merged one level deeper via `mergePermissions`: nested keys (like `read` or `bash` which are objects) are shallow-merged rather than replaced. This means users can add permissions without accidentally removing plugin defaults.
+
+### `event` hook
+
+Listens for `session.created` and creates the three artifact directories on session start:
+
+* `docs/exec-plans/`
+* `docs/briefs/`
+* `docs/specs/`
+
+This is a best-effort operation — if the directories already exist, it's a no-op. This prevents the planning and brainstorm agents from failing with permission errors on a fresh project.
+
+## Agent hierarchy
+
+```
+OpenCode IDE
+├── team-lead                [mode: all]
+│   │
+│   ├─► review-manager       [mode: subagent]
+│   │     ├─► requirements-reviewer  [mode: subagent]
+│   │     ├─► code-reviewer          [mode: subagent]
+│   │     └─► security-reviewer      [mode: subagent]
+│   │
+│   ├─► bug-finder           [mode: subagent]
+│   ├─► planning             [mode: all]
+│   └─► researcher           [mode: subagent]
+│
+├── brainstorm               [mode: all — runs before team-lead]
+├── harness                  [mode: all — triggered post-feature or by user]
+└── gardener                 [mode: all — periodic maintenance]
+```
+
+| Agent | Mode | Temperature | Variant |
+|-------|------|-------------|---------|
+| `team-lead` | `all` | 0.3 | max |
+| `review-manager` | `subagent` | 0.2 | max |
+| `requirements-reviewer` | `subagent` | 0.1 | max |
+| `code-reviewer` | `subagent` | 0.2 | max |
+| `security-reviewer` | `subagent` | 0.1 | max |
+| `bug-finder` | `all` | 0.2 | max |
+| `harness` | `all` | 0.2 | max |
+| `planning` | `all` | 0.3 | max |
+| `gardener` | `all` | 0.2 | max |
+| `brainstorm` | `all` | 0.5 | max |
+| `researcher` | `subagent` | 0.2 | max |
+
+## Permission model
+
+The principle is **deny-all, explicit allowlist**. Every agent starts with `"*": "deny"` and receives only the tools strictly necessary for its role.
+
+### team-lead
+
+| Tool | Access |
+|------|--------|
+| `task`, `todowrite`, `todoread`, `skill`, `question` | allow |
+| `distill`, `prune`, `compress` | allow (context management) |
+| `read` | allow on all files |
+| `edit` / `write` | allow on `docs/**` only |
+| `bash` | allow for git commands only (`git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, `git tag`) |
+| Everything else | deny |
+
+### review-manager
+
+`task` and `question` only. Can read files directly via `read`, `glob`, `grep`.
+
+### Specialized reviewers (`requirements-reviewer`, `code-reviewer`, `security-reviewer`)
+
+`read`, `glob`, `grep` for direct file access. Sub-agent spawning is blocked by the default `"*": "deny"` rule.
+
+### bug-finder
+
+Investigates directly via `read`, `glob`, `grep`. Reports findings back to caller — does not apply fixes itself.
+
+### brainstorm
+
+`task`, `question`, `webfetch`, `read` (all project files), `edit` (`docs/briefs/**` only). No bash.
+
+### harness
+
+`task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all), `write` (all). Full access — harness needs to be able to create and modify any enforcement artifact.
+
+### planning
+
+`task`, `question`, `read` (`AGENTS.md`, `README.md`, `docs/**`), `edit`/`write` (`docs/exec-plans/**` only).
+
+### gardener
+
+`task`, `question`, `bash` (`git log`, `git diff`, `git status`, `gh pr create`), `read` (all), `edit`/`write` (`QUALITY_SCORE.md` only).
+
+::: tip Why deny-all?
+An orchestrator that can read files directly tends to read them instead of delegating. The deny-all constraint forces the team-lead to delegate exploration and file access to specialized agents, keeping context clean and responsibilities well-separated.
+:::
+
+## How prompts are loaded
+
+Agent prompts are loaded once at plugin startup via `readFile`, not inlined in `index.js`. Paths are resolved from `__dirname` into `agents/`:
+
+```
+agents/
+├── prompt.md               → team-lead
+├── review-manager.md       → review-manager
+├── requirements-reviewer.md
+├── code-reviewer.md
+├── security-reviewer.md
+├── bug-finder.md
+├── harness.md
+├── planning.md
+├── gardener.md
+├── brainstorm.md
+└── researcher.md           → researcher
+```
+
+This means prompts are editable and diffable independently of the plugin code. A prompt change produces a clean diff in the relevant `agents/*.md` file without touching `index.js`.
+
+## Zero dependencies
+
+No npm dependencies. Only Node.js built-in modules:
+
+* `node:fs/promises` — reading prompt files and artifact directories
+* `node:path` — path resolution
+* `node:url` — `fileURLToPath` for `__dirname` in ESM context
+
+This is enforced by a CI check on every push — any PR that adds `dependencies` or `devDependencies` is automatically blocked.
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/decisions.md'
+---
+# Decisions & ADRs
+
+This page documents the strategic decisions and architectural choices behind `opencode-team-lead`. These are the "why we built it this way" decisions — the reasoning that shapes the plugin's design.
+
+## Strategic Decisions (2026-03-31)
+
+### D1: Abandon the BMAD approach
+
+BMAD transposes the SDLC onto AI agents. The SDLC was designed to solve human coordination problems — context loss between sessions, organizational silos, team turnover. Agents don't have those failure modes.
+
+BMAD personas (e.g. "Marie the PM", "Jean the architect") are psychological scaffolding for humans, not functional architecture. Phase gates are an illusion of control, not mechanical enforcement. PRDs are optimized for human approval, not agent navigation.
+
+**Key insight:** BMAD has the right intuition (catch bad decisions early) but the wrong mechanism (documentary ceremony instead of mechanical constraints).
+
+***
+
+### D2: `harness` instead of `analyst`
+
+The `analyst` agent (BMAD-style spec writer that helped users write PRDs and stories) was abandoned.
+
+**The pivot:** The question is not "how do we write better documents for agents" but "how do we build an environment in which agents can operate without ceremony."
+
+The `harness` agent analyzes a repository and generates what's missing for the team-lead and sub-agents to operate autonomously: precise `AGENTS.md` (map, not manual), navigable `docs/` structure, lint rules, pre-commit hooks, CI jobs, executable acceptance criteria.
+
+A well-structured environment eliminates the need for ceremonial planning. Mechanical constraints replace documented constraints.
+
+***
+
+### D3: `planning` kept with a restricted role
+
+The `planning` agent is retained — but with a significantly narrower role than originally planned.
+
+**What it does:** Lightweight fallback for genuinely ambiguous requests. Compresses user intent into a structured brief written to disk (`docs/exec-plans/<feature>.md`). Identifies decisions to make before acting.
+
+**What it does NOT do:** No PRDs, no user stories, no requirements gathering, no automatic activation on every session.
+
+**Strict activation criterion:** The request is ambiguous AND the environment doesn't clarify it AND a direct question to the user wouldn't be enough.
+
+A brief kept only in memory is an anti-pattern — invisible to future agents. The artifact goes to disk.
+
+***
+
+### D4: Abandon `memory.md`
+
+`memory.md` was a compensation mechanism. It existed because the environment was poorly structured — agents didn't know where to find project context, so a knowledge blob was injected into every LLM call.
+
+If the `harness` agent does its job (precise `AGENTS.md`, navigable `docs/`, conventions encoded in tooling), `memory.md` becomes redundant. Context is in the repository, navigable by reference, not in persistent memory.
+
+This is now reflected in the plugin: the `experimental.chat.system.transform` hook (which injected `memory.md`) has been removed. See [v0.9.0 changelog](/changelog#090---2026-05-04).
+
+***
+
+### D5: Harness engineering principles → ADR-001
+
+The four principles that govern how artifacts in this project are designed. See [ADR-001](#adr-001-harness-engineering-as-agentic-development-approach) below.
+
+***
+
+## What we will NOT do
+
+* **No personas** (Marie the PM, Jean the architect) — human scaffolding, not functional for agents
+* **No manual phase gates** — enforcement is mechanical or it isn't
+* **No monolithic PRDs** — long artifacts optimized for human approval
+* **No automatic `planning` activation** — unnecessary friction on clear requests
+* **No requirements gathering via agent** — if the environment is well-structured, it's superfluous
+
+***
+
+## ADR-001: Harness Engineering as Agentic Development Approach
+
+**Status:** Adopted\
+**Date:** 2026-03-31
+
+### Decision
+
+Artifacts in this project are designed for agent navigation, not human approval.
+
+### Context
+
+SDLC approaches (phases, personas, exhaustive PRDs) were designed for human coordination problems. Agents don't have those problems. Applying SDLC to agents produces: context crowding, non-guidance, instant rot, and unverifiable constraints.
+
+### Adopted principles
+
+1. **Map over manual** — every doc is an index with links, not an exhaustive guide
+2. **< 1,300 tokens per unit** — beyond that, it's context rot
+3. **Mechanical constraints over documented constraints** — lint rules and CI checks, not phrases in a doc
+4. **On disk, navigable** — any context a future agent needs must be in the repository as atomic files
+
+### Consequences
+
+* `docs/background/` holds narrative human docs (excluded from agent navigation)
+* `docs/templates/` holds templates for new files
+* Each spec must fit under 1,300 tokens, linking to detail rather than containing it
+* Content duplication is replaced by links
+
+::: tip Why 1,300 tokens?
+The limit isn't arbitrary. Beyond ~1,300 tokens, a single spec file starts to crowd the context window when multiple files are read in a single session. Keeping each unit small means agents can load more context simultaneously without hitting limits.
+:::
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/principles.md'
+---
+# Guiding Principles
+
+These principles require human judgment to evaluate — rules that can't be fully encoded as lint or CI checks. Each principle has concrete Good/Bad examples and a threshold that triggers action.
+
+For the mechanical enforcement artifacts that encode these principles (lint rules, CI checks), see [Architecture](/architecture).
+
+***
+
+## 1. Non-interactive git commands only
+
+All git operations in agent-executed or automated contexts must use non-interactive flags. Two commands are especially dangerous:
+
+* `git commit` without `-m` opens a text editor and hangs non-interactive shells
+* `git tag` without `-m` (when creating annotated tags with `-a`) does the same
+
+::: code-group
+
+```bash [Good]
+git commit -m "release: v0.3.0"
+git tag -a v0.3.0 -m "v0.3.0"
+git push && git push --tags
+```
+
+```bash [Bad]
+git commit           # hangs — opens $EDITOR
+git tag -a v0.3.0    # hangs — opens $EDITOR for tag message
+```
+
+:::
+
+**Threshold — blocker:** Any PR or agent-generated commit that includes `git commit` or `git tag -a` without the `-m` flag. Do not merge. Fix before proceeding.
+
+**Threshold — warning:** A `git commit` or `git tag` in any documentation example or `AGENTS.md` snippet that omits `-m`.
+
+***
+
+## 2. Zero runtime dependencies
+
+The plugin ships zero runtime dependencies. Only Node.js built-in modules are allowed. No `node_modules`, no lockfile, no `npm install` step.
+
+::: code-group
+
+```js [Good]
+import { readFile } from "node:fs/promises";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+```
+
+```js [Bad]
+import { readFile } from "fs/promises";  // missing node: prefix
+import axios from "axios";               // external dep — BLOCKED
+import _ from "lodash";                  // external dep — BLOCKED
+```
+
+:::
+
+**Threshold — blocker:** Any PR that adds a `dependencies` or `devDependencies` key to `package.json` with non-empty entries. Blocked regardless of justification — find a Node.js built-in alternative.
+
+**Threshold — warning:** A built-in import missing the `node:` prefix (e.g. `from "fs"` instead of `from "node:fs"`). The CI lint check catches this automatically.
+
+***
+
+## 3. CHANGELOG entries target users, not implementers
+
+Every CHANGELOG entry must describe what changed for the *user of the plugin* — the person who installs it in their OpenCode config. Implementation details, CI changes, and refactors are omitted unless they have a user-visible side effect.
+
+::: code-group
+
+```markdown [Good]
+- The team-lead can now manage its context window using DCP tools
+- Reviews are now handled by a dedicated review-manager that runs reviewers in parallel
+- npm package now ships with provenance attestation for supply chain verification
+```
+
+```markdown [Bad]
+- Added `experimental.session.compacting` hook in index.js
+- Migrated CI to OIDC trusted publishing
+- Refactored registerSubagent() to use a data-driven array
+```
+
+:::
+
+**Threshold — blocker:** A CHANGELOG entry describing internal implementation details when the user-facing impact is not explained.
+
+**Threshold — warning:** An empty `[Unreleased]` section in a PR that contains user-visible changes.
+
+***
+
+## 4. Agent permissions are default-deny
+
+Every agent registered in `index.js` must start with `"*": "deny"` and explicitly allow only the tools it needs.
+
+::: code-group
+
+```js [Good]
+permission: { "*": "deny", task: "allow", question: "allow" }
+permission: { "*": "deny", task: "allow" }
+```
+
+```js [Bad]
+permission: {}                   // no deny — all tools implicitly available
+permission: { task: "allow" }   // missing "*": "deny"
+permission: { "*": "allow" }    // unrestricted — BLOCKED
+```
+
+:::
+
+**Threshold — blocker:** Any new agent registered without `"*": "deny"` as the first permission entry. This is a security regression.
+
+**Threshold — warning:** An agent whose allowed tools are broader than what its system prompt actually uses.
+
+***
+
+## 5. Prompt files stay external and diffable
+
+Agent system prompts must stay in `agents/*.md` files loaded at runtime via `readFile`. They must not be inlined as template literals or string constants in `index.js`.
+
+::: code-group
+
+```js [Good]
+// index.js — load from file
+const prompt = await readFile(join(__dirname, "agents", "prompt.md"), "utf-8");
+```
+
+```js [Bad]
+// Inline — loses diffability, makes prompt changes noisy in index.js diffs
+const prompt = `You are the team-lead...
+...400 lines...`;
+```
+
+:::
+
+**Threshold — blocker:** A PR that moves agent prompt content into `index.js` as a string.
+
+**Threshold — warning:** An agent prompt file that exceeds 600 lines without a clear structural reason.
+
+***
+
+## 6. Agent prompt files do not declare permissions
+
+Permissions for every agent are declared exclusively in `index.js`. An `agents/*.md` file must never contain a `## Permissions` section. Such a section is purely documentary — it has no effect on what the agent can actually do — and it will diverge from the real enforcement in `index.js`. Stale permission docs are worse than no docs.
+
+::: code-group
+
+```markdown [Good]
+<!-- agents/my-agent.md — no permissions section -->
+## Role
+
+You are a specialist agent that...
+```
+
+```markdown [Bad]
+<!-- agents/my-agent.md — permissions section present -->
+## Permissions
+
+- task: allow
+- todowrite: allow
+```
+
+:::
+
+**Threshold — blocker:** Any PR that adds a `## Permissions` section to any file under `agents/`. Caught automatically by the `no-permissions-in-agent-prompts` CI check.
+
+***
+
+## 7. Product briefs follow a verifiable schema
+
+Briefs produced by the brainstorm agent are consumed by downstream agents — Planning uses them to generate exec-plans, and the team-lead uses them to scope delegated work. A brief missing required fields is not machine-actionable.
+
+**Required frontmatter fields:** `project:`, `type:`, `status:`, `created:`, `updated:`
+
+**Required sections:** `## Problem`, `## Vision`, `## Users`, `## Core Use Cases`, `## Success Criteria`, `## Scope`
+
+::: code-group
+
+```markdown [Good]
+---
+project: "api-usage-dashboard"
+type: tool
+status: draft
+created: 2026-04-03
+updated: 2026-04-03
+---
+
+## Problem
+...
+
+## Vision
+...
+
+## Users
+...
+
+## Core Use Cases
+...
+
+## Success Criteria
+...
+
+## Scope
+...
+```
+
+```markdown [Bad]
+---
+project: "api-usage-dashboard"
+type: tool
+status: draft
+created: 2026-04-03
+# Missing: updated:
+---
+
+# Missing: ## Scope section
+```
+
+:::
+
+**Threshold — blocker:** A brief file missing any of the 6 required sections or any of the 5 required frontmatter fields. Caught by the `brief-schema` CI check.
+
+**Threshold — warning:** A brief with an empty `## Open Questions` or `## Rejected Ideas` section — may indicate a rushed brainstorm session.
+
+***
+
+## 8. Declared edit target directories must exist in the repo
+
+Every directory that an agent is granted `edit` access to in `index.js` must physically exist in the repository — either with a `.gitkeep` or real content. A missing directory causes a silent runtime failure: the agent has the correct permission configured but the underlying file operation fails with a misleading error.
+
+::: code-group
+
+```js [Good]
+// Permission declared AND docs/briefs/ exists on disk (with .gitkeep or real files)
+edit: {
+  "*": "deny",
+  "docs/briefs/**": "allow",
+}
+```
+
+```js [Bad]
+// Permission declared but docs/exec-plans/ was never created
+edit: {
+  "*": "deny",
+  "docs/exec-plans/**": "allow",  // → silent runtime failure
+}
+```
+
+:::
+
+**Threshold — blocker:** Any PR that adds or modifies an `edit` permission path in `index.js` without a corresponding directory in the repository. Caught automatically by the `agent-write-dirs-exist` CI check.
+
+---
+
+---
+url: 'https://azrod.github.io/opencode-team-lead/changelog.md'
+---
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+
+* Reviewer agents (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) now access files directly via `read`, `glob`, and `grep` — sub-agent spawning is blocked by the default `"*": "deny"` rule.
+* The `review-manager` now accesses files directly via `read`, `glob`, and `grep` instead of delegating to an `explore` sub-agent. Its `task` permission is constrained to `*-reviewer` agents only.
+* The `bug-finder` agent now investigates directly via `read`, `glob`, and `grep` — sub-agent delegation via `task` has been removed. The agent reports its findings back to the caller instead of applying fixes itself.
+* The `harness` and `planning` agents now require user confirmation before spawning any sub-agent (`task: ask`).
+
+### Fixed
+
+* The `planning` and `brainstorm` agents no longer fail with permission errors when their target directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) don't exist in the user's project — the plugin now creates them automatically on session start via a `session.created` event hook.
+
+### Removed
+
+* The scratchpad working-memory file (`.opencode/scratchpad.md`) has been removed. The team-lead now tracks session progress via `todowrite` and resumes work by re-reading exec-plans and specs, rather than maintaining a separate persistent memory file.
+
+## [0.9.0] - 2026-05-04
+
+### Added
+
+* New `researcher` agent for external knowledge research — fetches and synthesizes information from the web, official docs, APIs, and public sources during the comprehension phase (before planning)
+* New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before the team-lead to produce a structured product brief at `docs/briefs/{project-name}.md`.
+* New `harness` agent — encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI workflows, AGENTS.md entries, guiding principles). Triggered by the user, the team-lead post-feature, or the Gardener on recurring drift.
+* New `planning` agent — transforms complex or ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Returns inline plan simples for small tasks; full exec-plans for multi-session work.
+* New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Opens targeted PRs; updates `QUALITY_SCORE.md`; escalates recurring patterns to `harness`.
+* The team-lead now knows when to invoke `planning` (complex/ambiguous requests) and when to suggest `harness` post-delivery (recurring patterns).
+* Five lifecycle tools now available directly to the team-lead — no delegation needed for project bookkeeping: `project_state` (full artifact inventory), `check_artifacts` (consistency scan), `mark_block_done` (check a block in an exec-plan), `complete_plan` (close a scope), and `register_spec` (create a new spec file). The team-lead calls these at mission start and after each delivery automatically.
+* Exec-plans now support an optional `brief:` frontmatter field to trace the brainstorm → implementation link bidirectionally.
+
+### Changed
+
+* The `brainstorm` agent now challenges your assumptions before drafting — Phase 2 applies Socratic pressure on stated assumptions and constraints, and a mandatory adversarial gate runs before the brief is written: the agent presents the strongest case against building the product and asks what would cause it to fail. Briefs are stronger as a result.
+* The `brainstorm` agent now hard-blocks on incomplete briefs — if the Problem statement, Success Criteria, or Scope In are missing or unresolved, the brief won't be drafted until those gaps are closed. Cosmetic disagreements are noted as open questions; substantive ones block the output entirely.
+* Scope inflation is now flagged throughout the brainstorm session — if the in-scope list grows to 5 or more items, the agent surfaces it once and asks what's truly essential.
+* Harness now operates fully autonomously — it explores the codebase, decides what to encode, and acts without asking for confirmation at each step. It only stops in three explicit cases: the pattern can't be mechanized, encoding requires creating a new workflow file, or the trigger is too vague with no codebase signal to anchor it.
+* The soul personality layer now applies to all agents with `mode: "all"` (brainstorm, planning, bug-finder, harness, gardener) — previously only the team-lead benefited from it.
+* The `bug-finder` agent now includes a pattern assessment in every output — flags whether the bug is a systemic pattern and recommends invoking `harness` when the root cause can be mechanically encoded.
+* The `review-manager` can now read any file directly — it no longer needs to spawn an `explore` sub-agent to read source files before reviewing.
+
+### Fixed
+
+* Lifecycle tools (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`) now return valid responses — previously the `execute` functions returned raw objects instead of strings, causing the OpenCode plugin API to silently discard their output.
+* Harness agent now has full `bash`, `read`, `write`, `edit`, `glob`, and `grep` permissions — previously it was registered with a restricted command allowlist and scoped file targets, which prevented it from running arbitrary lint commands or writing enforcement artifacts outside the predefined list.
+* The harness agent no longer writes human-facing checklists to `AGENTS.md` — it now correctly identifies them as documentation and routes them to CI checks or `docs/guiding-principles.md` instead.
+* Brainstorm agent now enforces a hard stop before responding to the user — the `docs/briefs/` scan is mandatory regardless of how much context the user provides at session start, preventing the agent from skipping existing brief detection.
+* Planning agent write/edit permissions now correctly allow files directly in `docs/exec-plans/` (not just subdirectories).
+* Planning agent can now read `AGENTS.md`, `README.md`, and `docs/**` — the `"*": "deny"` in the `read` sub-object was blocking all file reads.
+* Lifecycle tools (`project_state`, `register_spec`, `mark_block_done`, `complete_plan`, `check_artifacts`) now work correctly when OpenCode passes `worktree="/"` — the plugin falls back to `directory` instead of treating the filesystem root as the project root.
+* Removed invalid `write` permission key from all agent configs — OpenCode's permission system uses `edit` to govern all file modifications (write, edit, patch); the separate `write` key was silently ignored, causing new file creation to be blocked by the top-level `"*": "deny"` rule.
+
+### Removed
+
+* `memory.md` concept removed — the persistent project memory feature has been deprecated. The `experimental.chat.system.transform` hook and memory.md injections have been removed from the plugin. Only the scratchpad survives compaction.
+
+## [0.8.0] - 2026-03-30
+
+### Added
+
+* New `bug-finder` agent — a structured bug investigation orchestrator that forces root-cause analysis before any fix is applied. Prevents the team-lead from rushing to workarounds that mask symptoms and create code divergence.
+* Persistent memory across sessions — the team-lead now maintains `.opencode/memory.md`, a project-level knowledge base that accumulates architecture decisions, conventions, and user preferences. The plugin injects it automatically into every session via `experimental.chat.system.transform`, so it's available from the first message without any tool call.
+* The default soul directives are now in English — previously the built-in personality guidelines were in French, which was unexpected for non-French speakers. Disable with `soul: false` if you prefer a neutral voice.
+* The team-lead now prefers registered user-defined agents over invented personas — when a project defines domain-specific agents (e.g., `languages/typescript-pro`, `mcp/mcp-developer`, `web/react-specialist`), it selects them instead of defaulting to a `general` + invented persona name.
+
+### Changed
+
+* The `review-manager` is now significantly faster for trivial changes — it instantly approves docs-only or formatting updates without spawning sub-agents, and only spins up a single `code-reviewer` for low-risk tweaks.
+* The reviewer delegation prompt has been drastically slimmed down — the `review-manager` no longer wastes tokens re-explaining focus, stance, or formatting to specialized reviewers that already know their job.
+
+### Fixed
+
+* Reviewer agents (requirements, code, security) now have a hardcoded skeptical stance in their system prompts — this counteracts the default LLM approval bias where agents would spot real issues but rationalize them away instead of flagging them.
+
+### Removed
+
+* `sequential-thinking` has been removed — modern models decompose complex workflows natively, making the explicit planning tool unnecessary friction.
+* The "What you MUST NOT do" tool list has been removed — the Cardinal Rule and Anti-Patterns section already cover this constraint more effectively.
+* The delegation prompt template has been removed — modern models structure delegations well without an explicit template.
+* In-Flight Delegations tracking from the scratchpad template has been removed — the compaction hook already preserves the full scratchpad.
+* The Self-Evaluation numbered checklist has been collapsed to prose.
+* The `< 1-2 delegations away` interruption threshold has been removed from the scope-switching protocol.
+* The "When NOT to Prune" subsection has been removed from the Context Management section.
+* The "Max Retries" column has been removed from the error handling retry table.
+
+## [0.7.0] - 2026-03-25
+
+### Added
+
+* Three specialized reviewer agents are now included: `requirements-reviewer`, `code-reviewer`, and `security-reviewer` — the review-manager spawns them automatically based on change type and risk level (size × risk axes).
+* The team-lead can now embody a personality — embed your tone and communication directives in the plugin and the team-lead applies them automatically in every session. Disable with `soul: false` in your `opencode.json` agent config if you prefer a neutral voice.
+
+### Fixed
+
+* Overriding a permission key in `opencode.json` no longer silently drops the plugin defaults for that key — your custom permissions are now merged on top instead of replacing the entire group.
+* In-flight delegations are now tracked in the scratchpad with their `task_id` — if compaction hits while a delegation is running, the team-lead can resume without losing track of what was dispatched.
+* Adding the `requirements-reviewer` no longer reduces technical review coverage — functional and technical reviews now run in full, independently.
+
+## [0.6.2] - 2026-03-19
+
+### Changed
+
+* The team-lead agent identifier was established as `team-lead`.
+
+## [0.6.1] - 2026-03-13
+
+### Removed
+
+* Removed the memoai memory integration — the team-lead no longer uses `memoai_memo_search` and `memoai_memo_record` to record decisions or search past context across sessions.
+
+## [0.5.0] - 2026-02-20
+
+### Added
+
+* The team-lead now proactively manages its context window — clear guidance on when to distill, prune, and compress tool outputs to prevent compaction surprises.
+* The scratchpad now tracks the active task in detail — if compaction hits mid-step, the team-lead can resume exactly where it left off instead of losing implementation details.
+
+## [0.4.1] - 2026-02-20
+
+### Fixed
+
+* The team-lead now consistently delegates reviews to the review-manager instead of spawning reviewer agents directly — reinforced with explicit constraints in three places across the prompt.
+
+## [0.4.0] - 2026-02-20
+
+### Added
+
+* Reviews are now handled by a dedicated review-manager agent that spawns specialized reviewers in parallel and arbitrates disagreements — the team-lead no longer manages reviews directly.
+* The review-manager agent can be customized from `opencode.json` just like the team-lead (temperature, color, permissions).
+
+## [0.3.1] - 2026-02-20
+
+### Fixed
+
+* The team-lead now reads and writes its scratchpad (`.opencode/scratchpad.md`) directly — previously it couldn't maintain its working memory due to missing file permissions.
+
+## [0.3.0] - 2026-02-20
+
+### Added
+
+* Agent properties and permissions can now be customized from your `opencode.json` — override temperature, color, or add extra tool permissions without forking the plugin.
+
+## [0.2.1] - 2026-02-20
+
+### Added
+
+* The team-lead can now manage its context window using DCP tools (`distill`, `prune`, `compress`) — keeping sessions clean across long conversations.
+
+## [0.2.0] - 2026-02-20
+
+### Changed
+
+* npm package now ships with provenance attestation for supply chain verification.
+
+## [0.1.0] - 2026-02-20
+
+### Added
+
+* Initial release of the team-lead orchestrator plugin for OpenCode.
+* npm package with installation docs.
+
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.9.0...HEAD
+
+[0.9.0]: https://github.com/azrod/opencode-team-lead/compare/v0.8.0...v0.9.0
+
+[0.8.0]: https://github.com/azrod/opencode-team-lead/compare/v0.7.0...v0.8.0
+
+[0.7.0]: https://github.com/azrod/opencode-team-lead/compare/v0.6.2...v0.7.0
+
+[0.6.2]: https://github.com/azrod/opencode-team-lead/compare/v0.6.1...v0.6.2
+
+[0.6.1]: https://github.com/azrod/opencode-team-lead/compare/v0.5.0...v0.6.1
+
+[0.5.0]: https://github.com/azrod/opencode-team-lead/compare/v0.4.1...v0.5.0
+
+[0.4.1]: https://github.com/azrod/opencode-team-lead/compare/v0.4.0...v0.4.1
+
+[0.4.0]: https://github.com/azrod/opencode-team-lead/compare/v0.3.1...v0.4.0
+
+[0.3.1]: https://github.com/azrod/opencode-team-lead/compare/v0.3.0...v0.3.1
+
+[0.3.0]: https://github.com/azrod/opencode-team-lead/compare/v0.2.1...v0.3.0
+
+[0.2.1]: https://github.com/azrod/opencode-team-lead/compare/v0.2.0...v0.2.1
+
+[0.2.0]: https://github.com/azrod/opencode-team-lead/compare/v0.1.0...v0.2.0
+
+[0.1.0]: https://github.com/azrod/opencode-team-lead/releases/tag/v0.1.0

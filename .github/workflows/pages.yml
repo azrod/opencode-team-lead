@@ -1,11 +1,11 @@
-name: Deploy to GitHub Pages
+name: Deploy Documentation Website
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'team-lead-workflow/bundle.html'
+      - 'website/**'
   workflow_dispatch:
 
 permissions:
@@ -14,31 +14,42 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "pages-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare Pages content
-        run: |
-          mkdir -p _site
-          cp team-lead-workflow/bundle.html _site/index.html
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: website/package-lock.json
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+      - name: Install dependencies
+        run: npm install
+        working-directory: website
+
+      - name: Build
+        run: npm run build
+        working-directory: website
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '_site'
+          path: website/.vitepress/dist
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

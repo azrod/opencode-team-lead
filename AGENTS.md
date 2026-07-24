@@ -31,7 +31,7 @@ This is a tiny project — zero dependencies, pure ESM, no build step. Tests run
 
 | File | Role |
 |------|------|
-| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers agents) and `experimental.session.compacting` (preserves scratchpad across context resets). |
+| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers agents) and `event` (creates required artifact directories — `docs/exec-plans/`, `docs/briefs/`, `docs/specs/` — on `session.created`). |
 | `agents/prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
 | `agents/review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
 | `agents/requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
@@ -53,11 +53,11 @@ Full technical details: [`docs/architecture.md`](docs/architecture.md)
 ### How the plugin works
 
 1. **`config` hook** — Injects all agent definitions into OpenCode's config, merging user overrides from `opencode.json` on top of plugin defaults. The `prompt` is always provided by the plugin and cannot be overridden.
-2. **`experimental.session.compacting` hook** — Reads `.opencode/scratchpad.md` and injects it into the compaction context, so working state survives context resets.
+2. **`event` hook** — On `session.created`, best-effort creates the artifact directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) so the planning and brainstorm agents don't fail with permission errors on a fresh project.
 
 ### Key design decisions
 
-- Permissions are deny-all by default — the team-lead can delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), read files directly (`read`), and run basic git commands. Reading is permitted for coordination (scratchpad, plans, configs); analysis and exploration are always delegated to `explore`.
+- Permissions are deny-all by default — the team-lead can delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), read files directly (`read`), and run basic git commands. Edit/write access is scoped to `docs/**` only (exec-plans, specs, briefs); analysis and exploration are always delegated to `explore`.
 - Agent prompts are loaded from `agents/*.md` at init time via `readFile`, not inlined — keeps them editable and diffable independently of the code.
 - The plugin merges user config without overwriting it — users can override `temperature`, `color`, `variant`, `mode`, and add permissions.
 - The review-manager uses nested delegation (team-lead → review-manager → reviewers) and runs as `mode: "subagent"` — invisible to the user, only reachable via `task`.
@@ -187,14 +187,14 @@ The CHANGELOG targets **users of the plugin** — people who install it in their
 
 **Good:**
 ```markdown
-- Scratchpad now survives context compaction — the team-lead resumes where it left off after context resets
+- The team-lead now resumes work by re-reading exec-plans and specs after a context reset, instead of relying on a separate memory file
 - The team-lead can now manage its context window using DCP tools (distill, prune, compress)
 - npm package now ships with provenance attestation for supply chain verification
 ```
 
 **Bad:**
 ```markdown
-- Added `experimental.session.compacting` hook in index.js
+- Removed the `experimental.session.compacting` hook from index.js
 - Added distill, prune, compress to the permission allowlist
 - Migrated CI to OIDC trusted publishing — no npm token needed
 ```

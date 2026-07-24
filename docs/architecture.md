@@ -4,25 +4,15 @@
 
 `opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il n'a aucune dépendance npm — uniquement des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
 
-Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec les deux hooks.
+Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec le hook `config`.
 
-## Les deux hooks
-
-### `config`
+## Le hook `config`
 
 Appelé par OpenCode pour construire la configuration des agents. Le hook :
 
 1. Lit le config utilisateur existant (`input.agent`)
 2. Injecte les définitions de tous les agents (team-lead + sous-agents)
 3. Fusionne les overrides utilisateur par-dessus les defaults du plugin (voir **Fusion de config**)
-
-### `experimental.session.compacting`
-
-Appelé avant chaque compaction de contexte. Le hook lit `.opencode/scratchpad.md` et injecte son contenu dans `output.context` :
-
-- `.opencode/scratchpad.md` — état de la mission courante (plan, résultats d'agents, contexte de reprise)
-
-Si le fichier n'existe pas, le hook passe silencieusement (ENOENT ignoré).
 
 ## Les agents enregistrés
 
@@ -72,7 +62,8 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 |---|---|
 | `task`, `todowrite`, `todoread`, `skill`, `question` | allow |
 | `distill`, `prune`, `compress` | allow (gestion contexte via DCP) |
-| `read` / `edit` | allow uniquement sur `.opencode/scratchpad.md` |
+| `read` | allow sur tous les fichiers |
+| `edit` / `write` | allow uniquement sur `docs/**` |
 | `bash` | allow uniquement pour les commandes git (`git status*`, `git diff*`, `git log*`, `git add*`, `git commit*`, `git push*`, `git tag*`) |
 | Tout le reste | deny |
 
@@ -85,14 +76,6 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 **brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `edit` (`docs/briefs/**` uniquement). Pas de bash.
 
 La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
-
-## Le scratchpad
-
-Un seul fichier dans `.opencode/` à la racine du projet :
-
-- **`.opencode/scratchpad.md`** — état de la mission courante : plan, résultats d'agents, contexte de reprise. Écrasé à chaque nouvelle mission. Injecté à la compaction.
-
-Le scratchpad est le mécanisme de survie à la compaction : tout ce dont Orion a besoin pour reprendre doit y être.
 
 ## Chargement des prompts
 
@@ -134,6 +117,6 @@ Le `prompt` est toujours fourni par le plugin et ne peut pas être overridé par
 
 Aucune dépendance npm. Uniquement :
 
-- `node:fs/promises` — lecture des fichiers de prompts et du scratchpad
+- `node:fs/promises` — lecture des fichiers de prompts
 - `node:path` — résolution de chemins
 - `node:url` — `fileURLToPath` pour `__dirname` en ESM

@@ -25,7 +25,7 @@ User request
       │
       ▼
  ┌────────────────────────────────┐
- │  Lire scratchpad + AGENTS.md   │
+ │  Lire AGENTS.md                │
  └────────────────────────────────┘
       │
       ▼
@@ -37,7 +37,7 @@ User request
                                                       ▼
                                            ┌──────────────────────────┐
                                            │  PLAN                    │
-                                           │  todowrite + scratchpad  │
+                                           │  todowrite               │
                                            └──────────┬───────────────┘
                                                       │
                                                       ▼

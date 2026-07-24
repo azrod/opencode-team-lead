@@ -61,7 +61,7 @@ Every CHANGELOG entry must describe what changed for the *user of the plugin* �
 
 **Good:**
 ```markdown
-- Scratchpad now survives context compaction — the team-lead resumes where it left off
+- The team-lead can now manage its context window using DCP tools (`distill`, `prune`, `compress`) — keeping sessions clean across long conversations
 - Reviews are now handled by a dedicated review-manager that spawns specialized reviewers in parallel
 - npm package now ships with provenance attestation for supply chain verification
 ```
