@@ -1,3 +1,8 @@
+---
+status: implemented
+created: 2026-03-31
+---
+
 # Spec : Agent `gardener`
 
 **Statut :** draft  

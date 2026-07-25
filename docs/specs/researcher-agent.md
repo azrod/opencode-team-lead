@@ -1,3 +1,8 @@
+---
+status: implemented
+created: 2026-04-20
+---
+
 # Spec: Agent `researcher`
 
 **Status:** stable  

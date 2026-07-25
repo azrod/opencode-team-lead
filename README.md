@@ -94,14 +94,15 @@ These are not visible in the OpenCode UI. They run automatically as part of Orio
 
 | Agent | Permissions |
 |-------|-------------|
-| `team-lead` | `task`, `todowrite`, `todoread`, `skill`, `question`, `distill`, `prune`, `compress`, `bash` (git: status, diff, log, add, commit, push, tag), `read` (all), `edit`/`write` (`docs/**` only) |
-| `review-manager` | `task`, `question` |
-| `requirements-reviewer` / `code-reviewer` / `security-reviewer` | `task` |
-| `bug-finder` | `task`, `question` |
-| `brainstorm` | `task`, `question`, `webfetch`, `read` (all), `write` (`docs/briefs/**` only) |
-| `harness` | `task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all), `write` (all) |
-| `planning` | `task`, `question`, `read` (AGENTS.md, README.md, `docs/**`), `edit`/`write` (`docs/exec-plans/**` only) |
-| `gardener` | `task`, `question`, `bash` (git log/diff/status, gh pr create), `read` (all), `edit`/`write` (`QUALITY_SCORE.md` only) |
+| `team-lead` | `task`, `todowrite`, `todoread`, `skill`, `question`, `compress`, `bash` (git + ls + head + echo), `read` (all), `edit`/`write` (`docs/**` only) |
+| `review-manager` | `task` (`*-reviewer` only), `question`, `read`, `glob`, `grep` |
+| `requirements-reviewer` / `code-reviewer` / `security-reviewer` | `read`, `glob`, `grep` |
+| `bug-finder` | `read`, `glob`, `grep`, `question` |
+| `brainstorm` | `task`, `question`, `webfetch`, `read` (all), `edit` (`docs/briefs/**` only) |
+| `harness` | `task` (ask), `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all) |
+| `planning` | `task` (ask), `question`, `read` (all), `glob`, `grep`, `edit` (`docs/exec-plans/**` only) |
+| `gardener` | `question`, `bash` (git log/diff/status/show/blame/shortlog, gh pr create), `read` (all), `edit` (`QUALITY_SCORE.md` only) |
+| `researcher` | `read`, `webfetch`, `websearch`, `grep` |
 
 Everything not listed is denied.
 

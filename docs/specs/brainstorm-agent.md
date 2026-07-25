@@ -1,3 +1,8 @@
+---
+status: implemented
+created: 2026-04-03
+---
+
 # Spec : Agent `brainstorm`
 
 **Statut :** implemented  

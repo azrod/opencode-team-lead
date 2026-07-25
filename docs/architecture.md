@@ -4,7 +4,7 @@
 
 `opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il n'a aucune dépendance npm — uniquement des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
 
-Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec le hook `config`.
+Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec trois hooks : `config`, `event`, et `tool`.
 
 ## Le hook `config`
 
@@ -69,9 +69,9 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 
 **review-manager** : `task` + `question` uniquement.
 
-**Reviewers spécialisés** (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) : `task` uniquement.
+**Reviewers spécialisés** (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) : `read`, `glob`, `grep` uniquement — lecture directe, pas de délégation.
 
-**bug-finder** : `task` + `question` uniquement.
+**bug-finder** : `read`, `glob`, `grep`, `question` — lecture directe, pas de délégation.
 
 **brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `edit` (`docs/briefs/**` uniquement). Pas de bash.
 

@@ -56,7 +56,7 @@ Spec : [specs/planning-agent.md](specs/planning-agent.md)
 
 Si l'agent `harness` fait son travail (`AGENTS.md` précis, `docs/` navigable, conventions encodées dans le tooling), `memory.md` devient redondant. Le contexte est dans le dépôt, navigable par référence, pas en mémoire persistante.
 
-**Conséquence** : les hooks `experimental.session.compacting` et `experimental.chat.system.transform` (qui injectent `memory.md`) sont des dettes techniques à terme. Ils restent en place pendant la transition mais ne sont pas le modèle cible.
+**Conséquence** : les hooks `experimental.session.compacting` et `experimental.chat.system.transform` (qui injectaient `memory.md`) étaient des dettes techniques — ils ont été supprimés en v0.9.0.
 
 ---
 

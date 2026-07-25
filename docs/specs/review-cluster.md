@@ -1,3 +1,8 @@
+---
+status: implemented
+created: 2026-04-02
+---
+
 # Spec : Cluster `review`
 
 **Statut :** draft  
@@ -5,7 +10,7 @@
 
 ## Résumé
 
-Cluster de 4 agents qui analyse les changements selon trois dimensions orthogonales — conformité aux requirements, qualité du code, sécurité. Le `review-manager` orchestre, les trois reviewers spécialisés délèguent toute lecture via `task` et ne touchent jamais le code directement.
+Cluster de 4 agents qui analyse les changements selon trois dimensions orthogonales — conformité aux requirements, qualité du code, sécurité. Le `review-manager` orchestre, les trois reviewers spécialisés lisent directement via `read`, `glob`, `grep` et ne touchent jamais le code directement.
 
 ---
 
@@ -190,7 +195,7 @@ Chaque reviewer produit un verdict individuel : `APPROVED`, `CHANGES_REQUESTED`,
 
 ## Ce que le cluster ne fait PAS
 
-- Ne lit pas le code directement — toute exploration passe par `task`
+- Les reviewers spécialisés ne délèguent pas — ils lisent directement via `read`, `glob`, `grep`
 - Ne propose pas de fix — le cluster évalue, il ne corrige pas
 - Le `review-manager` ne formule pas de jugement propre sur le code — il agrège et arbitre
 - Ne rouvre pas une review déjà livrée sans nouveau contexte ou nouveau diff
@@ -199,12 +204,12 @@ Chaque reviewer produit un verdict individuel : `APPROVED`, `CHANGES_REQUESTED`,
 
 ## Permissions
 
-| Agent | `task` | `question` | Tout le reste |
-|---|---|---|---|
-| `review-manager` | allow | allow | deny |
-| `requirements-reviewer` | allow | — | deny |
-| `code-reviewer` | allow | — | deny |
-| `security-reviewer` | allow | — | deny |
+| Agent | `task` | `question` | `read` | `glob` | `grep` | Tout le reste |
+|---|---|---|---|---|---|---|
+| `review-manager` | allow | allow | allow | allow | allow | deny |
+| `requirements-reviewer` | — | — | allow | allow | allow | deny |
+| `code-reviewer` | — | — | allow | allow | allow | deny |
+| `security-reviewer` | — | — | allow | allow | allow | deny |
 
 ---
 

@@ -504,8 +504,6 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         skill: "allow",
         task: "allow",
         question: "allow",
-        distill: "allow",
-        prune: "allow",
         compress: "allow",
         project_state: "allow",
         mark_block_done: "allow",

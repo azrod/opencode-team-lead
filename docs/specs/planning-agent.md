@@ -1,3 +1,8 @@
+---
+status: implemented
+created: 2026-04-01
+---
+
 # Spec : Agent `planning`
 
 **Statut :** draft  

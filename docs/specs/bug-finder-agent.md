@@ -1,3 +1,8 @@
+---
+status: implemented
+created: 2026-04-02
+---
+
 # Spec : Agent `bug-finder`
 
 **Statut :** draft  
@@ -44,7 +49,7 @@ Répondre aux 4 questions fondamentales avant d'autoriser un fix :
 
 ### Phase 2 — INVESTIGATION
 
-- Déléguer l'exploration via `task` (jamais de lecture directe du code)
+- Lire directement via `read`, `glob`, `grep` (pas de délégation via `task`)
 - Répondre aux 4 questions fondamentales
 - Tracer la call chain jusqu'au point de divergence
 
@@ -56,8 +61,7 @@ Répondre aux 4 questions fondamentales avant d'autoriser un fix :
 
 ### Phase 4 — CORRECTION
 
-- Déléguer le fix à un agent général via `task`
-- Fournir le contexte complet des phases 1 à 3
+- Formuler le diagnostic complet (phases 1 à 3) et le retourner à l'appelant pour qu'il délègue le fix
 - Interdiction de corriger avant la fin de la phase INVESTIGATION
 
 ### Phase 5 — DELIVERY
@@ -83,7 +87,6 @@ Retourner un output structuré :
 
 ## Ce que l'agent ne fait PAS
 
-- Ne lit pas de fichiers directement
 - N'exécute pas de commandes shell
 - N'édite pas le code directement
 - Ne propose pas de fix avant la fin de la phase INVESTIGATION
@@ -95,7 +98,9 @@ Retourner un output structuré :
 
 | Ressource | Accès |
 |-----------|-------|
-| `task` | allow |
+| `read` | allow |
+| `glob` | allow |
+| `grep` | allow |
 | `question` | allow |
 | Tout le reste | deny |
 
