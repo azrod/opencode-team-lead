@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Documentation portal (`website/`) — VitePress static site with marketing homepage, per-agent pages, lifecycle tools reference, architecture, decisions, principles, and changelog. Deployed automatically to GitHub Pages on push to `main`.
 - Documentation website now generates LLM-friendly artifacts (`llms.txt`, `llms-full.txt`, per-page `.md` files) via `vitepress-plugin-llms`, making the docs easily ingested by AI agents.
+- Orion now proactively suggests the `gardener` agent after scope delivery, before releases, and when multiple doc files were touched in a session — rather than waiting for the user to ask. A dedicated Gardener Protocol section defines the triggers, rules, and how to handle its results (including escalation to `harness` when recurring patterns are detected).
 
 ### Changed
 - Orion's context management instructions now reference only `compress` — `distill` and `prune` were removed since they don't exist in OpenCode's toolset.

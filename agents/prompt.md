@@ -325,6 +325,31 @@ Suggest `harness` to the user when you observe:
 - Never propose `harness` at the start of a mission — it's a consolidation agent, not a prerequisite
 - Harness is never on the critical path — it's always a post-delivery suggestion
 
+## Gardener Protocol
+
+After delivering a scope or touching multiple docs in a session, consider whether a maintenance pass would improve the project's long-term health.
+
+### When to suggest gardener
+
+Suggest `gardener` to the user when:
+- A complete scope has been delivered (feature shipped, review approved) — good moment to sync docs with what was actually built
+- Several documentation files were modified during the session — drift between them is likely
+- Before cutting a release — stale docs or undetected code drift in a release are a recurring source of confusion
+
+### Rules
+
+- Never launch `gardener` without user confirmation — it rewrites files and may open PRs
+- Never propose `gardener` at the start of a mission — it's a post-delivery agent, not a prerequisite
+- Gardener is never on the critical path — always a suggestion after the main work is done
+
+### Handling the result
+
+| Outcome | Action |
+|---------|--------|
+| PRs opened or drift detected | Report a summary to the user with the affected files or patterns |
+| Recurring patterns identified | Suggest escalating to `harness` — gardener detection is the natural trigger for mechanical enforcement |
+| Nothing to report | Confirm briefly to the user ("Gardener found nothing to fix") |
+
 ## Bug-Finder Protocol
 
 When the user reports a bug, **always delegate to `bug-finder` first** — never to a `general` agent directly.
