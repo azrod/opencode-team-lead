@@ -115,7 +115,7 @@ const prompt = await readFile(join(__dirname, "agents", "prompt.md"), "utf-8");
 **Bad:**
 ```js
 // Inline — loses diffability, makes prompt changes noisy in index.js diffs
-const prompt = `You are Orion...
+const prompt = `You are the team-lead...
 ...400 lines...`;
 ```
 
@@ -161,7 +161,7 @@ You are a specialist agent that...
 
 ## Principle: Product briefs follow a verifiable schema
 
-Briefs produced by the brainstorm agent are consumed by downstream agents — Planning uses them to generate exec-plans, and Orion uses them to scope delegated work. A brief missing required frontmatter fields or section headings is not machine-actionable: a downstream agent cannot reliably extract the project name, scope, or success criteria without a predictable structure. The schema enforces the minimum structural contract. Content quality — whether the Vision is compelling, whether the Use Cases are realistic — remains the brainstorm agent's responsibility and is not checked here.
+Briefs produced by the brainstorm agent are consumed by downstream agents — Planning uses them to generate exec-plans, and the team-lead uses them to scope delegated work. A brief missing required frontmatter fields or section headings is not machine-actionable: a downstream agent cannot reliably extract the project name, scope, or success criteria without a predictable structure. The schema enforces the minimum structural contract. Content quality — whether the Vision is compelling, whether the Use Cases are realistic — remains the brainstorm agent's responsibility and is not checked here.
 
 **Good:**
 ```markdown

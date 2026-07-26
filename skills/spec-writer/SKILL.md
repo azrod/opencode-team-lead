@@ -70,7 +70,7 @@ Fill in the template with agent-specific content. Follow these guidelines:
 #### When to Use / Triggers Section
 - Decision table or bullet list
 - Be explicit about what this agent does NOT handle (redirect to other agents)
-- Include both Orion-triggered and user-triggered scenarios
+  - Include both team-lead-triggered and user-triggered scenarios
 
 #### Permissions Section
 - Table format: Tool | Permission | Rationale
@@ -79,7 +79,7 @@ Fill in the template with agent-specific content. Follow these guidelines:
 - Default-deny mindset: only grant what's strictly necessary
 
 #### Config Section
-- **Mode:** `all` (user + Orion) or `subagent` (Orion only)
+- **Mode:** `all` (user + team-lead) or `subagent` (team-lead only)
 - **Temperature:** 0.0-0.3 for deterministic tasks, 0.5-0.7 for creative tasks, 1.0 for maximum creativity
 - **Variant:** `standard` (128k), `extended` (200k), `max` (512k) — justify based on expected context needs
 - **Color:** UI indicator (primary, info, success, warning, danger)
@@ -170,7 +170,7 @@ Good:
 External knowledge retrieval agent. Fetches information from the web, public APIs,
 and online documentation during the understanding phase — before planning begins.
 
-> *"Orion asks questions. Researcher finds answers outside the codebase."*
+> *"The team-lead asks questions. Researcher finds answers outside the codebase."*
 ```
 
 ## Examples of Well-Justified Permissions
@@ -217,7 +217,7 @@ From `researcher-agent.md`:
 
 | Anti-Pattern | Why It's Wrong |
 |--------------|----------------|
-| Dumping raw HTML or JSON responses | Orion needs synthesis, not raw data |
+| Dumping raw HTML or JSON responses | The team-lead needs synthesis, not raw data |
 | Citing sources without context | "See link" is useless — explain what the link says |
 | Implementing solutions based on findings | Research informs, doesn't execute |
 | Hedging with "it depends" without enumerating cases | List the actual trade-offs |

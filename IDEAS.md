@@ -9,16 +9,16 @@ Currently, the `review-manager` uses a generic `code-reviewer` for everything no
 
 ## 2. The "Sprint Contract" Pattern
 Inspired by Anthropic's "Harness design for long-running application development".
-Currently, Orion delegates to a producer (`general`), then the result is evaluated by `review-manager`. This is a post-facto review.
+Currently, the team-lead delegates to a producer (`general`), then the result is evaluated by `review-manager`. This is a post-facto review.
 A "sprint contract" would move evaluation upstream:
-- Orion proposes a technical plan to `requirements-reviewer` first.
+- The team-lead proposes a technical plan to `requirements-reviewer` first.
 - The reviewer validates that the plan accounts for all edge cases and requirements *before any code is written*.
 - Once the contract is agreed upon, the producer agent executes it.
 This prevents the producer from going down a multi-file rabbit hole based on a flawed premise.
 
 ## 3. Enhancing the Bug-Finder Routing
-The `bug-finder` agent was added with `mode: "all"`, meaning users can invoke it directly. However, in OpenCode's default behavior, Orion (`team-lead`) intercepts open-ended user prompts like "I have a bug."
-We need to verify if Orion's prompt (specifically Anti-Pattern #9 and the Bug-Finder Protocol section) is strong enough to reliably route these requests to `bug-finder` first, or if we need to explore explicit routing directives/tools in future OpenCode plugin APIs.
+The `bug-finder` agent was added with `mode: "all"`, meaning users can invoke it directly. However, in OpenCode's default behavior, the team-lead intercepts open-ended user prompts like "I have a bug."
+We need to verify if the team-lead's prompt (specifically Anti-Pattern #9 and the Bug-Finder Protocol section) is strong enough to reliably route these requests to `bug-finder` first, or if we need to explore explicit routing directives/tools in future OpenCode plugin APIs.
 
 ## 4. Agnostic QA Runtime Loop (Dynamic Evaluation)
 The Anthropic article highlights the value of *active testing* over passive reading — their evaluator used Playwright to interact with the running application. Currently, `review-manager` only performs static code review.

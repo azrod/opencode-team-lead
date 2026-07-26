@@ -127,7 +127,7 @@ Watch out for these frequent issues:
 - **Vague permissions rationale** — "Needed to read files" is not specific enough. Which files? Why?
 - **Missing anti-patterns** — Every agent has failure modes worth documenting
 - **Unjustified config values** — Don't just copy another agent's temperature without thinking
-- **No output format** — Orion (or the user) needs to know what to expect back
+- **No output format** — The team-lead (or the user) needs to know what to expect back
 - **Language mixing** — English-only is the project standard
 - **Missing security considerations** — If agent writes to disk or fetches from the web, security section is required
 - **Workflow without deliverables** — Each phase should produce or decide something

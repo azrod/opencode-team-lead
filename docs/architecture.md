@@ -22,7 +22,7 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 │                                                                 │
 │  ┌──────────────┐   task   ┌─────────────────┐                 │
 │  │  team-lead   │ ───────► │  review-manager │ (subagent)      │
-│  │  (Orion)     │          │                 │                 │
+│  │              │          │                 │                 │
 │  │  mode: all   │          │  task ──► requirements-reviewer   │
 │  └──────────────┘          │  task ──► code-reviewer           │
 │         │                  │  task ──► security-reviewer       │
@@ -32,7 +32,7 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 │  │  bug-finder  │ (mode: all — visible utilisateur)            │
 │  └──────────────┘                                              │
 │  ┌──────────────┐                                              │
-│  │  brainstorm  │ (mode: all — phase 0, avant Orion)           │
+│  │  brainstorm  │ (mode: all — phase 0, avant le team-lead)    │
 │  └──────────────┘                                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -81,7 +81,7 @@ La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers 
 
 Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`, pas inlinés dans `index.js`. Chemins résolus depuis `__dirname` vers `agents/`:
 
-- `agents/prompt.md` → team-lead (Orion)
+- `agents/prompt.md` → team-lead
 - `agents/review-manager.md` → review-manager
 - `agents/requirements-reviewer.md`, `agents/code-reviewer.md`, `agents/security-reviewer.md`, `agents/bug-finder.md` → reviewers + bug-finder
 - `agents/harness.md` → harness

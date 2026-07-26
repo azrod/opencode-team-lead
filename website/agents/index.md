@@ -31,7 +31,7 @@ Agents are split into two modes:
 
 ## Agent Pages
 
-- [team-lead](/agents/orion) — the orchestrator at the center of everything
+- [team-lead](/agents/team-lead) — the orchestrator at the center of everything
 - [Review Cluster](/agents/review-cluster) — review-manager + requirements, code, and security reviewers
 - [Brainstorm](/agents/brainstorm) — Phase 0 thinking partner for vague ideas
 - [Bug-Finder](/agents/bug-finder) — structured investigation before any fix

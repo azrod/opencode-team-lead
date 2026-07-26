@@ -11,7 +11,7 @@ updated: 2026-04-07
 
 ## Résumé
 
-Cinq custom tools injectés dans OpenCode par le plugin, accessibles directement par Orion, pour les opérations de bookkeeping sur les artefacts de gestion de projet (exec-plans, specs, briefs). Mécaniques, déterministes, zéro LLM en dessous.
+Cinq custom tools injectés dans OpenCode par le plugin, accessibles directement par le team-lead, pour les opérations de bookkeeping sur les artefacts de gestion de projet (exec-plans, specs, briefs). Mécaniques, déterministes, zéro LLM en dessous.
 
 ---
 
@@ -23,11 +23,11 @@ Les projets utilisant le plugin accumulent des artefacts de gestion (exec-plans,
 
 | Symptôme | Impact |
 |---|---|
-| Exec-plan `status: active` alors que tous les blocs sont cochés | Orion ne sait pas si un scope est done |
+| Exec-plan `status: active` alors que tous les blocs sont cochés | Le team-lead ne sait pas si un scope est done |
 | Spec en `status: draft` depuis des semaines, jamais promue | Contrainte ignorée de facto |
 | Brief sans exec-plan associé | Pas de traçabilité brainstorm → implémentation |
 | Exec-plan avec `brief:` pointant vers un fichier inexistant | Ref morte — confuse pour tous les agents |
-| Orion doit déléguer un explore agent pour connaître l'état courant | Coût LLM inutile pour de la lecture mécanique |
+| Le team-lead doit déléguer un explore agent pour connaître l'état courant | Coût LLM inutile pour de la lecture mécanique |
 
 Ces dérives ne sont pas des bugs de logique — elles naissent de l'inertie : personne (aucun agent) ne met à jour les statuts et les registres de façon systématique, parce que personne ne les "possède" mécaniquement.
 
@@ -35,7 +35,7 @@ Ces dérives ne sont pas des bugs de logique — elles naissent de l'inertie : p
 
 Les opérations concernées sont **déterministes** : cocher une case dans un fichier, lire un frontmatter, vérifier qu'un fichier existe, ajouter une ligne dans un tableau markdown. Elles ne nécessitent aucun raisonnement. Les déléguer à un sous-agent implique un context window, un appel LLM, une latence — pour un résultat qu'une fonction pure produit en quelques millisecondes.
 
-Les custom tools OpenCode sont l'abstraction correcte : exécutés dans le process du plugin, synchrones, accessibles directement par Orion via son permission set. Pas de délégation, pas de sous-agent.
+Les custom tools OpenCode sont l'abstraction correcte : exécutés dans le process du plugin, synchrones, accessibles directement par le team-lead via son permission set. Pas de délégation, pas de sous-agent.
 
 ---
 
@@ -47,7 +47,7 @@ Les custom tools OpenCode sont l'abstraction correcte : exécutés dans le proce
 
 **Arguments :** aucun
 
-**Rôle :** Produire un rapport structuré de l'état courant des artefacts de gestion dans le projet utilisateur. Orion l'appelle en début de mission pour avoir une vue complète sans déléguer un explore agent.
+**Rôle :** Produire un rapport structuré de l'état courant des artefacts de gestion dans le projet utilisateur. Le team-lead l'appelle en début de mission pour avoir une vue complète sans déléguer un explore agent.
 
 **Comportement :**
 
@@ -93,7 +93,7 @@ Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `ope
 - Exec-plans : glob `{paths.execPlans}/*.md`, frontmatter YAML parsé, blocs `- [x]` et `- [ ]` comptés, champ `brief` vérifié sur disque si présent
 - Briefs : glob `{paths.briefs}/*.md`, frontmatter YAML parsé (`project`, `type`, `status`, `exec_plan`), champ `exec_plan` vérifié sur disque si présent
 
-**Warnings inline :** Si un exec-plan a tous les blocs cochés mais `status: active`, le champ `warning` est peuplé pour signaler à Orion qu'un appel `complete_plan` est attendu.
+**Warnings inline :** Si un exec-plan a tous les blocs cochés mais `status: active`, le champ `warning` est peuplé pour signaler au team-lead qu'un appel `complete_plan` est attendu.
 
 ---
 
@@ -105,7 +105,7 @@ Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `ope
 - `plan_file` — chemin relatif à `projectRoot`, ex: `docs/exec-plans/auth-system.md`
 - `block_name` — nom du bloc tel qu'il apparaît dans l'exec-plan, ex: `"Bloc 2: login flow"` ou une sous-chaîne non-ambiguë
 
-**Rôle :** Cocher un bloc spécifique dans un exec-plan (`[ ]` → `[x]`). Orion l'appelle après chaque livraison de sous-tâche validée.
+**Rôle :** Cocher un bloc spécifique dans un exec-plan (`[ ]` → `[x]`). Le team-lead l'appelle après chaque livraison de sous-tâche validée.
 
 **Comportement :**
 
@@ -143,7 +143,7 @@ Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `ope
 **Arguments :**
 - `plan_file` — chemin relatif à `projectRoot`
 
-**Rôle :** Passer le `status` d'un exec-plan de `active` à `completed` dans son frontmatter YAML. Orion l'appelle quand un scope est livré et reviewé.
+**Rôle :** Passer le `status` d'un exec-plan de `active` à `completed` dans son frontmatter YAML. Le team-lead l'appelle quand un scope est livré et reviewé.
 
 **Comportement :**
 
@@ -179,7 +179,7 @@ Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `ope
 - `specFile` — nom de fichier ou chemin relatif à `paths.specs`, ex: `auth.md` ou `docs/specs/auth.md`
 - `title` — titre de la spec, ex: `"Spec : Système d'auth"`
 
-**Rôle :** Initialiser un fichier de spec vide avec frontmatter minimal. Orion ou le harness l'appelle quand une nouvelle spec doit exister sur disque.
+**Rôle :** Initialiser un fichier de spec vide avec frontmatter minimal. Le team-lead ou le harness l'appelle quand une nouvelle spec doit exister sur disque.
 
 **Comportement :**
 
@@ -219,7 +219,7 @@ Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `ope
 
 **Arguments :** aucun
 
-**Rôle :** Scan de consistance transversal — détecter les incohérences entre les artefacts de gestion. Orion l'appelle en début de mission ou le gardener l'utilise dans ses sweeps de maintenance.
+**Rôle :** Scan de consistance transversal — détecter les incohérences entre les artefacts de gestion. Le team-lead l'appelle en début de mission ou le gardener l'utilise dans ses sweeps de maintenance.
 
 **Comportement :**
 
@@ -392,9 +392,9 @@ const paths = {
 
 `@opencode-ai/plugin` est fourni par l'hôte OpenCode — il est toujours présent dans l'environnement d'exécution du plugin. L'ajouter en `dependency` installerait une copie supplémentaire dans `node_modules/opencode-team-lead/`, ce qui violerait la contrainte zero-deps du CI (job `zero-deps` dans `.github/workflows/checks.yml`). En `peerDependency`, on déclare l'attente sans embarquer le package — zéro violation CI, zéro doublon à runtime.
 
-### Permissions Orion
+### Permissions team-lead
 
-Les tools sont déclarés dans `experimental.primary_tools` dans la config team-lead pour qu'Orion les voie en priorité. Les permissions sont ajoutées au `defaultPermission` d'Orion :
+Les tools sont déclarés dans `experimental.primary_tools` dans la config team-lead pour que le team-lead les voie en priorité. Les permissions sont ajoutées au `defaultPermission` du team-lead :
 
 ```js
 const defaultPermission = {
@@ -427,11 +427,11 @@ input.agent["team-lead"] = {
 }
 ```
 
-Cela place les tools lifecycle en tête de la liste des tools disponibles pour Orion, sans exclure les autres.
+Cela place les tools lifecycle en tête de la liste des tools disponibles pour le team-lead, sans exclure les autres.
 
 ---
 
-## 5. Impact sur le workflow Orion
+## 5. Impact sur le workflow du team-lead
 
 ### Quand appeler chaque tool
 
@@ -441,16 +441,16 @@ Cela place les tools lifecycle en tête de la liste des tools disponibles pour O
 | Début de mission | `check_artifacts` | Systématique — détecte les incohérences avant de commencer |
 | Après validation d'une livraison de sous-tâche | `mark_block_done` | Dès qu'un bloc d'un exec-plan est livré et approuvé par le review-manager |
 | Après livraison complète d'un scope | `complete_plan` | Quand tous les blocs sont cochés et le review final est APPROVED |
-| Après écriture d'une nouvelle spec | `register_spec` | Systématique — Orion ou le harness l'appelle dans la même session |
+| Après écriture d'une nouvelle spec | `register_spec` | Systématique — le team-lead ou le harness l'appelle dans la même session |
 | Maintenance périodique | `check_artifacts` | Gardener l'utilise dans ses sweeps |
 
 ### Changements dans `agents/prompt.md`
 
-La section "Outils disponibles" (ou équivalent) d'Orion doit être mise à jour pour documenter les 5 tools et leurs déclencheurs. Points clés à ajouter :
+La section "Outils disponibles" (ou équivalent) du team-lead doit être mise à jour pour documenter les 5 tools et leurs déclencheurs. Points clés à ajouter :
 
 1. **Début de mission** — appeler `project_state` + `check_artifacts` avant toute délégation. Ce n'est pas optionnel.
-2. **Après chaque livraison** — `mark_block_done` est la "fermeture de boucle" d'un bloc. Orion ne doit pas attendre la fin du scope pour le faire.
-3. **Complétion de scope** — `complete_plan` est bloquant tant que des blocs sont non cochés. Le tool l'enforcer lui-même, mais Orion doit comprendre la séquence.
+2. **Après chaque livraison** — `mark_block_done` est la "fermeture de boucle" d'un bloc. Le team-lead ne doit pas attendre la fin du scope pour le faire.
+3. **Complétion de scope** — `complete_plan` est bloquant tant que des blocs sont non cochés. Le tool l'enforcer lui-même, mais le team-lead doit comprendre la séquence.
 4. **Nouvelle spec** — `register_spec` fait partie du workflow de livraison d'une spec, pas une tâche post-hoc.
 
 Exemple de section à ajouter dans `prompt.md` :
@@ -473,10 +473,10 @@ Tu as accès à des tools de bookkeeping directs — pas de délégation, pas de
 
 - **Création d'exec-plans** — c'est le rôle de l'agent `planning`. Les tools lifecycle ne créent pas d'exec-plans.
 - **Création de briefs** — c'est le rôle de l'agent `brainstorm`.
-- **Mise à jour du decision log** — Orion le fait directement dans le fichier exec-plan (via sous-agent si besoin) ; le decision log reste dans l'exec-plan.
+- **Mise à jour du decision log** — Le team-lead le fait directement dans le fichier exec-plan (via sous-agent si besoin) ; le decision log reste dans l'exec-plan.
 - **Suppression d'artefacts** — les tools lifecycle ne suppriment rien.
 - **Validation du contenu** des specs ou briefs — `check_artifacts` vérifie l'existence et la cohérence des références, pas la qualité du contenu.
-- **Sync git** — les tools écrivent sur disque mais ne commitent pas. Le commit reste sous contrôle de l'utilisateur ou d'Orion via ses permissions git.
+- **Sync git** — les tools écrivent sur disque mais ne commitent pas. Le commit reste sous contrôle de l'utilisateur ou du team-lead via ses permissions git.
 - **Support multi-repo / monorepo** — les tools opèrent dans `projectRoot` unique.
 
 ---

@@ -76,7 +76,7 @@ Two possible outcomes per finding:
 | Finding type | Action |
 |---|---|
 | One-time drift | Open a targeted refactoring PR (< 1 min to review) |
-| Recurring pattern (same drift detected in multiple places or across sessions) | Trigger `harness` agent (or report to Orion for user confirmation before triggering) |
+| Recurring pattern (same drift detected in multiple places or across sessions) | Trigger `harness` agent (or report to the team-lead for user confirmation before triggering) |
 
 One-time drift PRs must be:
 - Minimal — touch only what drifted, not the surrounding code
@@ -117,7 +117,7 @@ Keep it concise. This file is a signal, not a report.
 ## Triggering Conditions
 
 Run Gardener:
-- **Post-feature**: Orion suggests it after a significant feature is delivered
+- **Post-feature**: The team-lead suggests it after a significant feature is delivered
 - **Explicit user request**: user asks for a maintenance pass
 - **Autonomous sweep**: Gardener is designed to run as a periodic maintenance agent — once daily orchestration is established, it will run automatically
 

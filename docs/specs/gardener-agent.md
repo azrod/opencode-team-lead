@@ -47,7 +47,7 @@ Le gardener ne recouvre pas le rôle du review-manager (évaluation inline) ni c
 | 2. Lire l'historique | `git log` depuis la dernière feature boundary — commits récents uniquement |
 | 3. Détecter les dérives | Anti-patterns sémantiques/architecturaux non interceptés par lint |
 | 4a. Dérive one-time | Ouvrir une PR de refactoring ciblée (< 1 min de review) |
-| 4b. Pattern récurrent | Déclencher l'agent `harness` (ou signaler à Orion pour confirmation) |
+| 4b. Pattern récurrent | Déclencher l'agent `harness` (ou signaler au team-lead pour confirmation) |
 | 5. Scorer | Mettre à jour `QUALITY_SCORE.md` avec les scores par domaine/couche architecturale |
 
 Note : le gardener ne re-vérifie pas ce que les artefacts harness (lint, CI) vérifient déjà. Il détecte uniquement ce qui n'est pas couvert mécaniquement — drift sémantique, duplication sémantique, cohérence d'abstraction.
@@ -58,7 +58,7 @@ Note : le gardener ne re-vérifie pas ce que les artefacts harness (lint, CI) v�
 
 | Déclencheur | Description |
 |-------------|-------------|
-| Post-feature (Orion) | Orion suggère après des changements de code significatifs |
+| Post-feature (the team-lead) | The team-lead suggère après des changements de code significatifs |
 | Demande explicite | L'utilisateur invoque directement |
 | Daily background sweep | Conçu pour un sweep autonome complet — orchestration périodique TBD |
 
@@ -100,7 +100,7 @@ Note : le gardener ne re-vérifie pas ce que les artefacts harness (lint, CI) v�
 
 | Paramètre | Valeur |
 |-----------|--------|
-| Mode | `all` — invocable par l'utilisateur ET suggéré par Orion |
+| Mode | `all` — invocable par l'utilisateur ET suggéré par le team-lead |
 | Temperature | 0.2 |
 
 ---

@@ -1,6 +1,6 @@
 # opencode-team-lead — Documentation
 
-Plugin OpenCode qui injecte Orion, un orchestrateur team-lead qui planifie, délègue, et ne touche jamais le code directement.
+Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, et ne touche jamais le code directement.
 
 ---
 
@@ -8,7 +8,7 @@ Plugin OpenCode qui injecte Orion, un orchestrateur team-lead qui planifie, dél
 
 | Agent | Mode | Rôle |
 |---|---|---|
-| `team-lead` | all | Orchestrateur principal (Orion) |
+| `team-lead` | all | Orchestrateur principal |
 | `review-manager` | subagent | Orchestre les reviewers en parallèle |
 | `requirements-reviewer` | subagent | Vérifie l'adéquation impl ↔ exigences |
 | `code-reviewer` | subagent | Correctness, logique, maintenabilité |
@@ -32,7 +32,7 @@ Plugin OpenCode qui injecte Orion, un orchestrateur team-lead qui planifie, dél
 
 ## Custom Tools (Lifecycle)
 
-Cinq tools de bookkeeping injectés directement dans OpenCode — accessibles par Orion sans délégation :
+Cinq tools de bookkeeping injectés directement dans OpenCode — accessibles par le team-lead sans délégation :
 
 | Tool | Rôle |
 |---|---|

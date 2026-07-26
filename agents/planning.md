@@ -11,7 +11,7 @@ Produce an exec-plan only when ALL three conditions are true:
 2. AND `AGENTS.md` and `docs/` don't clarify the intent
 3. AND a direct question to the user wouldn't suffice (the ambiguity is structural — the user doesn't yet know what they want, not just missing a clarification)
 
-**If any condition is false**: produce a plan simple (inline, no file written) or tell Orion to proceed directly.
+**If any condition is false**: produce a plan simple (inline, no file written) or tell the team-lead to proceed directly.
 
 For simple, clear tasks — do not invoke planning at all. Proceed directly. For bug reports — use `bug-finder`, not planning.
 
@@ -19,7 +19,7 @@ For simple, clear tasks — do not invoke planning at all. Proceed directly. For
 
 ### Plan Simple
 
-For small, clear tasks. Produced inline as a note to Orion. No file written.
+For small, clear tasks. Produced inline as a note to the team-lead. No file written.
 
 ```markdown
 ## Goal
@@ -62,7 +62,7 @@ updated: {date}
 {Blocking decisions that must be resolved before implementation can start. If empty, implementation can begin.}
 
 ## Decision log
-{Decisions made and their rationale. Orion updates this during implementation. Planning populates it only for decisions made during planning itself.}
+{Decisions made and their rationale. The team-lead updates this during implementation. Planning populates it only for decisions made during planning itself.}
 ```
 
 ## How to Produce a Plan
@@ -96,7 +96,7 @@ If you can't write a concrete criterion, the block is not scoped precisely enoug
 
 Open questions are blocking decisions — things that must be answered before implementation can start, or before a specific block can begin. For each:
 - State the question precisely
-- Identify who can answer it (user, Orion exploring the codebase, etc.)
+- Identify who can answer it (user, the team-lead exploring the codebase, etc.)
 - If the question blocks the entire plan, mark the plan `status: draft` and surface it immediately
 
 An exec-plan with no open questions can start immediately. Don't manufacture fake open questions.
@@ -120,12 +120,12 @@ Use `write` to create `docs/exec-plans/<feature>.md`. The filename should be:
 
 Exec-plans are living artifacts, not one-time documents:
 
-- `draft` — created by planning. Open questions must be resolved before Orion starts.
-- `active` — Orion has started implementation. Orion updates the decision log and checks off blocks as they complete.
-- `completed` — all blocks checked off. Orion updates status to `completed`. Do not delete — it's the record of what was built and why.
+- `draft` — created by planning. Open questions must be resolved before the team-lead starts.
+- `active` — the team-lead has started implementation. The team-lead updates the decision log and checks off blocks as they complete.
+- `completed` — all blocks checked off. The team-lead updates status to `completed`. Do not delete — it's the record of what was built and why.
 
-**Planning only writes at creation.** After that, the exec-plan belongs to Orion.
+**Planning only writes at creation.** After that, the exec-plan belongs to the team-lead.
 
-## Relationship with Orion's Session Tracking
+## Relationship with the Team-Lead's Session Tracking
 
-The exec-plan is the single source of truth for the mission — permanent, versioned in git, shared across all agents. Orion does not duplicate its task list elsewhere; it references the exec-plan file path directly in `todowrite` items and in responses to the user, and updates the exec-plan's decision log and status directly during implementation.
+The exec-plan is the single source of truth for the mission — permanent, versioned in git, shared across all agents. The team-lead does not duplicate its task list elsewhere; it references the exec-plan file path directly in `todowrite` items and in responses to the user, and updates the exec-plan's decision log and status directly during implementation.

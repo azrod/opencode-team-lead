@@ -26,7 +26,7 @@ L'agent `analyst` (spec BMAD-style) aidait les utilisateurs à écrire des PRDs 
 
 **Le pivot** : la question n'est pas "comment écrire de meilleurs documents pour les agents" mais "comment construire un environnement dans lequel les agents peuvent opérer sans cérémonie."
 
-L'agent `harness` analyse un dépôt et génère ce qui manque pour qu'Orion et ses sous-agents opèrent de manière autonome : `AGENTS.md` précis (carte courte, pas manuel), structure `docs/` navigable, lint rules, pre-commit hooks, CI jobs, critères d'acceptance exécutables.
+L'agent `harness` analyse un dépôt et génère ce qui manque pour que le team-lead et ses sous-agents opèrent de manière autonome : `AGENTS.md` précis (carte courte, pas manuel), structure `docs/` navigable, lint rules, pre-commit hooks, CI jobs, critères d'acceptance exécutables.
 
 Un environnement bien structuré élimine le besoin de planification cérémoniaire. Les contraintes mécaniques remplacent les contraintes documentées.
 

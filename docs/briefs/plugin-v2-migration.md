@@ -18,7 +18,7 @@ The plugin migrates to a single V2 default export. All existing capabilities (12
 
 ### Primary
 
-Developers who use `opencode-team-lead` in OpenCode — they invoke the `team-lead` / Orion agent and expect the `spec-writer` skill to be loadable. They are not aware of plugin internals; they just need things to keep working and the skill to stop being silently missing.
+Developers who use `opencode-team-lead` in OpenCode — they invoke the `team-lead` agent and expect the `spec-writer` skill to be loadable. They are not aware of plugin internals; they just need things to keep working and the skill to stop being silently missing.
 
 ### Secondary
 

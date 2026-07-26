@@ -3,9 +3,9 @@ status: implemented
 created: 2025-01-01
 ---
 
-# Orion — Workflow de délégation
+# The team-lead — Workflow de délégation
 
-Décrit le comportement d'Orion une fois les agents `harness` et `planning` implémentés.
+Décrit le comportement du team-lead une fois les agents `harness` et `planning` implémentés.
 
 ---
 
@@ -13,7 +13,7 @@ Décrit le comportement d'Orion une fois les agents `harness` et `planning` impl
 
 | Agent | Rôle | Mode | Spec |
 |-------|------|------|------|
-| `brainstorm` | Phase 0 discovery — aide l'utilisateur à formuler ce qu'il veut construire avant d'engager Orion. Produit un brief dans `docs/briefs/`. | all | — |
+| `brainstorm` | Phase 0 discovery — aide l'utilisateur à formuler ce qu'il veut construire avant d'engager le team-lead. Produit un brief dans `docs/briefs/`. | all | — |
 | `planning` | Compresse une requête ambiguë en brief structuré sur le disque | all | [planning-agent.md](planning-agent.md) |
 | `bug-finder` | Orchestre l'investigation de bugs, force root-cause avant fix | user-facing + sub-agent | — |
 | `review-manager` | Orchestre les reviewers spécialisés en parallèle | sub-agent | — |
@@ -76,7 +76,7 @@ User request
                     ╔══════════════════════════════════╗
                     ║  `harness` — agent de consolidation ║
                     ║  Déclenché à la demande            ║
-                    ║  ou suggéré par Orion post-mission ║
+                     ║  ou suggéré par le team-lead post-mission ║
                     ╚══════════════════════════════════╝
 ```
 
@@ -84,7 +84,7 @@ User request
 
 ## Invocation de `planning`
 
-Orion invoque `planning` seulement si **les trois conditions** sont réunies — voir [`planning-agent.md`](planning-agent.md#critères-dactivation) pour les critères complets.
+The team-lead invoque `planning` seulement si **les trois conditions** sont réunies — voir [`planning-agent.md`](planning-agent.md#critères-dactivation) pour les critères complets.
 
 Résumé :
 1. Requête genuinement ambiguë (plusieurs interprétations plausibles)
@@ -95,7 +95,7 @@ Résumé :
 
 ## Navigation des artefacts projet
 
-Orion lit `AGENTS.md` en premier (< 1 300 tokens, index), puis navigue vers ce qui est pertinent pour la requête courante.
+The team-lead lit `AGENTS.md` en premier (< 1 300 tokens, index), puis navigue vers ce qui est pertinent pour la requête courante.
 
 ```
 AGENTS.md
@@ -108,7 +108,7 @@ AGENTS.md
 
 ---
 
-## Ce qu'Orion ne fait pas
+## Ce que le team-lead ne fait pas
 
 | Interdit | Pourquoi |
 |----------|----------|

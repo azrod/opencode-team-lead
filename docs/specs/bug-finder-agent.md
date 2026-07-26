@@ -29,8 +29,8 @@ Répondre aux 4 questions fondamentales avant d'autoriser un fix :
 |--------|-----------|
 | Utilisateur | Comportement inattendu, régression, crash, ou output incorrect signalé |
 | Utilisateur | "Quelque chose a cessé de fonctionner" sans cause évidente |
-| Utilisateur / Orion | Un fix a été appliqué mais le problème persiste ou s'est déplacé |
-| Orion | Bug détecté — toujours déléguer à `bug-finder` avant tout fix |
+| Utilisateur / the team-lead | Un fix a été appliqué mais le problème persiste ou s'est déplacé |
+| The team-lead | Bug détecté — toujours déléguer à `bug-finder` avant tout fix |
 
 ## Workflow
 
@@ -83,7 +83,7 @@ Retourner un output structuré :
 | `MEDIUM` | Cause probable mais ≥ 1 hypothèse non vérifiée |
 | `UNCERTAINTY_EXPOSED` | Causes multiples plausibles → demander à l'utilisateur avant de continuer |
 
-**Pattern detection :** si la cause révèle un pattern récurrent, le signaler et suggérer à Orion d'invoquer `harness`.
+**Pattern detection :** si la cause révèle un pattern récurrent, le signaler et suggérer au team-lead d'invoquer `harness`.
 
 ## Ce que l'agent ne fait PAS
 
@@ -117,4 +117,4 @@ Retourner un output structuré :
 
 - [Index docs](../index.md)
 - [Spec : Harness](./harness-agent.md) — pattern detection → escalade harness
-- [Spec : Délégation Orion](./orion-delegation.md)
+- [Spec : Délégation team-lead](./team-lead-delegation.md)

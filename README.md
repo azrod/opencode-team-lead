@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/opencode-team-lead)](https://www.npmjs.com/package/opencode-team-lead)
 [![license](https://img.shields.io/npm/l/opencode-team-lead)](https://github.com/azrod/opencode-team-lead/blob/main/LICENSE)
 
-An [OpenCode](https://opencode.ai) plugin that installs **Orion**, a team-lead orchestrator, and a full suite of specialized sub-agents. Orion plans work, delegates everything to sub-agents, reviews results, and reports back. It never reads or writes files directly.
+An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestrator and a full suite of specialized sub-agents. The team-lead plans work, delegates everything to sub-agents, reviews results, and reports back. It never reads or writes files directly.
 
 ## What it does
 
@@ -15,7 +15,7 @@ One hook powers the plugin:
 
 | Agent | Role |
 |-------|------|
-| `team-lead` (Orion) | Pure orchestrator — understands, plans, delegates, reviews, synthesizes. Never touches code. |
+| `team-lead` | Pure orchestrator — understands, plans, delegates, reviews, synthesizes. Never touches code. |
 | `review-manager` | Spawns specialized reviewers in parallel, arbitrates disagreements, returns a single structured verdict |
 | `requirements-reviewer` | Verifies implementation matches the original requirements |
 | `code-reviewer` | Evaluates correctness, logic, error handling, and maintainability |
@@ -26,7 +26,7 @@ One hook powers the plugin:
 | `planning` | Transforms complex or ambiguous requests into structured exec-plans written to disk |
 | `gardener` | Periodic maintenance — fixes stale docs, detects code drift, escalates patterns to harness |
 
-### Orion's workflow
+### The team-lead's workflow
 
 1. **Understand** — asks clarifying questions if the request is ambiguous
 2. **Plan** — breaks work into tasks using `todowrite`
@@ -36,7 +36,7 @@ One hook powers the plugin:
 
 ### Review cluster
 
-`review-manager`, `requirements-reviewer`, `code-reviewer`, and `security-reviewer` work together. Orion delegates to `review-manager`, which selects the relevant reviewers based on what changed, runs them in parallel, and returns a single verdict. None of these agents are visible in the main agent list — they're only reachable via `task`.
+`review-manager`, `requirements-reviewer`, `code-reviewer`, and `security-reviewer` work together. The team-lead delegates to `review-manager`, which selects the relevant reviewers based on what changed, runs them in parallel, and returns a single verdict. None of these agents are visible in the main agent list — they're only reachable via `task`.
 
 ### bug-finder
 
@@ -44,7 +44,7 @@ Enforces a structured investigation workflow: frames the symptom vs. root cause,
 
 ### brainstorm
 
-Run before Orion when you have a vague idea. Runs a 3-phase conversational flow (discovery → deep dive → draft) and produces a product brief at `docs/briefs/{project-name}.md`. Hand it to `planning` or directly to Orion as mission input.
+Run before the team-lead when you have a vague idea. Runs a 3-phase conversational flow (discovery → deep dive → draft) and produces a product brief at `docs/briefs/{project-name}.md`. Hand it to `planning` or directly to the team-lead as mission input.
 
 ### harness
 
@@ -52,7 +52,7 @@ When a pattern recurs (a mistake that keeps happening, a convention that keeps b
 
 ### planning
 
-Takes a complex or ambiguous request and writes a structured exec-plan to `docs/exec-plans/`. Useful before handing a large task to Orion, or when you want a reviewable plan before any work starts.
+Takes a complex or ambiguous request and writes a structured exec-plan to `docs/exec-plans/`. Useful before handing a large task to the team-lead, or when you want a reviewable plan before any work starts.
 
 ### gardener
 
@@ -78,9 +78,9 @@ Restart OpenCode — the plugin loads and registers all agents automatically.
 
 ## Lifecycle Tools
 
-Orion has direct access to five bookkeeping tools that enforce consistency at zero LLM cost — no delegation, no sub-agent:
+The team-lead has direct access to five bookkeeping tools that enforce consistency at zero LLM cost — no delegation, no sub-agent:
 
-| Tool | When Orion calls it |
+| Tool | When the team-lead calls it |
 |------|---------------------|
 | `project_state()` | At the start of every mission — full view of exec-plans, specs, and briefs |
 | `check_artifacts()` | At mission start and after completing each scope — cross-artifact consistency scan |
@@ -88,7 +88,7 @@ Orion has direct access to five bookkeeping tools that enforce consistency at ze
 | `complete_plan(plan)` | When all blocks are checked and the final review is APPROVED |
 | `register_spec(file, title)` | When a new spec needs to exist on disk |
 
-These are not visible in the OpenCode UI. They run automatically as part of Orion's internal workflow.
+These are not visible in the OpenCode UI. They run automatically as part of the team-lead's internal workflow.
 
 ## Permissions
 

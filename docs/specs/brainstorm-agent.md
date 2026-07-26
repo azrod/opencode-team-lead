@@ -23,7 +23,7 @@ Transformer une intention floue en product brief structuré, via un dialogue en 
 | Source | Condition |
 |--------|-----------|
 | Utilisateur (direct) | Avant de savoir précisément quoi construire |
-| Orion | Demande très vague — vision à clarifier avant que `planning` soit utile |
+| The team-lead | Demande très vague — vision à clarifier avant que `planning` soit utile |
 
 ## Workflow
 
@@ -150,7 +150,7 @@ Exécuté avant d'écrire le fichier.
 
 | Paramètre | Valeur |
 |-----------|--------|
-| `mode` | `all` — invocable directement ET par Orion |
+| `mode` | `all` — invocable directement ET par le team-lead |
 | `temperature` | 0.5 |
 | `variant` | `max` |
 | `color` | `info` |

@@ -12,7 +12,7 @@ created: 2026-04-20
 
 External knowledge retrieval agent. Fetches information from the web, public APIs, and online documentation during the understanding phase — before planning begins.
 
-> *"Orion asks questions. Researcher finds answers outside the codebase."*
+> *"The team-lead asks questions. Researcher finds answers outside the codebase."*
 
 ---
 
@@ -32,7 +32,7 @@ Bridge the gap between what's in the project and what's documented externally. R
 | `researcher` | External knowledge retrieval (docs, RFCs, standards, examples) | Synthesized findings with citations |
 | `planning` | Execution plan creation from gathered context | Exec-plan on disk |
 
-Researcher operates **before** planning — Orion delegates research tasks when external context is needed to inform the plan.
+Researcher operates **before** planning — the team-lead delegates research tasks when external context is needed to inform the plan.
 
 ---
 
@@ -40,9 +40,9 @@ Researcher operates **before** planning — Orion delegates research tasks when 
 
 | Source | Condition |
 |--------|-----------|
-| Orion | Needs external context before planning (best practices, API docs, RFC standards) |
-| Orion | Technical decision requires validation against official documentation |
-| Orion | Implementation approach needs comparison with public examples |
+| The team-lead | Needs external context before planning (best practices, API docs, RFC standards) |
+| The team-lead | Technical decision requires validation against official documentation |
+| The team-lead | Implementation approach needs comparison with public examples |
 | User (direct) | Explicit research request ("what's the current best practice for X?") |
 
 **Not triggered for:**
@@ -138,7 +138,7 @@ Return structured output:
 
 | Parameter | Value |
 |-----------|-------|
-| `mode` | `all` — invocable by user AND Orion |
+| `mode` | `all` — invocable by user AND the team-lead |
 | `temperature` | 0.3 — factual retrieval, minimal creativity |
 | `variant` | `extended` — may need larger context for long docs |
 | `color` | `info` |
@@ -147,7 +147,7 @@ Return structured output:
 
 ## Output Format
 
-Structured markdown returned to Orion or user:
+Structured markdown returned to the team-lead or user:
 
 ```markdown
 ## Research Summary
@@ -182,7 +182,7 @@ Structured markdown returned to Orion or user:
 
 | Anti-Pattern | Why It's Wrong |
 |--------------|----------------|
-| Dumping raw HTML or JSON responses | Orion needs synthesis, not raw data |
+| Dumping raw HTML or JSON responses | The team-lead needs synthesis, not raw data |
 | Citing sources without context | "See link" is useless — explain what the link says |
 | Implementing solutions based on findings | Research informs, doesn't execute |
 | Reading internal project files to answer questions | Use `explore` for internal context |
@@ -224,8 +224,8 @@ If the project contains secrets that must never leave the machine, **do not use 
 
 | Handoff | Direction |
 |---------|-----------|
-| Orion → researcher | "What's the current best practice for X?" |
-| researcher → Orion | Structured findings, Orion incorporates into plan |
+| The team-lead → researcher | "What's the current best practice for X?" |
+| researcher → the team-lead | Structured findings, the team-lead incorporates into plan |
 | planning | May reference researcher's findings in decision log |
 | harness | Researcher findings may inform mechanical rules |
 
@@ -236,6 +236,6 @@ If the project contains secrets that must never leave the machine, **do not use 
 ## Links
 
 - [Index docs](../index.md)
-- [Spec: Orion delegation](./orion-delegation.md)
+- [Spec: team-lead delegation](./team-lead-delegation.md)
 - [Spec: Planning](./planning-agent.md)
 - [Decisions](../decisions.md)

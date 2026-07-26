@@ -10,10 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Documentation portal (`website/`) — VitePress static site with marketing homepage, per-agent pages, lifecycle tools reference, architecture, decisions, principles, and changelog. Deployed automatically to GitHub Pages on push to `main`.
 - Documentation website now generates LLM-friendly artifacts (`llms.txt`, `llms-full.txt`, per-page `.md` files) via `vitepress-plugin-llms`, making the docs easily ingested by AI agents.
-- Orion now proactively suggests the `gardener` agent after scope delivery, before releases, and when multiple doc files were touched in a session — rather than waiting for the user to ask. A dedicated Gardener Protocol section defines the triggers, rules, and how to handle its results (including escalation to `harness` when recurring patterns are detected).
+- The team-lead now proactively suggests the `gardener` agent after scope delivery, before releases, and when multiple doc files were touched in a session — rather than waiting for the user to ask. A dedicated Gardener Protocol section defines the triggers, rules, and how to handle its results (including escalation to `harness` when recurring patterns are detected).
 
 ### Changed
-- Orion's context management instructions now reference only `compress` — `distill` and `prune` were removed since they don't exist in OpenCode's toolset.
+- The team-lead's context management instructions now reference only `compress` — `distill` and `prune` were removed since they don't exist in OpenCode's toolset.
 - Reviewer agents (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) now access files directly via `read`, `glob`, and `grep` — sub-agent spawning is blocked by the default `"*": "deny"` rule.
 - The `review-manager` now accesses files directly via `read`, `glob`, and `grep` instead of delegating to an `explore` sub-agent. Its `task` permission is constrained to `*-reviewer` agents only.
 - The `bug-finder` agent now investigates directly via `read`, `glob`, and `grep` — sub-agent delegation via `task` has been removed. The agent reports its findings back to the caller instead of applying fixes itself.
@@ -29,12 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - New `researcher` agent for external knowledge research — fetches and synthesizes information from the web, official docs, APIs, and public sources during the comprehension phase (before planning)
-- New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before Orion to produce a structured product brief at `docs/briefs/{project-name}.md`.
-- New `harness` agent — encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI workflows, AGENTS.md entries, guiding principles). Triggered by the user, Orion post-feature, or the Gardener on recurring drift.
+- New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before the team-lead to produce a structured product brief at `docs/briefs/{project-name}.md`.
+- New `harness` agent — encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI workflows, AGENTS.md entries, guiding principles). Triggered by the user, the team-lead post-feature, or the Gardener on recurring drift.
 - New `planning` agent — transforms complex or ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Returns inline plan simples for small tasks; full exec-plans for multi-session work.
 - New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Opens targeted PRs; updates `QUALITY_SCORE.md`; escalates recurring patterns to `harness`.
-- Orion now knows when to invoke `planning` (complex/ambiguous requests) and when to suggest `harness` post-delivery (recurring patterns).
-- Five lifecycle tools now available directly to Orion — no delegation needed for project bookkeeping: `project_state` (full artifact inventory), `check_artifacts` (consistency scan), `mark_block_done` (check a block in an exec-plan), `complete_plan` (close a scope), and `register_spec` (create a new spec file). Orion calls these at mission start and after each delivery automatically.
+- The team-lead now knows when to invoke `planning` (complex/ambiguous requests) and when to suggest `harness` post-delivery (recurring patterns).
+- Five lifecycle tools now available directly to the team-lead — no delegation needed for project bookkeeping: `project_state` (full artifact inventory), `check_artifacts` (consistency scan), `mark_block_done` (check a block in an exec-plan), `complete_plan` (close a scope), and `register_spec` (create a new spec file). The team-lead calls these at mission start and after each delivery automatically.
 - Exec-plans now support an optional `brief:` frontmatter field to trace the brainstorm → implementation link bidirectionally.
 
 ### Changed
@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `brainstorm` agent now hard-blocks on incomplete briefs — if the Problem statement, Success Criteria, or Scope In are missing or unresolved, the brief won't be drafted until those gaps are closed. Cosmetic disagreements are noted as open questions; substantive ones block the output entirely.
 - Scope inflation is now flagged throughout the brainstorm session — if the in-scope list grows to 5 or more items, the agent surfaces it once and asks what's truly essential.
 - Harness now operates fully autonomously — it explores the codebase, decides what to encode, and acts without asking for confirmation at each step. It only stops in three explicit cases: the pattern can't be mechanized, encoding requires creating a new workflow file, or the trigger is too vague with no codebase signal to anchor it.
-- The soul personality layer now applies to all agents with `mode: "all"` (brainstorm, planning, bug-finder, harness, gardener) — previously only Orion benefited from it
+- The soul personality layer now applies to all agents with `mode: "all"` (brainstorm, planning, bug-finder, harness, gardener) — previously only the team-lead benefited from it
 - The `bug-finder` agent now includes a pattern assessment in every output — flags whether the bug is a systemic pattern and recommends invoking `harness` when the root cause can be mechanically encoded
 - The `review-manager` can now read any file directly — it no longer needs to spawn an `explore` sub-agent to read source files before reviewing
 
@@ -64,10 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `bug-finder` agent — a structured bug investigation orchestrator that forces root-cause analysis before any fix is applied. Prevents Orion from rushing to workarounds that mask symptoms and create code divergence.
-- Persistent memory across sessions — Orion now maintains `.opencode/memory.md`, a project-level knowledge base that accumulates architecture decisions, conventions, and user preferences. The plugin injects it automatically into every session via `experimental.chat.system.transform`, so it's available from the first message without any tool call.
+- New `bug-finder` agent — a structured bug investigation orchestrator that forces root-cause analysis before any fix is applied. Prevents the team-lead from rushing to workarounds that mask symptoms and create code divergence.
+- Persistent memory across sessions — the team-lead now maintains `.opencode/memory.md`, a project-level knowledge base that accumulates architecture decisions, conventions, and user preferences. The plugin injects it automatically into every session via `experimental.chat.system.transform`, so it's available from the first message without any tool call.
 - The default soul directives are now in English — previously the built-in personality guidelines were in French, which was unexpected for non-French speakers. Disable with `soul: false` if you prefer a neutral voice.
-- Orion now prefers registered user-defined agents over invented personas — when a project defines domain-specific agents (e.g., `languages/typescript-pro`, `mcp/mcp-developer`, `web/react-specialist`), Orion selects them instead of defaulting to a `general` + invented persona name
+- The team-lead now prefers registered user-defined agents over invented personas — when a project defines domain-specific agents (e.g., `languages/typescript-pro`, `mcp/mcp-developer`, `web/react-specialist`), the team-lead selects them instead of defaulting to a `general` + invented persona name
 
 ### Changed
 
@@ -94,18 +94,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Three specialized reviewer agents are now included: `requirements-reviewer`, `code-reviewer`, and `security-reviewer` — the review-manager spawns them automatically based on change type and risk level (size × risk axes), and always runs `requirements-reviewer` on non-trivial reviews; high-risk patterns (auth, SQL, crypto, secrets) force `security-reviewer` regardless of change size
-- Orion can now embody a personality — embed your tone and communication directives in the plugin and Orion applies them automatically in every session. Disable with `soul: false` in your `opencode.json` agent config if you prefer a neutral voice.
+- The team-lead can now embody a personality — embed your tone and communication directives in the plugin and the team-lead applies them automatically in every session. Disable with `soul: false` in your `opencode.json` agent config if you prefer a neutral voice.
 
 ### Fixed
 
 - Overriding a permission key in `opencode.json` no longer silently drops the plugin defaults for that key — your custom permissions are now merged on top instead of replacing the entire group
-- In-flight delegations are now tracked in the scratchpad with their `task_id` — if compaction hits while a delegation is running, Orion can resume without losing track of what was dispatched
+- In-flight delegations are now tracked in the scratchpad with their `task_id` — if compaction hits while a delegation is running, the team-lead can resume without losing track of what was dispatched
 - Adding the `requirements-reviewer` no longer reduces technical review coverage — functional and technical reviews now run in full, independently
 
 ## [0.6.2] - 2026-03-19
 
 ### Changed
-- The team-lead agent now has a name — meet **Orion**. Referenced as Orion throughout the system prompt and documentation.
+- The team-lead agent was given the name **Orion** — referenced throughout the system prompt and documentation (since removed).
 
 ## [0.6.1] - 2026-03-13
 

@@ -10,7 +10,7 @@ created: 2026-04-01
 
 ## Résumé
 
-Spec de l'agent `planning` — producteur de contrats de travail. S'adresse aux contributeurs du plugin et à Orion.
+Spec de l'agent `planning` — producteur de contrats de travail. S'adresse aux contributeurs du plugin et au team-lead.
 
 ---
 
@@ -28,7 +28,7 @@ Le plan n'est pas un outil de clarification. C'est un contrat qui définit **quo
 
 ### Plan simple
 
-Pour les tâches petites et claires. Orion peut le produire lui-même sans invoquer l'agent.
+Pour les tâches petites et claires. Le team-lead peut le produire lui-même sans invoquer l'agent.
 
 ```markdown
 ## Goal
@@ -68,7 +68,7 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 {Décisions bloquantes à résoudre avant d'agir — si vide, on peut commencer}
 
 ## Decision log
-{Décisions prises + rationale — mis à jour par Orion pendant l'implémentation}
+{Décisions prises + rationale — mis à jour par le team-lead pendant l'implémentation}
 ```
 
 ---
@@ -97,10 +97,10 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 
 | Situation | Action |
 |-----------|--------|
-| Tâche complexe ou multi-session | Orion invoque `planning` → exec-plan |
-| Tâche ambiguë (plusieurs interprétations) | Orion invoque `planning` → exec-plan |
+| Tâche complexe ou multi-session | The team-lead invoque `planning` → exec-plan |
+| Tâche ambiguë (plusieurs interprétations) | The team-lead invoque `planning` → exec-plan |
 | Invocation directe par l'utilisateur | Exec-plan |
-| Tâche simple et claire | Orion procède directement (plan simple inline si besoin) |
+| Tâche simple et claire | The team-lead procède directement (plan simple inline si besoin) |
 | Bug identifié | `bug-finder`, pas `planning` |
 
 ---
@@ -110,7 +110,7 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 | Type | Chemin | Usage |
 |------|--------|-------|
 | Exec-plan | `docs/exec-plans/<feature>.md` | Tâches complexes / multi-sessions |
-| Plan simple | Inline dans la réponse d'Orion / todowrite | Tâches simples — pas de fichier dédié |
+| Plan simple | Inline dans la réponse du team-lead / todowrite | Tâches simples — pas de fichier dédié |
 
 Les exec-plans complétés restent dans `docs/exec-plans/` avec `status: completed` — ils servent de référence historique pour les agents futurs.
 
@@ -119,10 +119,10 @@ Les exec-plans complétés restent dans `docs/exec-plans/` avec `status: complet
 ## Cycle de vie d'un exec-plan
 
 1. **draft** — produit par `planning`, pas encore validé
-2. **active** — Orion démarre l'implémentation, met à jour le decision log au fil du travail
+2. **active** — Le team-lead démarre l'implémentation, met à jour le decision log au fil du travail
 3. **completed** — tous les blocs cochés, plan archivé (status: completed, ne pas supprimer)
 
-Orion est responsable de la mise à jour du decision log et du status pendant l'implémentation. L'agent `planning` ne modifie le plan qu'à sa création.
+Le team-lead est responsable de la mise à jour du decision log et du status pendant l'implémentation. L'agent `planning` ne modifie le plan qu'à sa création.
 
 ---
 
@@ -144,15 +144,15 @@ Orion est responsable de la mise à jour du decision log et du status pendant l'
 
 | Paramètre | Valeur |
 |-----------|--------|
-| `mode` | `all` — invocable directement par l'utilisateur ET par Orion |
+| `mode` | `all` — invocable directement par l'utilisateur ET par le team-lead |
 | `temperature` | 0.3 |
 | `variant` | `max` |
 
 ---
 
-## Relation avec le suivi de session d'Orion
+## Relation avec le suivi de session du team-lead
 
-L'exec-plan est la source de vérité unique pour la mission — permanent, versionné dans git, partagé par tous les agents. Orion ne duplique pas sa liste de tâches ailleurs : il référence le chemin du fichier exec-plan directement dans ses items `todowrite` et dans ses réponses à l'utilisateur, et met à jour le decision log et le status directement dans le fichier exec-plan pendant l'implémentation.
+L'exec-plan est la source de vérité unique pour la mission — permanent, versionné dans git, partagé par tous les agents. Le team-lead ne duplique pas sa liste de tâches ailleurs : il référence le chemin du fichier exec-plan directement dans ses items `todowrite` et dans ses réponses à l'utilisateur, et met à jour le decision log et le status directement dans le fichier exec-plan pendant l'implémentation.
 
 ---
 

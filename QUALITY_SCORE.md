@@ -172,11 +172,11 @@ GitHub Pages must be configured with source set to **"GitHub Actions"** in repo 
   La spec décrit un workflow de délégation via `task` (phases 2 et 4) et liste `task: allow` dans ses permissions. Réalité dans `index.js` : pas de `task`, uniquement `read`, `glob`, `grep`. Ambiguïté : régression du code, ou décision intentionnelle non reflétée dans la spec ?
   → **Décision humaine requise** avant correction.
 
-  **[STALE — FAUX] `docs/specs/orion-delegation.md` — mode `planning`**
+  **[STALE — FAUX] `docs/specs/team-lead-delegation.md` — mode `planning`**
   Ligne 12 : `planning | sub-agent`. Réalité `index.js` : `mode: "all"`.
 
   **[POSSIBLE DÉRIVE] `index.js` permissions `distill`/`prune` vs CHANGELOG Unreleased**
-  CHANGELOG Unreleased : *"Orion's context management instructions now reference only `compress` — `distill` and `prune` were removed."*
+  CHANGELOG Unreleased : *"The team-lead's context management instructions now reference only `compress` — `distill` and `prune` were removed."*
   `index.js` lignes 508-510 : `distill: "allow"`, `prune: "allow"`, `compress: "allow"` toujours présents.
   Si `distill` et `prune` n'existent plus dans OpenCode, ces permissions sont mortes mais inoffensives.
   → **Décision humaine requise** : enlever les permissions ou revenir en arrière sur le CHANGELOG.
@@ -210,7 +210,7 @@ GitHub Pages must be configured with source set to **"GitHub Actions"** in repo 
 - **Findings:**
   Sur 12 specs dans `docs/specs/`, une seule (`lifecycle-tools.md`) a un frontmatter YAML complet. Les autres ont leurs métadonnées (`status`, `created`) uniquement en prose Markdown. Résultat : `project_state` retourne `undefined` pour `status` et `created` sur 11/12 specs, et `check_artifacts` ne peut pas détecter les specs stale-draft.
   
-  Specs actives concernées : `brainstorm-agent.md`, `bug-finder-agent.md`, `harness-agent.md`, `planning-agent.md`, `gardener-agent.md`, `review-cluster.md`, `review-manager-mechanical-checks.md`, `orion-delegation.md`, `researcher-agent.md`.
+  Specs actives concernées : `brainstorm-agent.md`, `bug-finder-agent.md`, `harness-agent.md`, `planning-agent.md`, `gardener-agent.md`, `review-cluster.md`, `review-manager-mechanical-checks.md`, `team-lead-delegation.md`, `researcher-agent.md`.
   
   Specs archivées (ne nécessitent pas de frontmatter) : `analyst-agent.md` (abandonné), `environment-agent.md` (redirect).
   
@@ -268,7 +268,7 @@ Réécrire la table avec les vraies permissions de `index.js` :
 ### PR-C — `docs: fix planning mode and reviewer permissions in specs`
 
 **Fichiers :**
-- `docs/specs/orion-delegation.md` ligne 12 : `sub-agent` → `all` pour `planning`
+- `docs/specs/team-lead-delegation.md` ligne 12 : `sub-agent` → `all` pour `planning`
 - `docs/specs/review-cluster.md` lignes 192-193 et table permissions : supprimer `task: allow` pour les reviewers, ajouter `read`, `glob`, `grep`
 
 ### PR-D — `docs: add YAML frontmatter to active specs`
@@ -283,7 +283,7 @@ created: YYYY-MM-DD   # date visible dans le fichier en prose
 ---
 ```
 
-Specs concernées (9) : `brainstorm-agent.md`, `bug-finder-agent.md`, `harness-agent.md`, `planning-agent.md`, `gardener-agent.md`, `review-cluster.md`, `review-manager-mechanical-checks.md`, `orion-delegation.md`, `researcher-agent.md`.
+Specs concernées (9) : `brainstorm-agent.md`, `bug-finder-agent.md`, `harness-agent.md`, `planning-agent.md`, `gardener-agent.md`, `review-cluster.md`, `review-manager-mechanical-checks.md`, `team-lead-delegation.md`, `researcher-agent.md`.
 
 ---
 
@@ -297,7 +297,7 @@ Options :
 - **A)** Le code est intentionnel (le bug-finder enquête directement) → mettre à jour la spec et le prompt pour refléter ce comportement. C'est la cohérence avec `review-cluster` (les reviewers lisent directement aussi).
 - **B)** La spec est l'intention cible et le code a régressé → remettre `task` dans les permissions.
 
-### D2 — permissions `distill`/`prune` mortes dans Orion
+### D2 — permissions `distill`/`prune` mortes dans le team-lead
 
 CHANGELOG Unreleased dit qu'elles ont été retirées du prompt. Les permissions restent dans `index.js`. Si `distill` et `prune` n'existent plus dans l'API OpenCode, les enlever des permissions nettoie la config. Si elles existent encore mais ne sont juste plus mentionnées dans le prompt, c'est moins urgent.
 

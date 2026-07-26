@@ -145,7 +145,7 @@ Mechanically encodable: YES | NO → [what artifact would catch it: lint rule / 
 
 **Flag as `Mechanically encodable: YES` only when** the cause can be expressed as a mechanical check (lint rule, test, CI check). Complex business logic errors are NOT encodable — don't flag them.
 
-**When `Pattern: YES` and `Mechanically encodable: YES`** — explicitly recommend that Orion invoke the `harness` agent after the fix is applied to encode the check.
+**When `Pattern: YES` and `Mechanically encodable: YES`** — explicitly recommend that the team-lead invoke the `harness` agent after the fix is applied to encode the check.
 
 ## When to Use `question`
 

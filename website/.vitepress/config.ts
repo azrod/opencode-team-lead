@@ -63,7 +63,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           { text: "Overview", link: "/agents/" },
-          { text: "team-lead — Orchestrator", link: "/agents/orion" },
+          { text: "team-lead — Orchestrator", link: "/agents/team-lead" },
           { text: "Review Cluster", link: "/agents/review-cluster" },
           { text: "Brainstorm", link: "/agents/brainstorm" },
           { text: "Bug-Finder", link: "/agents/bug-finder" },

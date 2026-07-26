@@ -85,7 +85,7 @@ team-lead-workflow/
 
 Two views navigable via a CTA button:
 
-1. **Intro screen** — presents Orion (concept & philosophy, memory management, available agents, typical use cases). Has a FR/EN language toggle (default EN).
+1. **Intro screen** — presents the team-lead agent (concept & philosophy, memory management, available agents, typical use cases). Has a FR/EN language toggle (default EN).
 2. **Flowchart view** — interactive SVG diagram of the 5-phase workflow (Understand → Plan → Delegate → Review → Synthesize) with a detail panel on the right. Also supports FR/EN.
 
 ### How to update the site
@@ -336,4 +336,4 @@ npm test
 ## References
 
 - [Building effective agents](https://www.anthropic.com/research/building-effective-agents) — Anthropic's foundational post on multi-agent system design. The orchestrator/subagent pattern and delegation-only architecture of this plugin are grounded in its principles.
-- [Harness design for long-running application development](https://www.anthropic.com/engineering/harness-design-long-running-apps) — Covers the generator/evaluator multi-agent pattern for autonomous long-running builds. Useful reference for understanding why the review-manager is a separate agent rather than inline logic in Orion, and why evaluator prompts require iterative calibration.
+- [Harness design for long-running application development](https://www.anthropic.com/engineering/harness-design-long-running-apps) — Covers the generator/evaluator multi-agent pattern for autonomous long-running builds. Useful reference for understanding why the review-manager is a separate agent rather than inline logic in the team-lead, and why evaluator prompts require iterative calibration.

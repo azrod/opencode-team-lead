@@ -13,17 +13,17 @@ Example:
 > External knowledge retrieval agent. Fetches information from the web, public APIs, and online documentation during the understanding phase — before planning begins.
 
 Optional: Add a memorable one-line quote that crystallizes the agent's identity:
-> *"Orion asks questions. Researcher finds answers outside the codebase."*
+> *"The team-lead asks questions. Researcher finds answers outside the codebase."*
 
 ---
 
 ## When to Use / Triggers
 
-[Decision table or bullet list showing when Orion or the user should invoke this agent]
+[Decision table or bullet list showing when the team-lead or the user should invoke this agent]
 
 | Source | Condition |
 |--------|-----------|
-| Orion | [When Orion delegates to this agent] |
+| The team-lead | [When the team-lead delegates to this agent] |
 | User (direct) | [When user invokes directly] |
 
 **Not triggered for:**
@@ -107,7 +107,7 @@ Deliverable: [What this phase produces]
 
 [Show the structure of what the agent returns. Use markdown code blocks for templates.]
 
-Structured markdown returned to Orion or user:
+Structured markdown returned to the team-lead or user:
 
 ```markdown
 ## {Section Title}
@@ -186,8 +186,8 @@ Mitigation:
 
 | Handoff | Direction |
 |---------|-----------|
-| Orion → `{this-agent}` | [Trigger condition] |
-| `{this-agent}` → Orion | [What gets returned] |
+| The team-lead → `{this-agent}` | [Trigger condition] |
+| `{this-agent}` → the team-lead | [What gets returned] |
 | `{this-agent}` → `{other-agent}` | [Delegation scenario] |
 | `{other-agent}` → `{this-agent}` | [When this agent is invoked by another] |
 

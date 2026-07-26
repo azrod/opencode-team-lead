@@ -17,7 +17,7 @@ Cluster de 4 agents qui analyse les changements selon trois dimensions orthogona
 ## Architecture du cluster
 
 ```
-Orion
+The team-lead
   └── review-manager          (orchestrateur — mode: subagent)
         ├── requirements-reviewer   (conformité fonctionnelle)
         ├── code-reviewer           (correctness, maintenabilité)
@@ -26,7 +26,7 @@ Orion
 
 | Agent | Rôle | Spawné par |
 |---|---|---|
-| `review-manager` | Sélectionne les reviewers, lance en parallèle, arbitre les verdicts | Orion |
+| `review-manager` | Sélectionne les reviewers, lance en parallèle, arbitre les verdicts | the team-lead |
 | `requirements-reviewer` | Vérifie que l'implémentation couvre les requirements originaux | `review-manager` |
 | `code-reviewer` | Vérifie la correction logique, les contrats d'API, la maintenabilité | `review-manager` |
 | `security-reviewer` | Identifie les vulnérabilités et mauvaises configurations | `review-manager` |
@@ -227,5 +227,5 @@ Chaque reviewer produit un verdict individuel : `APPROVED`, `CHANGES_REQUESTED`,
 ## Liens
 
 - [Index docs](../index.md)
-- [Spec : Délégation Orion](./orion-delegation.md)
+- [Spec : Délégation team-lead](./team-lead-delegation.md)
 - [Spec : Planning](./planning-agent.md)

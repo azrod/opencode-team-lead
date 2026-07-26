@@ -10,7 +10,7 @@ created: 2026-04-03
 
 ## Résumé
 
-Spec de l'agent `harness` — encodeur progressif de contraintes. S'adresse aux contributeurs du plugin et à Orion.
+Spec de l'agent `harness` — encodeur progressif de contraintes. S'adresse aux contributeurs du plugin et au team-lead.
 
 ---
 
@@ -29,7 +29,7 @@ Ce n'est **pas** un agent de setup one-shot. Il n'entre en jeu qu'une fois qu'un
 | Source | Condition |
 |--------|-----------|
 | Utilisateur | Invocation directe |
-| Orion | Suggestion post-feature quand des patterns récurrents ont émergé, suite à une prise de décision architecturale ou un bug récurrent |
+| The team-lead | Suggestion post-feature quand des patterns récurrents ont émergé, suite à une prise de décision architecturale ou un bug récurrent |
 | Gardener | Déclenchement automatique : pattern récurrent détecté (≠ drift one-time) |
 
 Une fois les artefacts produits, ils s'exécutent de façon autonome tout au long de la chaîne de dev (dev local, code review, PR, CI, git hooks) — le harness n'a pas besoin d'être rappelé pour que les règles soient appliquées.
@@ -95,7 +95,7 @@ Règle : si ça peut être vérifié mécaniquement → lint ou CI. Jamais un do
 
 - Ne réécrit pas le code existant (→ gardener)
 - Ne crée pas de règles subjectives ou non-vérifiables mécaniquement
-- Ne fait pas de setup from scratch (→ rôle initial d'Orion)
+- Ne fait pas de setup from scratch (→ rôle initial du team-lead)
 - N'ouvre pas de PR sans avoir testé la règle
 - Ne re-vérifie pas les artefacts existants — leur exécution est assurée par la chaîne de dev
 - N'écrit pas de checklists humaines dans `AGENTS.md` — AGENTS.md est exclusivement pour les règles de navigation et délégation agentique. Les règles opérationnelles humaines vont en CI si automatisables, en `docs/guiding-principles.md` sinon.

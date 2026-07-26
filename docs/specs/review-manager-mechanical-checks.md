@@ -231,6 +231,6 @@ Si un check (avant correction) a produit des warnings non-bloquants sur des fich
 ## Liens
 
 - [Spec : Cluster review](./review-cluster.md)
-- [Spec : Délégation Orion](./orion-delegation.md)
+- [Spec : Délégation team-lead](./team-lead-delegation.md)
 - [Prompt review-manager](../../agents/review-manager.md)
 - [Index docs](../index.md)
