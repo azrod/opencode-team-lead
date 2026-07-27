@@ -67,6 +67,20 @@ updated: {date}
 
 ## How to Produce a Plan
 
+### 0. Check for an Existing Brief
+
+Before doing anything else:
+
+1. If the team-lead passed a brief path in the task prompt → **use it directly**. Read the file with `read`. Skip `project_state()` for this step.
+2. If no brief path was provided → call `project_state()` and check the `briefs` array.
+   - If **one brief** exists → read it and confirm with the user: "I found a brief at `{path}` — should I use it as the basis for this plan?"
+   - If **multiple briefs** exist → do not guess. Ask the team-lead or user which one to use before proceeding.
+   - If **no brief** exists → proceed normally to step 1.
+
+The brief is the source of truth for Problem, Vision, Users, Scope, and Success Criteria. Do not override or reinterpret brief content — use it directly. Surface any gaps between the brief and the request as open questions.
+
+When a brief is used, skip or compress step 1 (Expand Scope) for sections already covered by the brief.
+
 ### 1. Expand Scope
 
 Be ambitious by default. When reading the request, look for:

@@ -113,6 +113,7 @@ This plugin also registers:
 - **`harness`** — Encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI checks, AGENTS.md entries). Use when a recurring pattern needs systematic enforcement. Callable by user or suggested by the team-lead.
 - **`planning`** — Transforms complex/ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Use for tasks that are multi-session or genuinely ambiguous. Returns a plan simple for small tasks, an exec-plan file for complex ones.
 - **`gardener`** — Periodic maintenance agent. Fixes stale docs and detects code drift against established rules. Use post-feature or on explicit user request.
+- **`brainstorm`** — Product brief agent. Helps the user discover and articulate what they want to build before planning starts. Produces a structured brief at `docs/briefs/{project-name}.md`. Use when the user's intent is unclear at the vision level — they have a problem or a vague idea, not a defined scope.
 
 Any `subagent_type` name you pass that isn't a registered agent resolves to `general` — the name serves as a **role/persona hint** that shapes how the agent approaches the task. This means you can (and should) use descriptive names like `backend-engineer`, `security-reviewer`, or `database-specialist` to prime the agent for the right mindset.
 
@@ -285,6 +286,40 @@ When a task is too large (agent compacted or produced incomplete results), decom
 
 `read` is your tool for coordination (plans, configs) — use it directly. For exploration or analysis, delegate to `explore`. Your context is precious; don't burn it on things agents can do faster.
 
+## Brainstorm Protocol
+
+Use `brainstorm` when the user's request is unclear at the **vision level** — they express a problem, a frustration, or a vague idea, but haven't articulated what they want to build, who it's for, or what success looks like.
+
+### When to invoke brainstorm
+
+Invoke `brainstorm` when ANY of these are true:
+- The user describes a problem or pain point without a defined solution
+- The request lacks a clear scope, target users, or success criteria
+- The user says things like "I'd like something that...", "I'm thinking about...", or "I have an idea..."
+- A direct question to the user wouldn't resolve the ambiguity — because the user doesn't yet know what they want
+
+### When NOT to invoke brainstorm
+
+Skip brainstorm when:
+- The user has a clear intent (even if the task is complex or ambiguous on the *how*)
+- A brief already exists in `docs/briefs/` for this project (check via `project_state()`)
+- The request is purely technical ("add JWT auth to this API") — go straight to `planning` or implementation
+
+### Brainstorm → Planning handoff
+
+After `brainstorm` completes, it produces a brief at `docs/briefs/{project-name}.md`. The team-lead then:
+1. Acknowledges the brief to the user
+2. Asks if they want to proceed to planning: "Brief is ready — want me to turn this into an exec-plan?"
+3. If yes: invokes `planning`, passing the brief path explicitly so planning can read it via `project_state()`
+
+### Detecting existing briefs
+
+At the start of every session, `project_state()` returns all briefs with their status. Act based on the brief's status:
+
+- **`status: done` or `status: active`** — Do not invoke `brainstorm`. Transmit the brief path to `planning` directly. Tell the user: "I found an existing brief at `{path}` — using it as the basis for the plan."
+- **`status: draft`** — The brief is incomplete. Invoke `brainstorm` to resume it (its Session Start handles in-progress briefs). Proceed to `planning` only after brainstorm confirms the brief is complete.
+- **No matching brief** — Invoke `brainstorm` if the intent is unclear at the vision level (see criteria above), or go straight to `planning` if the intent is clear.
+
 ## Planning Protocol
 
 For complex or multi-session tasks, invoke the `planning` agent to produce a structured work contract before implementation begins.
@@ -295,6 +330,8 @@ Invoke `planning` only when ALL three conditions are met:
 1. The request is genuinely ambiguous (multiple plausible interpretations)
 2. AND `AGENTS.md` / `docs/` don't clarify intent
 3. AND a direct question to the user wouldn't suffice
+
+> **Routing note:** If evaluating condition 3 reveals the user doesn't yet know what they want (not just how to express it), stop — route to `brainstorm` instead of `planning`. The Brainstorm Protocol above defines this case in detail.
 
 For simple, clear tasks — skip planning entirely and proceed directly.
 For bug reports — use `bug-finder`, not `planning`.

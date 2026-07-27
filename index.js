@@ -249,6 +249,7 @@ const SUBAGENT_DEFS = [
     color: "info",
     permission: {
       "*": "deny",
+      project_state: "allow",
       task: "ask",
       question: "allow",
       read: "allow",
@@ -304,6 +305,7 @@ const SUBAGENT_DEFS = [
     color: "info",
     permission: {
       "*": "deny",
+      project_state: "allow",
       task: "allow",
       question: "allow",
       webfetch: "allow",

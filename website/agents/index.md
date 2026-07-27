@@ -51,12 +51,13 @@ User
         │     ├─► code-reviewer
         │     └─► security-reviewer
         ├─► bug-finder                   (when debugging)
-        ├─► planning                     (when request is ambiguous)
+        ├─► brainstorm                   (when intent is unclear at vision level)
+        ├─► planning                     (when request is ambiguous on structure)
         └─► researcher                   (when external knowledge needed)
 ```
 
-::: tip Brainstorm runs before the team-lead
-The `brainstorm` agent is a Phase 0 tool — run it when you have a vague idea before handing anything to the team-lead. It produces a structured product brief at `docs/briefs/{project-name}.md`.
+::: tip Brainstorm — direct or automatic
+You can invoke `brainstorm` directly when you have a vague idea, or let the team-lead invoke it automatically when your request is unclear at the vision level. Either path produces a structured product brief at `docs/briefs/{project-name}.md` that feeds directly into `planning`.
 :::
 
 ::: tip Harness runs after patterns emerge

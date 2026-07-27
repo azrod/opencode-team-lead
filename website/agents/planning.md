@@ -58,6 +58,17 @@ updated: {date}
 {Decisions made and their rationale.}
 ```
 
+## Session Start
+
+Before structuring anything, Planning calls `project_state()` to check for existing briefs.
+
+- **Brief path provided by the team-lead** → read it directly with `read`. No `project_state()` needed.
+- **One brief found** → confirm with the user before using it as the basis for the plan.
+- **Multiple briefs found** → ask which one to use. Never guess.
+- **No brief found** → proceed normally.
+
+When a brief is used, it is the source of truth for Problem, Vision, Users, Scope, and Success Criteria. Planning does not override or reinterpret brief content — it surfaces gaps as open questions.
+
 ## Strict Activation Criteria
 
 Planning is invoked only when **all three** conditions are true:
@@ -65,6 +76,8 @@ Planning is invoked only when **all three** conditions are true:
 1. The request is **genuinely ambiguous** — multiple plausible interpretations that would lead to meaningfully different implementations
 2. **AND** `AGENTS.md` / `docs/` don't clarify the intent
 3. **AND** a direct question to the user wouldn't suffice — the ambiguity is structural, not just a missing clarification
+
+> **Routing note:** If evaluating condition 3 reveals the user doesn't yet know what they want (not just how to express it), the team-lead routes to `brainstorm` instead of `planning`. Planning structures what's already known — it doesn't interview stakeholders.
 
 If any condition is false: produce a plan simple, or tell the team-lead to proceed directly.
 
@@ -113,6 +126,10 @@ The exec-plan belongs to the team-lead after creation. Planning only writes at c
 ## Traceability
 
 An exec-plan can link to a brainstorm brief via a `brief:` frontmatter field. The team-lead uses `check_artifacts()` to surface dead links between exec-plans, specs, and briefs — catching stale references before they cause confusion.
+
+### Brainstorm → Planning handoff
+
+When the team-lead invokes `brainstorm` and receives a completed brief, it automatically proposes transitioning to Planning — passing the brief path so Planning can read it via `project_state()`. The brief anchors the exec-plan to a validated problem statement, scope, and success criteria produced through direct user collaboration.
 
 The team-lead treats the exec-plan as the single source of truth for the mission. It does not duplicate its task list in `todowrite` — it references the exec-plan file path directly.
 

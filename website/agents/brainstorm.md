@@ -1,6 +1,6 @@
 # Brainstorm — Phase 0 Discovery
 
-Brainstorm is the starting point agent. It transforms a vague idea into a structured, actionable product brief that the `planning` and implementation agents can act on without ambiguity. It runs **before the team-lead**, before any planning or implementation.
+Brainstorm is the discovery agent. It transforms a vague idea into a structured, actionable product brief that the `planning` and implementation agents can act on without ambiguity. It can be invoked directly by the user, or automatically by the team-lead when the intent is unclear at the vision level.
 
 **Mode:** `all` — users talk directly to it.
 
@@ -15,7 +15,7 @@ Before any implementation. When you have:
 Brainstorm turns it into a doc. The doc is what everything else acts on.
 
 ::: tip
-Run Brainstorm before handing anything to the team-lead. A well-written brief eliminates ambiguity, prevents scope creep, and makes planning faster.
+You can run Brainstorm directly — or let the team-lead invoke it automatically when your request is unclear at the vision level. Either way, the brief it produces eliminates ambiguity, prevents scope creep, and makes planning faster.
 :::
 
 ## Output
@@ -44,7 +44,14 @@ updated: YYYY-MM-DD
 
 ## Session Start
 
-Before responding to the user, Brainstorm always checks for existing briefs in `docs/briefs/`. If one is found, it asks whether to continue editing it or start fresh. If multiple are found, it lists them and asks which to work on. This check happens unconditionally — even if the user's opening message contains a complete description.
+Before responding to the user, Brainstorm always calls `project_state()` to check for existing briefs. This check happens unconditionally — even if the user's opening message contains a complete description.
+
+- **None found** → proceed to Phase 1.
+- **One found, `status: draft`** → ask: continue editing it or start fresh?
+- **One found, `status: done` or other** → ask: revise the existing brief or start a new project?
+- **Multiple found** → list them (path + status + project name) and ask which to work on.
+
+When invoked by the team-lead, Brainstorm receives the invocation context in the task prompt and returns the brief path as its final output — the team-lead decides what happens next.
 
 ## 3-Phase Workflow
 

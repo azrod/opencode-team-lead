@@ -44,11 +44,13 @@ See [Lifecycle Tools](/lifecycle-tools) for the full reference.
 
 ### 1. Understand
 
-The team-lead starts by calling `project_state()` to load current exec-plans, specs, and briefs — this is how it recovers context after a session reset. It checks `todowrite` state to detect whether it is resuming a parked scope. Then it listens to the user request and asks clarifying questions if intent is ambiguous. Work does not start until the goal is understood.
+The team-lead starts by calling `project_state()` to load current exec-plans, specs, and briefs — this is how it recovers context after a session reset. It checks `todowrite` state to detect whether it is resuming a parked scope. Then it listens to the user request.
+
+If the intent is unclear at the **vision level** (the user has a problem or a vague idea but hasn't articulated what to build, who it's for, or what success looks like), the team-lead invokes `brainstorm` before any planning. If an existing brief matches the request, it is used directly — no redundant brainstorm session. Work does not start until the goal is understood.
 
 ### 2. Plan
 
-The team-lead identifies which specialist agents are needed, determines task dependencies (what can run in parallel vs. sequentially), and creates a task list via `todowrite`. For complex or multi-session work it invokes the `planning` agent to write an exec-plan to disk. For simple, clear tasks, it produces an inline plan and proceeds directly.
+The team-lead identifies which specialist agents are needed, determines task dependencies (what can run in parallel vs. sequentially), and creates a task list via `todowrite`. For complex or multi-session work it invokes the `planning` agent to write an exec-plan to disk — passing the brief path if one exists, so Planning uses it as the source of truth. For simple, clear tasks, it produces an inline plan and proceeds directly.
 
 ### 3. Delegate
 
@@ -119,6 +121,7 @@ The team-lead selects agents based on the task domain:
 | External knowledge, docs, RFCs | `researcher` |
 | All code review | `review-manager` (never spawn reviewers directly) |
 | Bug investigation | `bug-finder` |
+| Intent unclear at vision level | `brainstorm` (produces a brief before planning starts) |
 | Complex / ambiguous planning | `planning` |
 | Recurring pattern enforcement | `harness` |
 | Post-feature maintenance | `gardener` |
