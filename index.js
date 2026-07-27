@@ -259,6 +259,10 @@ const SUBAGENT_DEFS = [
         "*": "deny",
         "docs/exec-plans/**": "allow",
       },
+      write: {
+        "*": "deny",
+        "docs/exec-plans/**": "allow",
+      },
     },
   },
   {
