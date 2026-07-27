@@ -314,6 +314,10 @@ const SUBAGENT_DEFS = [
         "*": "deny",
         "docs/briefs/**": "allow",
       },
+      write: {
+        "*": "deny",
+        "docs/briefs/**": "allow",
+      },
     },
   },
   {
