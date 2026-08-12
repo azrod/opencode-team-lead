@@ -21,8 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The `planning` and `brainstorm` agents no longer fail with permission errors when their target directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) don't exist in the user's project — the plugin now creates them automatically on session start via a `session.created` event hook.
-- The `brainstorm` agent can now create new brief files from scratch — `write` permission on `docs/briefs/**` was missing, preventing file creation (only `edit` was allowed, which requires the file to already exist).
-- The `planning` agent can now create new exec-plan files from scratch — `write` permission on `docs/exec-plans/**` was missing, preventing file creation (only `edit` was allowed, which requires the file to already exist).
+- The `brainstorm` and `planning` agents can now create new files from scratch — OpenCode maps the `write` tool to the `edit` permission internally, so `edit` permission on `docs/briefs/**` and `docs/exec-plans/**` respectively is sufficient to enable both `edit` and `write` tools. Separate `write` permission blocks (which caused `Permission.disabled` to hide the tool) have been removed.
 
 ### Removed
 - The scratchpad working-memory file (`.opencode/scratchpad.md`) has been removed. The team-lead now tracks session progress via `todowrite` and resumes work by re-reading exec-plans and specs, rather than maintaining a separate persistent memory file.

@@ -259,10 +259,6 @@ const SUBAGENT_DEFS = [
         "*": "deny",
         "docs/exec-plans/**": "allow",
       },
-      write: {
-        "*": "deny",
-        "docs/exec-plans/**": "allow",
-      },
     },
   },
   {
@@ -315,10 +311,6 @@ const SUBAGENT_DEFS = [
       webfetch: "allow",
       read: "allow",
       edit: {
-        "*": "deny",
-        "docs/briefs/**": "allow",
-      },
-      write: {
         "*": "deny",
         "docs/briefs/**": "allow",
       },

@@ -36,15 +36,11 @@ features:
 
 ## Quick Install
 
-Add to your `opencode.json`:
-
-```json
-{
-  "plugin": ["opencode-team-lead"]
-}
+```bash
+opencode plugin opencode-team-lead --global
 ```
 
-OpenCode will automatically download and load the plugin on next startup. All 11 agents are registered automatically — no `npm install` needed.
+OpenCode will automatically download and load the plugin on next startup. All 11 agents are registered automatically.
 
 ::: tip Set team-lead as your default agent
 ```json

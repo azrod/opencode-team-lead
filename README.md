@@ -61,18 +61,14 @@ Periodic hygiene agent. Reads docs and code, spots drift (docs that describe del
 ## Installation
 
 ```bash
-npm install -g opencode-team-lead
+opencode plugin opencode-team-lead --global
 ```
 
-Add to your `opencode.json`:
+To track the beta channel:
 
-```json
-{
-  "plugin": ["opencode-team-lead"]
-}
+```bash
+opencode plugin opencode-team-lead@beta --global
 ```
-
-Use `opencode-team-lead@beta` to track the beta channel.
 
 Restart OpenCode — the plugin loads and registers all agents automatically.
 

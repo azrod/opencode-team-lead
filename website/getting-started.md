@@ -3,26 +3,19 @@
 ## Prerequisites
 
 - [OpenCode](https://opencode.ai) installed and configured
-- Node.js 18+ (for npm)
 
 ## Installation
 
-Add the plugin to your `opencode.json`:
-
-```json
-{
-  "plugin": ["opencode-team-lead"]
-}
+```bash
+opencode plugin opencode-team-lead --global
 ```
 
-OpenCode will automatically download and load the plugin on next startup. No manual `npm install` needed.
+OpenCode will automatically download and load the plugin on next startup.
 
 To track the beta channel (latest features, may have rough edges):
 
-```json
-{
-  "plugin": ["opencode-team-lead@beta"]
-}
+```bash
+opencode plugin opencode-team-lead@beta --global
 ```
 
 ## Set team-lead as your default agent
