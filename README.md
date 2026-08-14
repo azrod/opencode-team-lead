@@ -1,3 +1,5 @@
+
+
 # opencode-team-lead
 
 [![npm version](https://img.shields.io/npm/v/opencode-team-lead)](https://www.npmjs.com/package/opencode-team-lead)
@@ -7,9 +9,10 @@ An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestr
 
 ## What it does
 
-One hook powers the plugin:
+Two hooks power the plugin:
 
 - **`config`** — registers all agents into OpenCode's config, merging your overrides from `opencode.json` on top of plugin defaults
+- **`event`** — on `session.created`, automatically creates required artifact directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) so the planning and brainstorm agents don't fail on a fresh project
 
 ## Agents
 
