@@ -257,7 +257,7 @@ const SUBAGENT_DEFS = [
       grep: "allow",
       edit: {
         "*": "deny",
-        "docs/exec-plans/**": "allow",
+        "**/docs/exec-plans/**": "allow",
       },
     },
   },
@@ -312,7 +312,7 @@ const SUBAGENT_DEFS = [
       read: "allow",
       edit: {
         "*": "deny",
-        "docs/briefs/**": "allow",
+        "**/docs/briefs/**": "allow",
       },
     },
   },
@@ -515,11 +515,11 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         read: "allow",
         edit: {
           "*": "deny",
-          "docs/**": "allow",
+          "**/docs/**": "allow",
         },
         write: {
           "*": "deny",
-          "docs/**": "allow",
+          "**/docs/**": "allow",
         },
         bash: {
           "*": "deny",

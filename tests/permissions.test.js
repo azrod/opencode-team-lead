@@ -18,14 +18,15 @@ describe("agent permissions — write/edit target directories", () => {
     const content = await readFile(indexPath, "utf-8");
 
     // Match paths that appear as "allow" values and end with /**
-    // Excludes "*" wildcards — we only want specific directory glob targets.
-    // Pattern: "some/path/**": "allow"  or  "some/path/**" : "allow"
-    const matches = content.matchAll(/"([^*"][^"]*\/\*\*)":\s*"allow"/g);
+    // Accepts both "some/path/**" and "**/some/path/**" forms.
+    // Excludes bare "*" wildcards — we only want specific directory glob targets.
+    // Pattern: "some/path/**": "allow"  or  "**/some/path/**": "allow"
+    const matches = content.matchAll(/"(\*\*\/[^"]+\/\*\*|[^*"][^"]*\/\*\*)":\s*"allow"/g);
 
     const dirs = new Set();
     for (const [, path] of matches) {
-      // Strip the /** suffix to get the base directory
-      dirs.add(path.replace(/\/\*\*$/, ""));
+      // Strip leading **/ prefix and trailing /** suffix to get the base directory
+      dirs.add(path.replace(/^\*\*\//, "").replace(/\/\*\*$/, ""));
     }
 
     assert.ok(dirs.size > 0, "expected at least one write/edit target directory in index.js");
