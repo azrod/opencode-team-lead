@@ -20,11 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `harness` and `planning` agents now require user confirmation before spawning any sub-agent (`task: ask`).
 
 ### Fixed
-- The `planning` and `brainstorm` agents no longer fail with permission errors when their target directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) don't exist in the user's project — the plugin now creates them automatically on session start via a `session.created` event hook.
 - The `brainstorm` and `planning` agents can now create files in projects without a git repository. Previously, OpenCode resolved permissions against `instance.worktree` which defaults to `/` when no git repo exists — causing the relative path to include the full system path prefix and never match `docs/briefs/**` or `docs/exec-plans/**`. All `docs/` permission patterns now use a `**/docs/` prefix to match regardless of worktree depth.
 
 ### Removed
 - The scratchpad working-memory file (`.opencode/scratchpad.md`) has been removed. The team-lead now tracks session progress via `todowrite` and resumes work by re-reading exec-plans and specs, rather than maintaining a separate persistent memory file.
+- The `session.created` event hook that auto-created `docs/exec-plans/`, `docs/briefs/`, and `docs/specs/` directories has been removed — the `write` tool creates parent directories automatically, and the root permission bug (non-git projects) has been fixed separately.
 
 ## [0.9.0] - 2026-05-04
 
