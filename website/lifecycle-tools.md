@@ -179,7 +179,7 @@ By default, lifecycle tools look for artifacts in:
 - `docs/exec-plans/` — exec-plan files
 - `docs/briefs/` — product briefs
 
-These directories are created automatically by the plugin on `session.created`. To use custom paths, add an `opencode.json` override:
+The `write` tool creates these directories automatically when needed. To use custom paths, add an `opencode.json` override:
 
 ```json
 {

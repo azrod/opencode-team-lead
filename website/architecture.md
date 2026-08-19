@@ -4,7 +4,7 @@
 
 `opencode-team-lead` is an OpenCode plugin that injects agents into the IDE configuration at startup. It has zero npm dependencies — only Node.js builtins (`node:fs/promises`, `node:path`, `node:url`). Pure ESM, no build step.
 
-The entry point is `index.js`. It exports `TeamLeadPlugin`, an async function that loads agent prompts from disk and returns an object with two hooks: `config` and `event`.
+The entry point is `index.js`. It exports `TeamLeadPlugin`, an async function that loads agent prompts from disk and returns an object with a `config` hook.
 
 ## Plugin hooks
 
@@ -34,16 +34,6 @@ input.agent["team-lead"] = {
 ```
 
 Permissions are merged one level deeper via `mergePermissions`: nested keys (like `read` or `bash` which are objects) are shallow-merged rather than replaced. This means users can add permissions without accidentally removing plugin defaults.
-
-### `event` hook
-
-Listens for `session.created` and creates the three artifact directories on session start:
-
-- `docs/exec-plans/`
-- `docs/briefs/`
-- `docs/specs/`
-
-This is a best-effort operation — if the directories already exist, it's a no-op. This prevents the planning and brainstorm agents from failing with permission errors on a fresh project.
 
 ## Agent hierarchy
 

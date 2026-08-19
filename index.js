@@ -1,7 +1,7 @@
 // opencode-team-lead plugin
 // Installs the team-lead orchestrator agent and its specialized sub-agents.
 
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tool } from "@opencode-ai/plugin/tool";
@@ -551,19 +551,6 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         if (subagentPrompts[i]) {
           registerSubagent(input, SUBAGENT_DEFS[i], subagentPrompts[i], subagentUserConfigs[i]);
         }
-      }
-    },
-
-    // ── Event hook: ensure required directories exist ─────────────────
-    event: async ({ event }) => {
-      if (event.type === "session.created") {
-        await Promise.all([
-          mkdir(join(projectRoot, paths.execPlans), { recursive: true }),
-          mkdir(join(projectRoot, paths.briefs), { recursive: true }),
-          mkdir(join(projectRoot, paths.specs), { recursive: true }),
-        ]).catch(() => {
-          // Directory creation is best-effort — never block session startup.
-        });
       }
     },
 

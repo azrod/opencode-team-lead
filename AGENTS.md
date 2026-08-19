@@ -31,7 +31,7 @@ This is a tiny project — zero dependencies, pure ESM, no build step. Tests run
 
 | File | Role |
 |------|------|
-| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers agents) and `event` (creates required artifact directories — `docs/exec-plans/`, `docs/briefs/`, `docs/specs/` — on `session.created`). |
+| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. One hook: `config` (registers agents and lifecycle tools). |
 | `agents/prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
 | `agents/review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
 | `agents/requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
@@ -53,7 +53,7 @@ Full technical details: [`docs/architecture.md`](docs/architecture.md)
 ### How the plugin works
 
 1. **`config` hook** — Injects all agent definitions into OpenCode's config, merging user overrides from `opencode.json` on top of plugin defaults. The `prompt` is always provided by the plugin and cannot be overridden.
-2. **`event` hook** — On `session.created`, best-effort creates the artifact directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) so the planning and brainstorm agents don't fail with permission errors on a fresh project.
+2. The `write` tool creates parent directories automatically — no separate setup step needed for artifact directories.
 
 ### Key design decisions
 
