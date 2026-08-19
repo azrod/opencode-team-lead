@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-19
+
 ### Added
 - Documentation portal (`website/`) — VitePress static site with marketing homepage, per-agent pages, lifecycle tools reference, architecture, decisions, principles, and changelog. Deployed automatically to GitHub Pages on push to `main`.
 - Documentation website now generates LLM-friendly artifacts (`llms.txt`, `llms-full.txt`, per-page `.md` files) via `vitepress-plugin-llms`, making the docs easily ingested by AI agents.
@@ -165,7 +167,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode
 - npm package with installation docs
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/azrod/opencode-team-lead/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/azrod/opencode-team-lead/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/azrod/opencode-team-lead/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/azrod/opencode-team-lead/compare/v0.6.2...v0.7.0
