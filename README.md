@@ -1,5 +1,7 @@
 # opencode-team-lead
 
+> **Not affiliated with the OpenCode team.** This is an independent community plugin, not built or endorsed by the OpenCode project.
+
 [![npm version](https://img.shields.io/npm/v/opencode-team-lead)](https://www.npmjs.com/package/opencode-team-lead)
 [![license](https://img.shields.io/npm/l/opencode-team-lead)](https://github.com/azrod/opencode-team-lead/blob/main/LICENSE)
 
