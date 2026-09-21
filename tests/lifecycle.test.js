@@ -29,6 +29,8 @@ import {
   briefDelete,
   briefList,
   projectState,
+  specFormat,
+  planFormat,
 } from "../tools/lifecycle.js";
 import {
   checkArtifactAccess,
@@ -1465,5 +1467,97 @@ describe("checkArtifactAccess", () => {
       PROTECTED_DIRS
     );
     assert.equal(result, null);
+  });
+});
+
+// ── specFormat ────────────────────────────────────────────────────────────────
+
+describe("specFormat", () => {
+  test("returns a non-empty string", () => {
+    const result = specFormat();
+    assert.equal(typeof result, "string");
+    assert.ok(result.length > 0);
+  });
+
+  test("contains required section headers", () => {
+    const result = specFormat();
+    assert.ok(result.includes("## Purpose"), "missing ## Purpose");
+    assert.ok(result.includes("## Behavior"), "missing ## Behavior");
+    assert.ok(result.includes("## Constraints"), "missing ## Constraints");
+    assert.ok(result.includes("## Examples"), "missing ## Examples");
+  });
+
+  test("contains frontmatter field references", () => {
+    const result = specFormat();
+    assert.ok(result.includes("title"), "missing title field reference");
+    assert.ok(result.includes("type"), "missing type field reference");
+    assert.ok(result.includes("status"), "missing status field reference");
+    assert.ok(result.includes("created"), "missing created field reference");
+  });
+
+  test("mentions valid type values", () => {
+    const result = specFormat();
+    assert.ok(result.includes("technical"), "missing 'technical' type");
+    assert.ok(result.includes("functional"), "missing 'functional' type");
+    assert.ok(result.includes("architectural"), "missing 'architectural' type");
+  });
+
+  test("mentions valid status values", () => {
+    const result = specFormat();
+    assert.ok(result.includes("draft"), "missing 'draft' status");
+    assert.ok(result.includes("active"), "missing 'active' status");
+    assert.ok(result.includes("deprecated"), "missing 'deprecated' status");
+  });
+
+  test("does not contain ambiguous heading notation (e.g. '### ##')", () => {
+    const result = specFormat();
+    assert.ok(!result.includes("### ##"), "specFormat output must not contain '### ##' mixed heading notation");
+  });
+
+  test("is pure — returns same value on repeated calls", () => {
+    assert.equal(specFormat(), specFormat());
+  });
+});
+
+// ── planFormat ────────────────────────────────────────────────────────────────
+
+describe("planFormat", () => {
+  test("returns a non-empty string", () => {
+    const result = planFormat();
+    assert.equal(typeof result, "string");
+    assert.ok(result.length > 0);
+  });
+
+  test("contains required section headers", () => {
+    const result = planFormat();
+    assert.ok(result.includes("## Functional objective"), "missing ## Functional objective");
+    assert.ok(result.includes("## Building blocks"), "missing ## Building blocks");
+    assert.ok(result.includes("## Goal"), "missing ## Goal");
+    assert.ok(result.includes("## Decision log"), "missing ## Decision log");
+  });
+
+  test("contains block format with checkbox syntax", () => {
+    const result = planFormat();
+    assert.ok(result.includes("- [ ]"), "missing '- [ ]' block syntax");
+  });
+
+  test("mentions Done when criteria pattern", () => {
+    const result = planFormat();
+    assert.ok(result.includes("Done when"), "missing 'Done when' criteria pattern");
+  });
+
+  test("mentions scope subsections", () => {
+    const result = planFormat();
+    assert.ok(result.includes("In scope"), "missing 'In scope'");
+    assert.ok(result.includes("Out of scope"), "missing 'Out of scope'");
+  });
+
+  test("mentions granularity rules", () => {
+    const result = planFormat();
+    assert.ok(result.includes("atomic"), "missing atomicity rule");
+  });
+
+  test("is pure — returns same value on repeated calls", () => {
+    assert.equal(planFormat(), planFormat());
   });
 });

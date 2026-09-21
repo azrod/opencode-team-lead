@@ -375,7 +375,7 @@ Skip spec creation when:
 
 ### Workflow
 
-1. **At planning time** — if the scope warrants a spec, call `spec_create(title, type, content)` (draft content) before creating the exec-plan. Link the spec id in the plan if relevant.
+1. **At planning time** — if the scope warrants a spec, call `spec_format()` to get the expected structure, then `spec_create(title, type, content)` (draft content) before creating the exec-plan. Link the spec id in the plan if relevant. For complex specs, delegate to `spec-writer`.
 2. **Before implementation** — call `spec_list()` then `spec_get(id)` on relevant specs to detect divergences with what you're about to build. Surface conflicts before delegation, not after.
 3. **At completion** — if the implementation diverged from the initial draft, call `spec_update(id, old_string, new_string)` to bring the spec in sync. Then use `plan_block_done` to mark the corresponding block done.
 
@@ -438,11 +438,21 @@ Suggest `gardener` to the user when:
 - Never propose `gardener` at the start of a mission — it's a post-delivery agent, not a prerequisite
 - Gardener is never on the critical path — always a suggestion after the main work is done
 
+### Two modes
+
+Gardener operates in two modes depending on the project's spec maturity:
+
+- **Bootstrap mode** (fewer than 3 active specs) — discovery-first: gardener scans the codebase to identify the major functional domains, then delegates spec drafting to `spec-writer` for each one. The goal is to bring a project without specs up to a documented baseline. Reports a summary of created specs when done.
+- **Maintenance mode** (3 or more active specs) — existing behavior: fixes stale docs, detects code drift against established rules, escalates recurring patterns to `harness`.
+
+Gardener selects the mode automatically by calling `spec_list()` at startup and counting active specs.
+
 ### Handling the result
 
 | Outcome | Action |
 |---------|--------|
 | PRs opened or drift detected | Report a summary to the user with the affected files or patterns |
+| Specs created (Bootstrap mode) | Report the list of new specs to the user with a brief description of each |
 | Recurring patterns identified | Suggest escalating to `harness` — gardener detection is the natural trigger for mechanical enforcement |
 | Nothing to report | Confirm briefly to the user ("Gardener found nothing to fix") |
 

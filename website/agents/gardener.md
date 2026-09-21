@@ -6,6 +6,28 @@ Gardener is the maintenance agent. It catches what CI doesn't: stale documentati
 
 > "Harness installs the net. Gardener checks what slipped through."
 
+## Two Operating Modes
+
+Gardener selects its mode automatically at startup by calling `spec_list()` and counting active specs.
+
+### Bootstrap Mode — fewer than 3 active specs
+
+When a project has fewer than 3 active specs, the priority is to establish a documented baseline before performing maintenance. Gardener switches into discovery mode:
+
+1. **Scan the codebase** — identifies the major functional domains (core modules, public interfaces, key behaviors)
+2. **Delegate spec drafting** — for each identified domain, delegates to `spec-writer` to produce a canonical spec
+3. **Report** — returns a summary of the specs created and the domains they cover
+
+The goal of Bootstrap mode is to bring an undocumented project up to a spec baseline so that future Maintenance runs have something to check against.
+
+::: tip Spec-writer does the heavy lifting
+In Bootstrap mode, Gardener is the coordinator — it identifies what needs to be documented and delegates the actual spec writing to `spec-writer`. Gardener never writes specs directly.
+:::
+
+### Maintenance Mode — 3 or more active specs
+
+The standard operating mode. Gardener performs the two distinct functions below.
+
 ## Two Distinct Functions
 
 Gardener performs two independent functions. They can be run together or separately.

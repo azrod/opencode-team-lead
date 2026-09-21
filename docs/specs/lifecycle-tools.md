@@ -39,7 +39,9 @@ Les custom tools OpenCode sont l'abstraction correcte : exécutés dans le proce
 
 ---
 
-## 2. Les cinq tools
+## 2. Les tools
+
+> **Note :** La spécification ci-dessous décrit le design initial à cinq tools. L'implémentation livrée comprend 19 lifecycle tools organisés en familles : `project_state`, `spec_*` (get, create, update, validate, list, delete, format), `plan_*` (get, create, update, validate, block_done, list, delete, format), et `brief_*` (get, create, update, delete, list). Les deux tools `spec_format` et `plan_format` retournent le format canonique attendu pour les specs et exec-plans respectivement — raw string, pas du JSON, pour consommation directe par le LLM.
 
 ### `project_state`
 

@@ -29,7 +29,8 @@ Agents are split into two modes:
 | `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
 | `harness` | `all` | Encodes recurring patterns as permanent enforcement artifacts. |
 | `planning` | `all` | Writes complex requests as exec-plans to disk. |
-| `gardener` | `all` | Periodic maintenance. Fixes stale docs, detects code drift. |
+| `gardener` | `all` | Periodic maintenance. Bootstrap mode: discovers domains and delegates to spec-writer. Maintenance mode: fixes stale docs, detects code drift. |
+| `spec-writer` | `subagent` | Writes high-quality specs conforming to the canonical format. Delegated by team-lead or gardener. |
 | `researcher` | `subagent` | External knowledge retrieval. Searches docs, RFCs, APIs. |
 
 ## Agent Pages
@@ -40,7 +41,8 @@ Agents are split into two modes:
 - [Bug-Finder](/agents/bug-finder) — structured investigation before any fix
 - [Harness](/agents/harness) — pattern encoder that makes recurring mistakes impossible
 - [Planning](/agents/planning) — turns complex requests into reviewable exec-plans
-- [Gardener](/agents/gardener) — periodic hygiene and drift detection
+- [Gardener](/agents/gardener) — periodic hygiene, drift detection, and Bootstrap spec creation
+- [Spec-Writer](/agents/spec-writer) — canonical spec authoring, delegated by team-lead or gardener
 - [Researcher](/agents/researcher) — external knowledge retrieval
 
 > `spec-validator` and `plan-validator` invocation is documented in [Lifecycle Tools](/lifecycle-tools). `spec-reviewer` is part of the [Review Cluster](/agents/review-cluster).
@@ -59,6 +61,9 @@ User
         ├─► bug-finder                   (when debugging)
         ├─► brainstorm                   (when intent is unclear at vision level)
         ├─► planning                     (when request is ambiguous on structure)
+        ├─► spec-writer                  (when a complex spec needs authoring)
+        ├─► gardener                     (post-delivery maintenance)
+        │     └─► spec-writer            (Bootstrap mode — < 3 active specs)
         └─► researcher                   (when external knowledge needed)
 ```
 

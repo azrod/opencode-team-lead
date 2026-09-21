@@ -44,7 +44,8 @@ This is a tiny project — zero dependencies, pure ESM, no build step. Tests run
 | `agents/bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
 | `agents/harness.md` | System prompt for the harness agent — pattern enforcement agent that encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries, guiding principles). |
 | `agents/planning.md` | System prompt for the planning agent — transforms complex or ambiguous requests into structured exec-plans on disk. |
-| `agents/gardener.md` | System prompt for the gardener agent — periodic maintenance agent that fixes stale docs and detects code drift, then escalates recurring patterns to harness. |
+| `agents/spec-writer.md` | System prompt for the spec-writer agent — specialized in writing high-quality specs conforming to the canonical format. Delegates from team-lead or gardener (Bootstrap mode). Calls `spec_format()` before `spec_create()`. Temperature 0.3. |
+| `agents/gardener.md` | System prompt for the gardener agent — periodic maintenance agent with two modes: Bootstrap (< 3 active specs — discovers functional domains and delegates to spec-writer) and Maintenance (≥ 3 specs — fixes stale docs, detects drift, escalates to harness). |
 | `agents/brainstorm.md` | System prompt for the brainstorm agent — helps users discover and articulate what they want to build. Produces a product brief at docs/briefs/{project-name}.md. |
 | `skills/spec-writer/` | Bundled skill for writing agent specifications — loaded at init, registered via `skill` hook. Provides templates, examples, and validation checklists. |
 | `package.json` | Standard npm config. Ships `index.js`, the `agents/` directory (all agent prompts), `tools/`, and `README.md`. |
@@ -310,7 +311,7 @@ For the principles behind these rules, see [`docs/guiding-principles.md`](docs/g
 | `.git-hooks/commit-msg` | Commit message is non-empty (guards against `git commit` without `-m`) | On commit (after `sh .git-hooks/install.sh`) |
 | `docs/guiding-principles.md` | Non-interactive git, zero deps, user-facing CHANGELOG, default-deny permissions, external prompts, edit target dirs | Human + Gardener review |
 | `index.js` `tool.execute.before` hook + `tools/artifact-guard.js` | Direct `read`/`edit`/`write`/`bash`/`glob`/`grep` access to `docs/specs/`, `docs/exec-plans/`, `docs/briefs/` is blocked unless the caller is a lifecycle tool | Every tool call at runtime |
-| `tests/lifecycle.test.js` + `npm test` | Correctness of all 19 lifecycle tool functions and the artifact guard | Manually / pre-PR |
+| `tests/lifecycle.test.js` + `npm test` | Correctness of all lifecycle tool functions (including `spec_format` and `plan_format`) and the artifact guard | Manually / pre-PR |
 
 ### Installing the git hook
 
@@ -336,7 +337,7 @@ ESLint is run via `npx` — no install needed. The config is a flat `eslint.conf
 npm test
 ```
 
-92 tests covering all 19 lifecycle tool functions and the artifact guard. Uses `node:test` + `node:assert/strict` — no external test runner needed.
+106 tests covering all lifecycle tool functions (including `spec_format` and `plan_format`) and the artifact guard. Uses `node:test` + `node:assert/strict` — no external test runner needed.
 
 ## References
 

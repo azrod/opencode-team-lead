@@ -14,6 +14,8 @@ Any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these path
 
 ::: tip When the team-lead calls these
 - `project_state()` is called at the **start of every mission**
+- `spec_format()` is called **before `spec_create`** — always
+- `plan_format()` is called **before `plan_create`** — always
 - `spec_create` / `spec_update` are always followed by `spec_validate(id)`
 - `plan_create` is always followed by `plan_validate(id)`
 - `plan_block_done()` is called **after each validated delivery**
@@ -310,6 +312,36 @@ Unlike `spec_validate` — which must be called after both `spec_create` and `sp
 ```
 
 **Notes:** Only plans with at least one unchecked block are included — completed plans are omitted to keep the output focused.
+
+---
+
+## Format Tools
+
+### `spec_format()`
+
+**Signature:** `spec_format() → string`
+
+**When to call it:** Before `spec_create` — always. Returns the canonical spec format so the agent knows exactly what structure is expected before writing content.
+
+**What it returns:** The canonical spec template as a markdown string, including required frontmatter fields and section headers with inline guidance.
+
+**Who calls it:** The team-lead (before writing a spec directly) and the `spec-writer` agent (as the first step of its workflow).
+
+---
+
+### `plan_format()`
+
+**Signature:** `plan_format() → string`
+
+**When to call it:** Before `plan_create` — always. Returns the canonical exec-plan format so the agent knows exactly what structure is expected before writing content.
+
+**What it returns:** The canonical exec-plan template as a markdown string, including required frontmatter fields, goal, scope, building blocks, open questions, and decision log sections.
+
+**Who calls it:** The team-lead (before creating an exec-plan) and the `planning` agent.
+
+::: tip Format tools are zero-cost
+`spec_format()` and `plan_format()` are pure string returns — no file I/O, no LLM call, no side effects. Call them freely as the first step of any spec or plan creation workflow.
+:::
 
 ---
 

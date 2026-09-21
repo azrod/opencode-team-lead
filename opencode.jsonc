@@ -13,7 +13,10 @@
         "skill": {
           "*": "allow"
         },
-	"team_lead*": "allow"
+        "bash": {
+          "gh*": "allow"
+        },
+	     "team_lead*": "allow"
       }
     }
   }

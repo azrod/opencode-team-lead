@@ -25,6 +25,8 @@ import {
   briefUpdate,
   briefDelete,
   briefList,
+  specFormat,
+  planFormat,
 } from "./tools/lifecycle.js";
 import { checkArtifactAccess } from "./tools/artifact-guard.js";
 
@@ -307,6 +309,7 @@ const SUBAGENT_DEFS = [
       grep: "allow",
       spec_list: "allow",
       spec_get: "allow",
+      spec_format: "allow",
       plan_list: "allow",
       plan_get: "allow",
       edit: {
@@ -414,6 +417,31 @@ const SUBAGENT_DEFS = [
       "*": "deny",
       spec_list: "allow",
       spec_get: "allow",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+    },
+  },
+  {
+    id: "spec-writer",
+    file: "spec-writer.md",
+    description:
+      "Spec authoring agent — writes high-quality specification files conforming to the project's " +
+      "canonical format. Delegated by the team-lead or gardener with a domain to document. " +
+      "Calls spec_format(), checks for duplicates, explores the codebase, writes and validates the spec.",
+    temperature: 0.3,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: false,
+    permission: {
+      "*": "deny",
+      spec_list: "allow",
+      spec_get: "allow",
+      spec_create: "allow",
+      spec_update: "allow",
+      spec_validate: "allow",
+      spec_format: "allow",
       read: "allow",
       glob: "allow",
       grep: "allow",
@@ -597,6 +625,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         spec_validate: "allow",
         spec_list: "allow",
         spec_delete: "allow",
+        spec_format: "allow",
         plan_get: "allow",
         plan_create: "allow",
         plan_update: "allow",
@@ -604,6 +633,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         plan_block_done: "allow",
         plan_list: "allow",
         plan_delete: "allow",
+        plan_format: "allow",
         brief_get: "allow",
         brief_create: "allow",
         brief_update: "allow",
@@ -672,7 +702,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         },
       },
       spec_create: {
-        description: "Create a new spec file. Refuses to overwrite an existing one. After creation, call spec_validate to trigger the LLM spec-validator agent.",
+        description: "Create a new spec file. Refuses to overwrite an existing one. After creation, call spec_validate to trigger the LLM spec-validator agent. Call spec_format() first if unsure of the expected structure.",
         args: {
           title: tool.schema.string().describe("Human-readable title of the spec"),
           type: tool.schema.string().optional().describe("Spec type: 'technical' | 'functional' | 'architectural'. Defaults to 'technical'"),
@@ -684,7 +714,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         },
       },
       spec_update: {
-        description: "Update a spec by replacing oldString with newString. Fails if oldString not found or found multiple times. After updating, call spec_validate to trigger the LLM spec-validator agent.",
+        description: "Update a spec by replacing oldString with newString. Fails if oldString not found or found multiple times. After updating, call spec_validate to trigger the LLM spec-validator agent. Call spec_format() first if unsure of the expected structure.",
         args: {
           id: tool.schema.string().describe("Spec id"),
           old_string: tool.schema.string().describe("Exact string to replace"),
@@ -734,7 +764,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         },
       },
       plan_create: {
-        description: "Create a new exec-plan. functional_objective is required. After creation, call plan_validate to trigger the LLM plan-validator agent.",
+        description: "Create a new exec-plan. functional_objective is required. After creation, call plan_validate to trigger the LLM plan-validator agent. Call plan_format() first if unsure of the expected structure — especially the building blocks syntax.",
         args: {
           title: tool.schema.string().describe("Plan title"),
           functional_objective: tool.schema.string().describe("2-4 sentences describing the user problem being solved"),
@@ -794,6 +824,24 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         },
         async execute({ id }) {
           try { return JSON.stringify(await planDelete(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      spec_format: {
+        description: "Return the canonical format expected for a spec file. Call this before spec_create or spec_update if unsure of the expected structure.",
+        args: {},
+        async execute(_args) {
+          // Raw string intentional — not JSON-encoded, format content for direct LLM consumption
+          try { return specFormat(); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_format: {
+        description: "Return the canonical format expected for an exec-plan file. Call this before plan_create if unsure of the expected structure — especially the building blocks syntax.",
+        args: {},
+        async execute(_args) {
+          // Raw string intentional — not JSON-encoded, format content for direct LLM consumption
+          try { return planFormat(); }
           catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
         },
       },

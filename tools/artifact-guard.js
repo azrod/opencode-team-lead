@@ -26,6 +26,8 @@ export const LIFECYCLE_TOOLS = new Set([
   "brief_update",
   "brief_delete",
   "brief_list",
+  "spec_format",
+  "plan_format",
 ]);
 
 /**

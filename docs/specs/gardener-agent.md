@@ -28,7 +28,30 @@ Le gardener ne recouvre pas le rôle du review-manager (évaluation inline) ni c
 
 ---
 
-## Deux fonctions distinctes
+## Deux modes de fonctionnement
+
+Le gardener opère en deux modes distincts, sélectionnés automatiquement au démarrage via `spec_list()` :
+
+| Mode | Condition d'activation | Objectif |
+|------|------------------------|----------|
+| **Bootstrap** | < 3 specs actives | Créer les specs fondamentales manquantes avant que la maintenance soit utile |
+| **Maintenance** | ≥ 3 specs actives (ou demande explicite) | Détecter et corriger la dérive entre docs/code et règles |
+
+### Mode Bootstrap
+
+Activé quand le projet manque de documentation de base. Le gardener :
+
+1. Appelle `spec_list()` pour comprendre ce qui existe déjà
+2. Explore la codebase pour identifier 3–7 domaines fonctionnels distincts
+3. Pour chaque domaine non couvert, délègue à `spec-writer` via `task`
+
+**Relation avec `spec-writer` :** Le gardener délègue la rédaction à `spec-writer` — il ne rédige pas les specs lui-même. La délégation inclut le domaine, les fichiers clés à explorer, et les contraintes connues. `spec-writer` appelle `spec_format()` lui-même en premier step — le gardener n'a pas besoin de le faire ni de copier son output dans le prompt de délégation.
+
+Les domaines sont délégués **séquentiellement** (pas en parallèle) — chaque spec peut informer la suivante.
+
+---
+
+## Deux fonctions de maintenance
 
 ### Fonction 1 — Doc-gardening
 
