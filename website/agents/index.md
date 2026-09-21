@@ -24,7 +24,7 @@ Agents are split into two modes:
 | `security-reviewer` | `subagent` | Identifies vulnerabilities across 7 threat categories. |
 | `spec-validator` | `subagent` | LLM validator invoked after `spec_create`/`spec_update`. Checks completeness, clarity, and consistency. |
 | `plan-validator` | `subagent` | LLM validator invoked after `plan_create`. Checks exec-plan structure and block granularity. |
-| `spec-reviewer` | `subagent` | Integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` after each delivery. |
+| `spec-reviewer` | `subagent` | Integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` / `SPEC_VIOLATION` after each delivery. |
 | `bug-finder` | `subagent` | Structured investigation. Forces root-cause before any fix. |
 | `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
 | `harness` | `all` | Encodes recurring patterns as permanent enforcement artifacts. |
@@ -55,7 +55,7 @@ User
         │     ├─► requirements-reviewer
         │     ├─► code-reviewer
         │     ├─► security-reviewer
-        │     └─► spec-reviewer          (always — NO_ACTION_NEEDED / SPEC_CREATE_NEEDED / SPEC_UPDATE_NEEDED)
+        │             └─► spec-reviewer          (always — NO_ACTION_NEEDED / SPEC_CREATE_NEEDED / SPEC_UPDATE_NEEDED / SPEC_VIOLATION)
         ├─► bug-finder                   (when debugging)
         ├─► brainstorm                   (when intent is unclear at vision level)
         ├─► planning                     (when request is ambiguous on structure)

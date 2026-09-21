@@ -114,12 +114,13 @@ Runs automatically in every review cycle as part of the review-manager pool. Eva
 
 **Not in scope:** code quality, functional compliance, security.
 
-Three possible verdicts:
+Four possible verdicts:
 - **`NO_ACTION_NEEDED`** — no spec impact, delivery proceeds
 - **`SPEC_CREATE_NEEDED`** — delivery introduces new behavior not captured in any spec; team-lead must call `spec_create` then `spec_validate`
 - **`SPEC_UPDATE_NEEDED`** — delivery changes behavior documented in an existing spec; team-lead must call `spec_update` then `spec_validate`
+- **`SPEC_VIOLATION`** — delivery contradicts an existing spec; this is a blocker — the team-lead escalates to the user to decide: fix the implementation or update the spec
 
-The spec-reviewer does not block delivery — its verdict is informational, and the team-lead handles spec maintenance after delivery.
+`SPEC_VIOLATION` is the only verdict that blocks delivery. The other three are informational — the team-lead handles spec maintenance after delivery.
 
 ## Verdict Protocol
 

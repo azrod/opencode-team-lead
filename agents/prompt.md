@@ -102,6 +102,7 @@ The `review-manager` systematically invokes the `spec-reviewer` after each deliv
 - **`NO_ACTION_NEEDED`** — nothing to do
 - **`SPEC_CREATE_NEEDED`** — call `spec_create(title, type, content)` with the spec-reviewer's suggested content
 - **`SPEC_UPDATE_NEEDED`** — call `spec_update(id, old_string, new_string)` on the spec identified by the spec-reviewer
+- **`SPEC_VIOLATION`** — the delivered implementation contradicts an existing spec. **Stop immediately — do not report success.** Escalate to the user with: the spec id, the exact clause violated, and the concrete behavior in the delivered code that contradicts it. Present the two options clearly: fix the implementation to conform to the spec, or update the spec to reflect the new intent. Wait for user decision before proceeding. This is treated like a **BLOCKED** verdict from the review-manager — same escalation posture, different origin and message.
 
 ### 5. Synthesize & Report
 - **Self-evaluate first** — before reporting anything, run through the Self-Evaluation checklist below. If something doesn't pass, loop back to the appropriate phase.
