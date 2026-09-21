@@ -24,19 +24,21 @@ The only exceptions:
 | `read` | Read raw file content directly for coordination (plans, configs) |
 | `question` | Ask clarifying questions to the user |
 | `compress` | Collapse closed conversation ranges to protect against context loss |
-| Lifecycle tools | `project_state`, `check_artifacts`, `mark_block_done`, `complete_plan`, `register_spec` |
+| Lifecycle tools | 19 domain-specific tools for specs, plans, briefs, and global state |
 
 Everything else — exploration, editing, running tests, searching — goes to a sub-agent.
 
 ## Lifecycle Tools
 
-The team-lead has direct access to five bookkeeping tools. No delegation, no sub-agent, zero LLM overhead:
+The team-lead has direct access to 19 lifecycle tools organized by domain. No delegation, no sub-agent, zero LLM overhead:
 
-- **`project_state()`** — Full view of exec-plans, specs, and briefs. Called at the start of every mission before any planning.
-- **`check_artifacts()`** — Cross-artifact consistency scan (dead refs, stale statuses). Called at mission start and after completing each scope.
-- **`mark_block_done(plan_file, block_name)`** — Check a block in an exec-plan after each validated delivery.
-- **`complete_plan(plan_file)`** — Set an exec-plan to `status: completed` when all blocks are checked and the final review is APPROVED.
-- **`register_spec(specFile, title)`** — Create a new spec file with minimal frontmatter. Never create spec files manually.
+**Specs (6):** `spec_list()`, `spec_get(id)`, `spec_create(title, type?, content?)`, `spec_update(id, old_string, new_string)`, `spec_validate(id)`, `spec_delete(id)`
+
+**Plans (7):** `plan_list()`, `plan_get(id)`, `plan_create(title, functional_objective, content?, brief_id?)`, `plan_update(id, old_string, new_string)`, `plan_validate(id)`, `plan_block_done(plan_id, block_name)`, `plan_delete(id)`
+
+**Briefs (5):** `brief_list()`, `brief_get(id)`, `brief_create(title, content?, exec_plan_id?)`, `brief_update(id, old_string, new_string)`, `brief_delete(id)`
+
+**Global (1):** `project_state()` — Returns all specs + plans with at least one unchecked block. Briefs are excluded — use `brief_list()` explicitly. Called at the start of every mission.
 
 See [Lifecycle Tools](/lifecycle-tools) for the full reference.
 
@@ -44,7 +46,7 @@ See [Lifecycle Tools](/lifecycle-tools) for the full reference.
 
 ### 1. Understand
 
-The team-lead starts by calling `project_state()` to load current exec-plans, specs, and briefs — this is how it recovers context after a session reset. It checks `todowrite` state to detect whether it is resuming a parked scope. Then it listens to the user request.
+The team-lead starts by calling `project_state()` to load current exec-plans and specs — this is how it recovers context after a session reset. Briefs are excluded from `project_state()` output; the team-lead calls `brief_list()` explicitly when it needs them. It checks `todowrite` state to detect whether it is resuming a parked scope. Then it listens to the user request.
 
 If the intent is unclear at the **vision level** (the user has a problem or a vague idea but hasn't articulated what to build, who it's for, or what success looks like), the team-lead invokes `brainstorm` before any planning. If an existing brief matches the request, it is used directly — no redundant brainstorm session. Work does not start until the goal is understood.
 
@@ -152,7 +154,7 @@ The team-lead operates under a default-deny permission model:
 | `read` | Any file (coordination only) |
 | `question` | Ask user for clarification |
 | `compress` | Context window management |
-| Lifecycle tools | `project_state`, `check_artifacts`, `mark_block_done`, `complete_plan`, `register_spec` |
+| Lifecycle tools | 19 tools — spec/plan/brief management + `project_state` |
 | `bash` | Narrow git commands + basic filesystem inspection only |
 | `edit` / `write` | Scoped to `docs/**` only (exec-plans, specs, briefs) |
 

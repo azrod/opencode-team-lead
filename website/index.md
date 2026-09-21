@@ -40,7 +40,7 @@ features:
 opencode plugin opencode-team-lead --global
 ```
 
-OpenCode will automatically download and load the plugin on next startup. All 11 agents are registered automatically.
+OpenCode will automatically download and load the plugin on next startup. All 14 agents are registered automatically.
 
 ::: tip Set team-lead as your default agent
 ```json

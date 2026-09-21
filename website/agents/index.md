@@ -22,6 +22,9 @@ Agents are split into two modes:
 | `requirements-reviewer` | `subagent` | Verifies implementation matches original requirements. |
 | `code-reviewer` | `subagent` | Evaluates logic, error handling, API design, maintainability. |
 | `security-reviewer` | `subagent` | Identifies vulnerabilities across 7 threat categories. |
+| `spec-validator` | `subagent` | LLM validator invoked after `spec_create`/`spec_update`. Checks completeness, clarity, and consistency. |
+| `plan-validator` | `subagent` | LLM validator invoked after `plan_create`. Checks exec-plan structure and block granularity. |
+| `spec-reviewer` | `subagent` | Integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` after each delivery. |
 | `bug-finder` | `subagent` | Structured investigation. Forces root-cause before any fix. |
 | `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
 | `harness` | `all` | Encodes recurring patterns as permanent enforcement artifacts. |
@@ -32,13 +35,15 @@ Agents are split into two modes:
 ## Agent Pages
 
 - [team-lead](/agents/team-lead) — the orchestrator at the center of everything
-- [Review Cluster](/agents/review-cluster) — review-manager + requirements, code, and security reviewers
+- [Review Cluster](/agents/review-cluster) — review-manager + requirements, code, security, and spec reviewers
 - [Brainstorm](/agents/brainstorm) — Phase 0 thinking partner for vague ideas
 - [Bug-Finder](/agents/bug-finder) — structured investigation before any fix
 - [Harness](/agents/harness) — pattern encoder that makes recurring mistakes impossible
 - [Planning](/agents/planning) — turns complex requests into reviewable exec-plans
 - [Gardener](/agents/gardener) — periodic hygiene and drift detection
 - [Researcher](/agents/researcher) — external knowledge retrieval
+
+> `spec-validator` and `plan-validator` invocation is documented in [Lifecycle Tools](/lifecycle-tools). `spec-reviewer` is part of the [Review Cluster](/agents/review-cluster).
 
 ## How delegation flows
 
@@ -49,7 +54,8 @@ User
         ├─► review-manager               (reviews)
         │     ├─► requirements-reviewer
         │     ├─► code-reviewer
-        │     └─► security-reviewer
+        │     ├─► security-reviewer
+        │     └─► spec-reviewer          (always — NO_ACTION_NEEDED / SPEC_CREATE_NEEDED / SPEC_UPDATE_NEEDED)
         ├─► bug-finder                   (when debugging)
         ├─► brainstorm                   (when intent is unclear at vision level)
         ├─► planning                     (when request is ambiguous on structure)

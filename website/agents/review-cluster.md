@@ -1,6 +1,6 @@
 # Review Cluster
 
-The review cluster is a 4-agent system that validates every code change before it ships. `review-manager` orchestrates three specialists (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) running in parallel, then synthesizes their verdicts into a single structured result that the team-lead acts on.
+The review cluster is a 5-agent system that validates every delivery before it ships. `review-manager` orchestrates four specialists (`requirements-reviewer`, `code-reviewer`, `security-reviewer`, `spec-reviewer`) running in parallel, then synthesizes their verdicts into a single structured result that the team-lead acts on.
 
 The team-lead always delegates to `review-manager`. It never spawns reviewers directly.
 
@@ -13,7 +13,8 @@ team-lead
   └─► review-manager
         ├─► requirements-reviewer  (parallel)
         ├─► code-reviewer          (parallel)
-        └─► security-reviewer      (parallel)
+        ├─► security-reviewer      (parallel)
+        └─► spec-reviewer          (always — checks spec coverage)
               ↓
         Arbitrate disagreements
               ↓
@@ -26,7 +27,7 @@ team-lead
 4. `review-manager` collects their verdicts, arbitrates disagreements, and returns one structured result.
 5. The team-lead acts on the verdict.
 
-## The 4 Agents
+## The 5 Agents
 
 ### review-manager
 
@@ -105,6 +106,21 @@ Identifies vulnerabilities, misconfigurations, and data exposure risks.
 
 For changes touching auth, session/token handling, or cryptographic operations, the security-reviewer must explicitly acknowledge the review in its output — even if no issues were found. Absence of a finding is not implicit.
 
+### spec-reviewer
+
+Runs automatically in every review cycle as part of the review-manager pool. Evaluates whether the delivery introduces or changes behavior that should be captured in a spec.
+
+**Focus:** spec coverage — does this delivery need a new spec, or should an existing spec be updated?
+
+**Not in scope:** code quality, functional compliance, security.
+
+Three possible verdicts:
+- **`NO_ACTION_NEEDED`** — no spec impact, delivery proceeds
+- **`SPEC_CREATE_NEEDED`** — delivery introduces new behavior not captured in any spec; team-lead must call `spec_create` then `spec_validate`
+- **`SPEC_UPDATE_NEEDED`** — delivery changes behavior documented in an existing spec; team-lead must call `spec_update` then `spec_validate`
+
+The spec-reviewer does not block delivery — its verdict is informational, and the team-lead handles spec maintenance after delivery.
+
 ## Verdict Protocol
 
 | Verdict | Meaning | team-lead's action |
@@ -132,6 +148,10 @@ When in doubt between APPROVED and CHANGES_REQUESTED, `review-manager` defaults 
 | Any code change | Large (10+ files) | **High** | `requirements-reviewer` + `security-reviewer` + `code-reviewer` + 1 domain reviewer |
 
 **Hard cap:** never more than 3 technical reviewers. `requirements-reviewer` does not count toward this cap.
+
+::: tip spec-reviewer scope
+`spec-reviewer` runs on every review cycle that actually spawns reviewers. It does **not** run on the docs-only fast-path (instant APPROVED without spawning any reviewers). It is also not triggered when review is skipped entirely (see [When to Skip Review](#when-to-skip-review)).
+:::
 
 **High-risk patterns that always require `security-reviewer`** regardless of size:
 - Auth, session, or token handling

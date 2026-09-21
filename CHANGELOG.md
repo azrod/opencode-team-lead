@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- 19 lifecycle tools replace the previous 5, organized by domain: 6 spec tools (`spec_list`, `spec_get`, `spec_create`, `spec_update`, `spec_validate`, `spec_delete`), 7 plan tools (`plan_list`, `plan_get`, `plan_create`, `plan_update`, `plan_validate`, `plan_block_done`, `plan_delete`), 5 brief tools (`brief_list`, `brief_get`, `brief_create`, `brief_update`, `brief_delete`), and `project_state` (now returns specs + plans with unchecked blocks only, no briefs)
+- Three new agents: `spec-validator` (checks spec completeness and consistency after `spec_create`/`spec_update`), `plan-validator` (checks exec-plan structure and block granularity after `plan_create`), and `spec-reviewer` (integrated into the review-manager pool — decides whether specs need creation or update after each delivery)
+- Artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`) are now protected at runtime — any direct `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is blocked by the plugin. All access goes through the 19 lifecycle tools.
+- The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
+
+### Removed
+- `mark_block_done`, `complete_plan`, `register_spec`, and `check_artifacts` have been removed and replaced by the new domain-specific lifecycle tools (`plan_block_done`, `spec_create`, etc.)
+
 ## [1.0.0] - 2026-08-19
 
 ### Added

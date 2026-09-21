@@ -7,11 +7,26 @@ import { fileURLToPath } from "node:url";
 import { tool } from "@opencode-ai/plugin/tool";
 import {
   projectState,
-  markBlockDone,
-  completePlan,
-  registerSpec,
-  checkArtifacts,
+  specGet,
+  specCreate,
+  specUpdate,
+  specValidate,
+  specList,
+  specDelete,
+  planGet,
+  planCreate,
+  planUpdate,
+  planValidate,
+  planBlockDone,
+  planList,
+  planDelete,
+  briefGet,
+  briefCreate,
+  briefUpdate,
+  briefDelete,
+  briefList,
 } from "./tools/lifecycle.js";
+import { checkArtifactAccess } from "./tools/artifact-guard.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -250,15 +265,18 @@ const SUBAGENT_DEFS = [
     permission: {
       "*": "deny",
       project_state: "allow",
+      plan_create: "allow",
+      plan_get: "allow",
+      plan_update: "allow",
+      plan_validate: "allow",
+      plan_list: "allow",
+      spec_list: "allow",
+      spec_get: "allow",
       task: "ask",
       question: "allow",
       read: "allow",
       glob: "allow",
       grep: "allow",
-      edit: {
-        "*": "deny",
-        "**/docs/exec-plans/**": "allow",
-      },
     },
   },
   {
@@ -287,6 +305,10 @@ const SUBAGENT_DEFS = [
       },
       read: "allow",
       grep: "allow",
+      spec_list: "allow",
+      spec_get: "allow",
+      plan_list: "allow",
+      plan_get: "allow",
       edit: {
         "*": "deny",
         "QUALITY_SCORE.md": "allow",
@@ -306,14 +328,14 @@ const SUBAGENT_DEFS = [
     permission: {
       "*": "deny",
       project_state: "allow",
+      brief_create: "allow",
+      brief_get: "allow",
+      brief_update: "allow",
+      brief_list: "allow",
       task: "allow",
       question: "allow",
       webfetch: "allow",
       read: "allow",
-      edit: {
-        "*": "deny",
-        "**/docs/briefs/**": "allow",
-      },
     },
   },
   {
@@ -333,6 +355,68 @@ const SUBAGENT_DEFS = [
       read: "allow",
       webfetch: "allow",
       websearch: "allow",
+      grep: "allow",
+    },
+  },
+  {
+    id: "spec-validator",
+    file: "spec-validator.md",
+    description:
+      "Semantic consistency checker for specs — verifies internal coherence and " +
+      "compatibility with the existing spec corpus. Returns APPROVED or REJECTED. " +
+      "Invoked automatically on spec creation and update, or explicitly via spec_validate.",
+    temperature: 0.1,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: true,
+    permission: {
+      "*": "deny",
+      spec_list: "allow",
+      spec_get: "allow",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+    },
+  },
+  {
+    id: "plan-validator",
+    file: "plan-validator.md",
+    description:
+      "Structural clarity checker for exec-plans — verifies functional objective present, " +
+      "blocks are atomic and actionable with verifiable 'Done when' criteria, " +
+      "and dependencies are coherent. Returns APPROVED or REJECTED. " +
+      "Invoked automatically on plan creation only.",
+    temperature: 0.1,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: true,
+    permission: {
+      "*": "deny",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+    },
+  },
+  {
+    id: "spec-reviewer",
+    file: "spec-reviewer.md",
+    description:
+      "Post-delivery spec coverage reviewer — determines whether delivered code introduces " +
+      "or invalidates spec coverage. Returns NO_ACTION_NEEDED, SPEC_CREATE_NEEDED, or SPEC_UPDATE_NEEDED. " +
+      "Part of the review-manager's reviewer pool.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: true,
+    permission: {
+      "*": "deny",
+      spec_list: "allow",
+      spec_get: "allow",
+      read: "allow",
+      glob: "allow",
       grep: "allow",
     },
   },
@@ -508,10 +592,24 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         question: "allow",
         compress: "allow",
         project_state: "allow",
-        mark_block_done: "allow",
-        complete_plan: "allow",
-        register_spec: "allow",
-        check_artifacts: "allow",
+        spec_get: "allow",
+        spec_create: "allow",
+        spec_update: "allow",
+        spec_validate: "allow",
+        spec_list: "allow",
+        spec_delete: "allow",
+        plan_get: "allow",
+        plan_create: "allow",
+        plan_update: "allow",
+        plan_validate: "allow",
+        plan_block_done: "allow",
+        plan_list: "allow",
+        plan_delete: "allow",
+        brief_get: "allow",
+        brief_create: "allow",
+        brief_update: "allow",
+        brief_delete: "allow",
+        brief_list: "allow",
         read: "allow",
         edit: {
           "*": "deny",
@@ -557,81 +655,208 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     // ── Tool hook: lifecycle bookkeeping tools ────────────────────────
     tool: {
       project_state: {
-        description:
-          "Return a structured report of the current state of all management artifacts " +
-          "(exec-plans, specs, briefs) in the project. Call at the start of every mission.",
+        description: "Return the current state of active artifacts: all specs with metadata, and active exec-plans (those with at least one unchecked block). Briefs are excluded — call brief_list() if needed. Call at the start of every mission.",
         args: {},
         async execute(_args) {
-          try {
-            return JSON.stringify(await projectState(projectRoot, paths));
-          } catch (err) {
-            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
-          }
+          try { return JSON.stringify(await projectState(projectRoot, paths)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
         },
       },
-      mark_block_done: {
-        description:
-          "Check a specific block in an exec-plan ([ ] → [x]). " +
-          "Call after each validated sub-task delivery.",
+      spec_get: {
+        description: "Retrieve a spec by id. Returns file path, content, and frontmatter.",
         args: {
-          plan_file: tool.schema.string().describe("Relative path to the exec-plan file, e.g. 'docs/exec-plans/auth-system.md'"),
-          block_name: tool.schema.string().describe("Name or unambiguous substring of the block to check, e.g. 'Bloc 2: login flow'"),
+          id: tool.schema.string().describe("Spec id (filename without extension, e.g. 'auth')"),
         },
-        async execute({ plan_file, block_name }) {
-          try {
-            return JSON.stringify(await markBlockDone(projectRoot, plan_file, block_name));
-          } catch (err) {
-            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
-          }
+        async execute({ id }) {
+          try { return JSON.stringify(await specGet(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
         },
       },
-      complete_plan: {
-        description:
-          "Set an exec-plan's status to 'completed' in its frontmatter. " +
-          "Refuses if any unchecked blocks remain. " +
-          "Call when all blocks are done and the final review is APPROVED.",
+      spec_create: {
+        description: "Create a new spec file. Refuses to overwrite an existing one. After creation, call spec_validate to trigger the LLM spec-validator agent.",
         args: {
-          plan_file: tool.schema.string().describe("Relative path to the exec-plan file"),
+          title: tool.schema.string().describe("Human-readable title of the spec"),
+          type: tool.schema.string().optional().describe("Spec type: 'technical' | 'functional' | 'architectural'. Defaults to 'technical'"),
+          content: tool.schema.string().optional().describe("Optional markdown body content"),
         },
-        async execute({ plan_file }) {
-          try {
-            return JSON.stringify(await completePlan(projectRoot, plan_file));
-          } catch (err) {
-            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
-          }
+        async execute({ title, type, content }) {
+          try { return JSON.stringify(await specCreate(projectRoot, paths, title, type ?? "technical", content ?? null)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
         },
       },
-      register_spec: {
-        description:
-          "Create a new spec file with minimal frontmatter (title, status: draft, created). " +
-          "Refuses to overwrite existing files. " +
-          "Call when a new spec needs to exist on disk.",
+      spec_update: {
+        description: "Update a spec by replacing oldString with newString. Fails if oldString not found or found multiple times. After updating, call spec_validate to trigger the LLM spec-validator agent.",
         args: {
-          spec_file: tool.schema.string().describe("Filename or relative path for the spec, e.g. 'auth.md' or 'docs/specs/auth.md'"),
-          title: tool.schema.string().describe("Human-readable title of the spec, e.g. 'Spec : Authentication System'"),
+          id: tool.schema.string().describe("Spec id"),
+          old_string: tool.schema.string().describe("Exact string to replace"),
+          new_string: tool.schema.string().describe("Replacement string"),
         },
-        async execute({ spec_file, title }) {
-          try {
-            return JSON.stringify(await registerSpec(projectRoot, paths, spec_file, title));
-          } catch (err) {
-            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
-          }
+        async execute({ id, old_string, new_string }) {
+          try { return JSON.stringify(await specUpdate(projectRoot, paths, id, old_string, new_string)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
         },
       },
-      check_artifacts: {
-        description:
-          "Cross-artifact consistency scan — detects dead references, stale statuses, " +
-          "and missing links between exec-plans, specs, and briefs. " +
-          "Call at mission start and after completing each scope.",
+      spec_validate: {
+        description: "Validate a spec's structure: frontmatter present, required fields, non-empty body.",
+        args: {
+          id: tool.schema.string().describe("Spec id"),
+        },
+        async execute({ id }) {
+          try { return JSON.stringify(await specValidate(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      spec_list: {
+        description: "List all specs with their metadata (title, id, type, status, created).",
         args: {},
         async execute(_args) {
-          try {
-            return JSON.stringify(await checkArtifacts(projectRoot, paths));
-          } catch (err) {
-            return JSON.stringify({ error: err instanceof Error ? err.message : String(err) });
-          }
+          try { return JSON.stringify(await specList(projectRoot, paths)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
         },
       },
+      spec_delete: {
+        description: "Delete a spec by id.",
+        args: {
+          id: tool.schema.string().describe("Spec id"),
+        },
+        async execute({ id }) {
+          try { return JSON.stringify(await specDelete(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_get: {
+        description: "Retrieve an exec-plan by id. Returns file path, content, frontmatter, and block counts.",
+        args: {
+          id: tool.schema.string().describe("Plan id (filename without extension, e.g. 'auth-system')"),
+        },
+        async execute({ id }) {
+          try { return JSON.stringify(await planGet(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_create: {
+        description: "Create a new exec-plan. functional_objective is required. After creation, call plan_validate to trigger the LLM plan-validator agent.",
+        args: {
+          title: tool.schema.string().describe("Plan title"),
+          functional_objective: tool.schema.string().describe("2-4 sentences describing the user problem being solved"),
+          content: tool.schema.string().optional().describe("Optional markdown content for Scope section"),
+          brief: tool.schema.string().optional().describe("Optional id of the associated brief"),
+        },
+        async execute({ title, functional_objective, content, brief }) {
+          try { return JSON.stringify(await planCreate(projectRoot, paths, { title, functional_objective, content: content ?? null, brief: brief ?? null })); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_update: {
+        description: "Update an exec-plan by replacing oldString with newString. Same surgical mechanic as spec_update.",
+        args: {
+          id: tool.schema.string().describe("Plan id"),
+          old_string: tool.schema.string().describe("Exact string to replace"),
+          new_string: tool.schema.string().describe("Replacement string"),
+        },
+        async execute({ id, old_string, new_string }) {
+          try { return JSON.stringify(await planUpdate(projectRoot, paths, id, old_string, new_string)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_validate: {
+        description: "Validate an exec-plan's structure: functional_objective present, building blocks present, at least one block.",
+        args: {
+          id: tool.schema.string().describe("Plan id"),
+        },
+        async execute({ id }) {
+          try { return JSON.stringify(await planValidate(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_block_done: {
+        description: "Check a specific block in an exec-plan ([ ] → [x]). Call after each validated sub-task delivery.",
+        args: {
+          plan_id: tool.schema.string().describe("Plan id (filename without extension)"),
+          block_name: tool.schema.string().describe("Name or unambiguous substring of the block to check"),
+        },
+        async execute({ plan_id, block_name }) {
+          try { return JSON.stringify(await planBlockDone(projectRoot, paths, plan_id, block_name)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_list: {
+        description: "List all exec-plans with their metadata and block progress.",
+        args: {},
+        async execute(_args) {
+          try { return JSON.stringify(await planList(projectRoot, paths)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      plan_delete: {
+        description: "Delete an exec-plan by id. Use when a plan is abandoned — deletion is the signal of abandonment, not a status field.",
+        args: {
+          id: tool.schema.string().describe("Plan id"),
+        },
+        async execute({ id }) {
+          try { return JSON.stringify(await planDelete(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      brief_get: {
+        description: "Retrieve a brief by id. Returns file path, content, and frontmatter.",
+        args: {
+          id: tool.schema.string().describe("Brief id (filename without extension)"),
+        },
+        async execute({ id }) {
+          try { return JSON.stringify(await briefGet(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      brief_create: {
+        description: "Create a new product brief.",
+        args: {
+          title: tool.schema.string().describe("Brief title"),
+          content: tool.schema.string().optional().describe("Optional markdown body content"),
+          exec_plan: tool.schema.string().optional().describe("Optional id of the associated exec-plan"),
+        },
+        async execute({ title, content, exec_plan }) {
+          try { return JSON.stringify(await briefCreate(projectRoot, paths, { title, content: content ?? null, exec_plan: exec_plan ?? null })); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      brief_update: {
+        description: "Update a brief by replacing oldString with newString.",
+        args: {
+          id: tool.schema.string().describe("Brief id"),
+          old_string: tool.schema.string().describe("Exact string to replace"),
+          new_string: tool.schema.string().describe("Replacement string"),
+        },
+        async execute({ id, old_string, new_string }) {
+          try { return JSON.stringify(await briefUpdate(projectRoot, paths, id, old_string, new_string)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      brief_delete: {
+        description: "Delete a brief by id. Use when a brief is abandoned.",
+        args: {
+          id: tool.schema.string().describe("Brief id"),
+        },
+        async execute({ id }) {
+          try { return JSON.stringify(await briefDelete(projectRoot, paths, id)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+      brief_list: {
+        description: "List all briefs with their metadata (title, id, exec_plan, created).",
+        args: {},
+        async execute(_args) {
+          try { return JSON.stringify(await briefList(projectRoot, paths)); }
+          catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
+        },
+      },
+    },
+
+    // ── Tool execute before hook: protect artifact directories ───────
+    "tool.execute.before": async ({ tool: toolName, args }) => {
+      const protectedDirs = [paths.specs, paths.execPlans, paths.briefs];
+      const err = checkArtifactAccess({ tool: toolName, args }, protectedDirs);
+      if (err) throw err;
     },
 
     // ── Skill hook: register bundled skills ──────────────────────────

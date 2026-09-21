@@ -1,73 +1,202 @@
 # Lifecycle Tools
 
-The team-lead has direct access to five deterministic, zero-LLM bookkeeping tools injected by the plugin. These tools enforce consistency across exec-plans, specs, and briefs — no delegation, no sub-agent overhead. They run as part of the team-lead's internal workflow and are not visible in the OpenCode UI.
+The team-lead has direct access to 19 lifecycle tools — the only way to interact with artifact directories. Direct tool access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is blocked at runtime by the plugin's `tool.execute.before` hook. All access goes through these tools.
+
+## Protected Zones
+
+The following directories are protected for all agents:
+
+- `docs/specs/` — spec files
+- `docs/exec-plans/` — exec-plan files
+- `docs/briefs/` — product briefs
+
+Any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is intercepted and blocked. The lifecycle tools bypass this guard transparently.
 
 ::: tip When the team-lead calls these
-- `project_state()` and `check_artifacts()` are called at the **start of every mission**
-- `mark_block_done()` is called **after each validated delivery**
-- `complete_plan()` is called **when all blocks are done and the final review is APPROVED**
-- `register_spec()` is called **when a new spec needs to exist on disk**
+- `project_state()` is called at the **start of every mission**
+- `spec_create` / `spec_update` are always followed by `spec_validate(id)`
+- `plan_create` is always followed by `plan_validate(id)`
+- `plan_block_done()` is called **after each validated delivery**
+- `spec-reviewer` runs **automatically** in the review phase after every delivery (via `review-manager`)
 :::
 
 ---
 
-## `project_state()`
+## Spec Tools
 
-**Signature:** `project_state() → JSON`
+### `spec_list()`
 
-**When the team-lead calls it:** Mandatory at the start of every mission, before any work begins.
+**Signature:** `spec_list() → JSON`
 
-**What it does:** Globs all three artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`), reads YAML frontmatter from every file found, and returns a full inventory of the project's current state.
+**When the team-lead calls it:** To get an overview of existing specs before creating a new one.
+
+**Returns:** Array of all specs with their `id`, `title`, `status`, and `created` date.
+
+---
+
+### `spec_get(id)`
+
+**Signature:** `spec_get(id: string) → JSON`
+
+**When the team-lead calls it:** To read the full content of a specific spec.
+
+**Returns:** Full spec content including frontmatter and body.
+
+---
+
+### `spec_create(title, type?, content?)`
+
+**Signature:** `spec_create(title: string, type?: string, content?: string) → JSON`
+
+**When the team-lead calls it:** When a scope involves an architecture decision, a significant functional behavior, or an interface between components — before implementation starts.
+
+**What it does:** Creates a new spec file in `docs/specs/` with minimal frontmatter.
 
 **Returns:**
 ```json
 {
-  "specs": [
-    {
-      "title": "string",
-      "id": "string",
-      "criticality": "string | null",
-      "status": "string",
-      "created": "ISO date string"
-    }
-  ],
-  "exec_plans": [
-    {
-      "file": "string",
-      "status": "string",
-      "brief": "string | null",
-      "blocks": { "total": 0, "checked": 0 },
-      "warnings": ["string"]
-    }
-  ],
-  "briefs": [
-    {
-      "project": "string",
-      "type": "string",
-      "status": "string",
-      "exec_plan": "string | null"
-    }
-  ]
+  "created": true,
+  "id": "my-feature",
+  "file": "docs/specs/my-feature.md"
 }
 ```
 
-**Notes:** Warns inline when an exec-plan has all blocks checked but `status` is not `completed` — a prompt to call `complete_plan()`.
+::: warning Always follow with spec_validate
+After `spec_create`, the team-lead must call `spec_validate(id)` to invoke the LLM spec-validator agent. The validator checks completeness, clarity, and internal consistency.
+:::
+
+::: tip No overwrite
+`spec_create` will refuse if a file with the same id already exists. Use `spec_update` to modify an existing spec.
+:::
 
 ---
 
-## `mark_block_done(plan_file, block_name)`
+### `spec_update(id, old_string, new_string)`
 
-**Signature:** `mark_block_done(plan_file: string, block_name: string) → JSON`
+**Signature:** `spec_update(id: string, old_string: string, new_string: string) → JSON`
+
+**When the team-lead calls it:** To update an existing spec with targeted edits.
+
+**Returns:** Confirmation with the updated file path.
+
+::: warning Always follow with spec_validate
+After `spec_update`, the team-lead must call `spec_validate(id)` to re-validate the updated spec.
+:::
+
+---
+
+### `spec_validate(id)`
+
+**Signature:** `spec_validate(id: string) → JSON`
+
+**When the team-lead calls it:** Immediately after `spec_create` or `spec_update`. Also available on demand when reviewing existing specs.
+
+**What it does:** Invokes the `spec-validator` LLM agent, which checks:
+- Completeness — all required sections present
+- Clarity — unambiguous, no undefined terms
+- Internal consistency — no contradictions within the spec
+
+**Returns:** Validator verdict with findings and suggestions.
+
+---
+
+### `spec_delete(id)`
+
+**Signature:** `spec_delete(id: string) → JSON`
+
+**When the team-lead calls it:** When a spec is no longer relevant and should be removed.
+
+**Returns:** Confirmation of deletion.
+
+---
+
+## Plan Tools
+
+### `plan_list()`
+
+**Signature:** `plan_list() → JSON`
+
+**When the team-lead calls it:** To get an overview of active and completed exec-plans.
+
+**Returns:** Array of all exec-plans with their `id`, `title`, `status`, `blocks` counts, and `brief_id` if linked.
+
+---
+
+### `plan_get(id)`
+
+**Signature:** `plan_get(id: string) → JSON`
+
+**When the team-lead calls it:** To read the full content of a specific exec-plan.
+
+**Returns:** Full exec-plan content including frontmatter, functional objective, and all blocks.
+
+---
+
+### `plan_create(title, functional_objective, content?, brief_id?)`
+
+**Signature:** `plan_create(title: string, functional_objective: string, content?: string, brief_id?: string) → JSON`
+
+**When the team-lead calls it:** When breaking a complex or multi-session task into structured blocks.
+
+**What it does:** Creates a new exec-plan file in `docs/exec-plans/` with frontmatter and the provided blocks.
+
+**Returns:**
+```json
+{
+  "created": true,
+  "id": "my-feature",
+  "file": "docs/exec-plans/my-feature.md"
+}
+```
+
+::: warning Always follow with plan_validate
+After `plan_create`, the team-lead must call `plan_validate(id)` to invoke the LLM plan-validator agent. The validator checks block granularity, structure, and links to brief/specs.
+:::
+
+---
+
+### `plan_update(id, old_string, new_string)`
+
+**Signature:** `plan_update(id: string, old_string: string, new_string: string) → JSON`
+
+**When the team-lead calls it:** To edit blocks or metadata in an existing exec-plan.
+
+**Returns:** Confirmation with the updated file path.
+
+---
+
+### `plan_validate(id)`
+
+**Signature:** `plan_validate(id: string) → JSON`
+
+**When the team-lead calls it:** Immediately after `plan_create`. Also available on demand.
+
+::: info Not required after plan_update
+Unlike `spec_validate` — which must be called after both `spec_create` and `spec_update` — `plan_validate` is only required after `plan_create`. Incremental block edits via `plan_update` do not need a re-validation pass.
+:::
+
+**What it does:** Invokes the `plan-validator` LLM agent, which checks:
+- Block structure — each block is actionable and atomic
+- Block granularity — not too coarse, not too fine
+- Links — brief_id and spec references resolve correctly
+
+**Returns:** Validator verdict with findings and suggestions.
+
+---
+
+### `plan_block_done(plan_id, block_name)`
+
+**Signature:** `plan_block_done(plan_id: string, block_name: string) → JSON`
 
 **When the team-lead calls it:** After each validated sub-task delivery.
 
-**What it does:** Finds the block in the exec-plan file by substring match on `block_name`, changes `[ ]` to `[x]`, and writes the file. If all blocks are now checked, returns `all_done: true` as a prompt to call `complete_plan()`.
+**What it does:** Finds the block by substring match on `block_name`, changes `[ ]` to `[x]`, and writes the file.
 
 **Returns:**
 ```json
 {
   "file": "docs/exec-plans/my-feature.md",
-  "block": "Bloc 2: implement validation",
+  "block": "Block 2: implement validation",
   "was": "[ ]",
   "now": "[x]",
   "blocks": { "total": 4, "checked": 2 },
@@ -85,89 +214,102 @@ The team-lead has direct access to five deterministic, zero-LLM bookkeeping tool
 
 ---
 
-## `complete_plan(plan_file)`
+### `plan_delete(id)`
 
-**Signature:** `complete_plan(plan_file: string) → JSON`
+**Signature:** `plan_delete(id: string) → JSON`
 
-**When the team-lead calls it:** When all blocks are done **and** the final review is APPROVED.
+**When the team-lead calls it:** When an exec-plan is no longer needed.
 
-**What it does:** Verifies all blocks in the exec-plan are checked. If any remain unchecked, refuses with an error. Otherwise, updates the frontmatter `status` field to `completed` and sets `updated` to today's ISO date.
-
-**Returns:**
-```json
-{
-  "file": "docs/exec-plans/my-feature.md",
-  "status": "completed",
-  "updated": "2026-05-04"
-}
-```
-
-**Notes:** The file is **not deleted** after completion — it remains as a historical reference. A completed exec-plan is a record of what was built and how.
-
-::: warning Refuses if unchecked blocks remain
-`complete_plan()` will refuse with an error listing the unchecked blocks. All blocks must be marked done first via `mark_block_done()`.
-:::
+**Returns:** Confirmation of deletion.
 
 ---
 
-## `register_spec(specFile, title)`
+## Brief Tools
 
-**Signature:** `register_spec(specFile: string, title: string) → JSON`
+### `brief_list()`
 
-**When the team-lead calls it:** When a new spec needs to exist on disk for a component, API contract, or design decision.
+**Signature:** `brief_list() → JSON`
 
-**What it does:** Resolves the path within `docs/specs/`, errors if the file already exists (no overwrite), then writes minimal frontmatter plus an H1 heading placeholder.
+**When the team-lead calls it:** To check existing product briefs before starting a new planning session.
 
-**Returns:**
-```json
-{
-  "created": true,
-  "file": "docs/specs/my-feature.md"
-}
-```
-
-**Notes:** Does **not** write to any registry — the disk is the source of truth. Future calls to `project_state()` will automatically pick up the new file.
-
-::: tip No overwrite
-`register_spec()` will refuse if the target file already exists. This prevents accidental spec corruption. To update an existing spec, read it and edit it directly.
-:::
+**Returns:** Array of all briefs with their `id`, `title`, `status`, and linked `exec_plan_id`.
 
 ---
 
-## `check_artifacts()`
+### `brief_get(id)`
 
-**Signature:** `check_artifacts() → JSON`
+**Signature:** `brief_get(id: string) → JSON`
 
-**When the team-lead calls it:** At mission start AND after each scope completion.
+**When the team-lead calls it:** To read the full content of a product brief.
 
-**What it does:** Cross-artifact consistency scan. Detects six categories of problems between exec-plans, specs, and briefs:
+**Returns:** Full brief content including frontmatter and body.
 
-| Type | Condition | Severity |
-|------|-----------|----------|
-| `plan_stale_status` | All blocks checked, status ≠ `completed` | `blocking` |
-| `plan_missing_brief` | Exec-plan has no `brief:` field | `warning` |
-| `plan_brief_dead` | `brief:` points to a file that doesn't exist | `blocking` |
-| `brief_missing_plan` | Brief has no `exec_plan:` field | `warning` |
-| `brief_plan_dead` | `exec_plan:` points to a file that doesn't exist | `blocking` |
-| `spec_stale_draft` | `status: draft` and `created` > 30 days ago | `warning` |
+---
+
+### `brief_create(title, content?, exec_plan_id?)`
+
+**Signature:** `brief_create(title: string, content?: string, exec_plan_id?: string) → JSON`
+
+**When the team-lead calls it:** When a brainstorm session produces a structured product brief to record.
+
+**Returns:** Confirmation with the created file path.
+
+---
+
+### `brief_update(id, old_string, new_string)`
+
+**Signature:** `brief_update(id: string, old_string: string, new_string: string) → JSON`
+
+**When the team-lead calls it:** To update an existing brief with new information.
+
+**Returns:** Confirmation with the updated file path.
+
+---
+
+### `brief_delete(id)`
+
+**Signature:** `brief_delete(id: string) → JSON`
+
+**When the team-lead calls it:** When a brief is obsolete.
+
+**Returns:** Confirmation of deletion.
+
+---
+
+## Global
+
+### `project_state()`
+
+**Signature:** `project_state() → JSON`
+
+**When the team-lead calls it:** Mandatory at the start of every mission, before any work begins.
+
+**What it does:** Returns a full inventory of the project's current state — all specs, and all plans that have at least one unchecked block.
 
 **Returns:**
 ```json
 {
-  "problems": [
+  "specs": [
     {
-      "type": "plan_stale_status",
-      "file": "docs/exec-plans/my-feature.md",
-      "severity": "blocking",
-      "detail": "All 4 blocks checked but status is 'in-progress'",
-      "suggestion": "Call complete_plan() to close this scope"
+      "id": "string",
+      "title": "string",
+      "status": "string",
+      "created": "ISO date string"
     }
   ],
-  "summary": "1 blocking problem, 0 warnings"
+  "exec_plans": [
+    {
+      "id": "string",
+      "title": "string",
+      "status": "string",
+      "brief_id": "string | null",
+      "blocks": { "total": 0, "checked": 0 }
+    }
+  ]
 }
 ```
 
-**Error cases:** Returns `{ problems: [], summary: "No problems found" }` if everything is consistent.
+**Notes:** Only plans with at least one unchecked block are included — completed plans are omitted to keep the output focused.
 
 ---
 
@@ -179,23 +321,8 @@ By default, lifecycle tools look for artifacts in:
 - `docs/exec-plans/` — exec-plan files
 - `docs/briefs/` — product briefs
 
-The `write` tool creates these directories automatically when needed. To use custom paths, add an `opencode.json` override:
-
-```json
-{
-  "plugin": ["opencode-team-lead"],
-  "agents": {
-    "team-lead": {
-      "env": {
-        "SPECS_DIR": "custom/specs",
-        "PLANS_DIR": "custom/plans",
-        "BRIEFS_DIR": "custom/briefs"
-      }
-    }
-  }
-}
-```
+The `write` tool creates these directories automatically when needed.
 
 ::: warning Path configuration is not yet supported
-Custom path configuration via environment variables is not implemented in v0.9.0. The paths above are hardcoded. This is planned for a future release.
+Custom path configuration via environment variables is not implemented. The paths above are hardcoded.
 :::

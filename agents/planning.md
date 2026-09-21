@@ -72,7 +72,7 @@ updated: {date}
 Before doing anything else:
 
 1. If the team-lead passed a brief path in the task prompt → **use it directly**. Read the file with `read`. Skip `project_state()` for this step.
-2. If no brief path was provided → call `project_state()` and check the `briefs` array.
+   2. If no brief path was provided → call `brief_list()`.
    - If **one brief** exists → read it and confirm with the user: "I found a brief at `{path}` — should I use it as the basis for this plan?"
    - If **multiple briefs** exist → do not guess. Ask the team-lead or user which one to use before proceeding.
    - If **no brief** exists → proceed normally to step 1.
