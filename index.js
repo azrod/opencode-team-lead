@@ -394,9 +394,8 @@ const SUBAGENT_DEFS = [
     silent: true,
     permission: {
       "*": "deny",
-      read: "allow",
-      glob: "allow",
-      grep: "allow",
+      plan_get: "allow",
+      plan_list: "allow",
     },
   },
   {

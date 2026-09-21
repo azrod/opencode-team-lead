@@ -103,6 +103,5 @@ REJECTED
 
 ## Tools Available
 
-- **`read`** — read the plan file and any referenced documents
-- **`glob`** — find files by pattern if needed for context
-- **`grep`** — search for specific patterns if needed for context
+- **`plan_get`** — read a plan by id (the only way to access exec-plans — direct `read` is blocked)
+- **`plan_list`** — list all plans if you need to find a plan by name or check existing ones
