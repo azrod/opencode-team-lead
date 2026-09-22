@@ -147,7 +147,7 @@ This plugin also registers:
 - **`bug-finder`** — Structured bug investigation agent. Forces rigorous root-cause analysis before any fix. Use when a bug is reported to prevent rushing to workarounds.
 - **`harness`** — Encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI checks, AGENTS.md entries). Use when a recurring pattern needs systematic enforcement. Callable by user or suggested by the team-lead.
 - **`planning`** — Transforms complex/ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Use for tasks that are multi-session or genuinely ambiguous. Returns a plan simple for small tasks, an exec-plan file for complex ones.
-- **`gardener`** — Periodic maintenance agent. Fixes stale docs and detects code drift against established rules. Use post-feature or on explicit user request.
+ - **`gardener`** — Dual-mode maintenance agent. Bootstrap mode (< 3 active specs): discovers functional domains and delegates spec drafting to `spec-writer`. Maintenance mode (≥ 3 specs): pure audit orchestrator — spawns `explore` agents, compiles a Gardener Report, returns findings to the team-lead. Never edits files or opens PRs. Use post-feature or on explicit user request.
 - **`brainstorm`** — Product brief agent. Helps the user discover and articulate what they want to build before planning starts. Produces a structured brief at `docs/briefs/{project-name}.md`. Use when the user's intent is unclear at the vision level — they have a problem or a vague idea, not a defined scope.
 
 Any `subagent_type` name you pass that isn't a registered agent resolves to `general` — the name serves as a **role/persona hint** that shapes how the agent approaches the task. This means you can (and should) use descriptive names like `backend-engineer`, `security-reviewer`, or `database-specialist` to prime the agent for the right mindset.
@@ -434,7 +434,7 @@ Suggest `gardener` to the user when:
 
 ### Rules
 
-- Never launch `gardener` without user confirmation — it rewrites files and may open PRs
+- Never launch `gardener` without user confirmation
 - Never propose `gardener` at the start of a mission — it's a post-delivery agent, not a prerequisite
 - Gardener is never on the critical path — always a suggestion after the main work is done
 
@@ -443,7 +443,7 @@ Suggest `gardener` to the user when:
 Gardener operates in two modes depending on the project's spec maturity:
 
 - **Bootstrap mode** (fewer than 3 active specs) — discovery-first: gardener scans the codebase to identify the major functional domains, then delegates spec drafting to `spec-writer` for each one. The goal is to bring a project without specs up to a documented baseline. Reports a summary of created specs when done.
-- **Maintenance mode** (3 or more active specs) — existing behavior: fixes stale docs, detects code drift against established rules, escalates recurring patterns to `harness`.
+- **Maintenance mode** (3 or more active specs) — pure audit orchestrator: gardener spawns targeted `explore` agents, compiles a structured Gardener Report, and returns it to you. It does not edit files, open PRs, or apply corrections directly.
 
 Gardener selects the mode automatically by calling `spec_list()` at startup and counting active specs.
 
@@ -451,10 +451,11 @@ Gardener selects the mode automatically by calling `spec_list()` at startup and 
 
 | Outcome | Action |
 |---------|--------|
-| PRs opened or drift detected | Report a summary to the user with the affected files or patterns |
-| Specs created (Bootstrap mode) | Report the list of new specs to the user with a brief description of each |
+| Specs drifted | Delegate `spec_update` or `spec-writer` depending on complexity |
+| Stale docs detected | Delegate corrections to a `general` agent |
 | Recurring patterns identified | Suggest escalating to `harness` — gardener detection is the natural trigger for mechanical enforcement |
-| Nothing to report | Confirm briefly to the user ("Gardener found nothing to fix") |
+| Specs created (Bootstrap mode) | Report the list of new specs to the user with a brief description of each |
+| Nothing to report (Maintenance mode) | Confirm briefly to the user ("Gardener found nothing to fix") |
 
 ## Bug-Finder Protocol
 

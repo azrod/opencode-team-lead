@@ -30,7 +30,7 @@ Two hooks power the plugin:
 | `brainstorm` | Phase 0 thinking partner — helps articulate what you want to build before planning starts |
 | `harness` | Encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries) |
 | `planning` | Transforms complex or ambiguous requests into structured exec-plans written to disk |
-| `gardener` | Periodic maintenance — fixes stale docs, detects code drift, escalates patterns to harness |
+| `gardener` | Periodic audit agent — Bootstrap: discovers functional domains, delegates to spec-writer. Maintenance: pure audit orchestrator, compiles Gardener Report, returns findings to team-lead. |
 | `researcher` | External knowledge research — fetches and synthesizes information from the web, official docs, and APIs |
 
 ### The team-lead's workflow
@@ -63,7 +63,7 @@ Takes a complex or ambiguous request and writes a structured exec-plan to `docs/
 
 ### gardener
 
-Periodic hygiene agent. Reads docs and code, spots drift (docs that describe deleted features, patterns that have evolved, stale TODOs), fixes what it can, and escalates recurring issues to harness.
+Periodic audit agent. In Bootstrap mode, discovers undocumented functional domains and delegates spec writing to `spec-writer`. In Maintenance mode, operates as a pure audit orchestrator — spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead. Never edits files or opens PRs directly; all corrections are delegated by the team-lead after receiving the report.
 
 ## Installation
 
@@ -153,7 +153,7 @@ These tools are not visible in the OpenCode UI. They run automatically as part o
 | `brainstorm` | `task`, `question`, `webfetch`, `read` (all), `edit` (`docs/briefs/**` only) |
 | `harness` | `task` (ask), `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all) |
 | `planning` | `task` (ask), `question`, `read` (all), `glob`, `grep`, `edit` (`docs/exec-plans/**` only) |
-| `gardener` | `question`, `bash` (git log/diff/status/show/blame/shortlog, gh pr create), `read` (all), `edit` (`QUALITY_SCORE.md` only) |
+| `gardener` | `task` (explore + spec-writer only), `bash` (git log/diff/status), `read` (all), `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
 | `researcher` | `read`, `webfetch`, `websearch`, `grep` |
 
 Everything not listed is denied.

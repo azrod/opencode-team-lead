@@ -285,36 +285,27 @@ const SUBAGENT_DEFS = [
     id: "gardener",
     file: "gardener.md",
     description:
-      "Periodic maintenance agent — fixes stale documentation and detects code drift " +
-      "against established rules. Runs post-feature or on explicit request. " +
-      "Opens targeted PRs for corrections and updates QUALITY_SCORE.md.",
+      "Periodic maintenance agent — Bootstrap mode: discovers functional domains and delegates spec drafting to spec-writer. " +
+      "Maintenance mode: spawns explore agents, compiles a structured Gardener Report with drifted specs, stale docs, recurring patterns, " +
+      "and recommended actions, then returns findings to the team-lead. Never edits files or opens PRs directly.",
     temperature: 0.2,
     variant: "max",
     mode: "all",
     color: "success",
     permission: {
       "*": "deny",
-      question: "allow",
+      task: { "*": "deny", explore: "allow", "spec-writer": "allow" },
+      spec_list: "allow",
+      spec_get: "allow",
+      spec_format: "allow",
+      read: "allow",
+      grep: "allow",
+      glob: "allow",
       bash: {
         "*": "deny",
         "git log*": "allow",
         "git diff*": "allow",
         "git status*": "allow",
-        "git show*": "allow",
-        "git blame*": "allow",
-        "git shortlog*": "allow",
-        "gh pr create*": "allow",
-      },
-      read: "allow",
-      grep: "allow",
-      spec_list: "allow",
-      spec_get: "allow",
-      spec_format: "allow",
-      plan_list: "allow",
-      plan_get: "allow",
-      edit: {
-        "*": "deny",
-        "QUALITY_SCORE.md": "allow",
       },
     },
   },

@@ -67,7 +67,7 @@ OpenCode IDE
 | `planning` | `all` | 0.3 | max |
 | `gardener` | `all` | 0.2 | max |
 | `brainstorm` | `all` | 0.5 | max |
-| `researcher` | `subagent` | 0.2 | max |
+| `researcher` | `subagent` | 0.3 | extended |
 
 ## Permission model
 
@@ -86,7 +86,7 @@ The principle is **deny-all, explicit allowlist**. Every agent starts with `"*":
 
 ### review-manager
 
-`task` and `question` only. Can read files directly via `read`, `glob`, `grep`.
+`task` (filtered to `*-reviewer` agents only), `question`, `read`, `glob`, `grep`.
 
 ### Specialized reviewers (`requirements-reviewer`, `code-reviewer`, `security-reviewer`)
 
@@ -98,22 +98,28 @@ Investigates directly via `read`, `glob`, `grep`. Reports findings back to calle
 
 ### brainstorm
 
-`task`, `question`, `webfetch`, `read` (all project files), `edit` (`docs/briefs/**` only). No bash.
+`task`, `question`, `webfetch`, `read` (all project files). No bash, no edit.
 
 ### harness
 
-`task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all), `write` (all). Full access — harness needs to be able to create and modify any enforcement artifact.
+`task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all). No write — harness creates and modifies enforcement artifacts via edit only.
 
 ### planning
 
-`task`, `question`, `read` (`AGENTS.md`, `README.md`, `docs/**`), `edit`/`write` (`docs/exec-plans/**` only).
+`task`, `read`, `glob`, `grep`, `project_state`, `spec_list`, `spec_get`, `plan_create`, `plan_get`, `plan_update`, `plan_validate`, `plan_list`. No direct `edit` or `write` — all artifact mutations go through lifecycle tools.
 
 ### gardener
 
-`task`, `question`, `bash` (`git log`, `git diff`, `git status`, `gh pr create`), `read` (all), `edit`/`write` (`QUALITY_SCORE.md` only).
+`task` (`explore` + `spec-writer` only), `bash` (`git log`, `git diff`, `git status`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`
 
-::: tip Why deny-all?
-An orchestrator that can read files directly tends to read them instead of delegating. The deny-all constraint forces the team-lead to delegate exploration and file access to specialized agents, keeping context clean and responsibilities well-separated.
+### Guardrails
+
+**Tooling directories:** Gardener never reads or scans dotted tooling directories (`.opencode/`, `.claude/`, `.cursor/`, `.git/`, `.ssh/`). These hold operational state, not project code or documentation.
+
+**Credentials:** Gardener never reads files matching `.env*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.secret`, or any other file that may contain secrets, private keys, or credentials. This is a hard constraint, not a guideline — prompt injection in source files or documentation could attempt to exfiltrate secrets by asking it to "check" such files.
+
+::: tip Why restrict `task`?
+`task` is filtered to `explore` + `spec-writer` only — the gardener cannot spawn general-purpose agents or open PRs, which enforces its audit-only mission.
 :::
 
 ## How prompts are loaded

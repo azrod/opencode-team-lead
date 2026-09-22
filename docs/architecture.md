@@ -47,7 +47,7 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 | `bug-finder` | `all` | 0.2 | max | Investigation structurée de bugs. Force l'analyse root-cause avant toute correction. |
 | `harness` | `all` | 0.2 | max | Encode les patterns récurrents en artifacts d'enforcement mécaniques (lint rules, CI checks, AGENTS.md entries). |
 | `planning` | `all` | 0.3 | max | Transforme les requêtes complexes ou ambiguës en work contracts structurés sur disque (exec-plans). |
-| `gardener` | `all` | 0.2 | max | Maintenance périodique — corrige les docs stales, détecte la dérive de code, ouvre des PRs ciblées. |
+| `gardener` | `all` | 0.2 | max | Maintenance périodique — mode Bootstrap : découvre les domaines fonctionnels et délègue à `spec-writer`. Mode Maintenance : audite docs et specs, compile un Gardener Report structuré, retourne les findings au team-lead. Ne modifie aucun fichier directement. |
 | `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
 
 Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`silent: true`) — un fichier manquant ne fait pas planter le plugin.
@@ -74,6 +74,8 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 **bug-finder** : `read`, `glob`, `grep`, `question` — lecture directe, pas de délégation.
 
 **brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `edit` (`docs/briefs/**` uniquement). Pas de bash.
+
+**gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
 
 La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
 
