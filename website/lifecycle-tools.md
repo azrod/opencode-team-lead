@@ -1,6 +1,6 @@
 # Lifecycle Tools
 
-The team-lead has direct access to 19 lifecycle tools — the only way to interact with artifact directories. Direct tool access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is blocked at runtime by the plugin's `tool.execute.before` hook. All access goes through these tools.
+The team-lead has direct access to 20 lifecycle tools — the only way to interact with artifact directories. Direct tool access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is blocked at runtime by the plugin's `tool.execute.before` hook. All access goes through these tools.
 
 ## Protected Zones
 

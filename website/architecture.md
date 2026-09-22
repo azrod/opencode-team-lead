@@ -46,9 +46,9 @@ OpenCode IDE
 │   │     ├─► code-reviewer          [mode: subagent]
 │   │     └─► security-reviewer      [mode: subagent]
 │   │
-│   ├─► bug-finder           [mode: subagent]
+│   ├─► bug-finder           [mode: all]
 │   ├─► planning             [mode: all]
-│   └─► researcher           [mode: subagent]
+│   └─► researcher           [mode: all]
 │
 ├── brainstorm               [mode: all — runs before team-lead]
 ├── harness                  [mode: all — triggered post-feature or by user]
@@ -67,7 +67,7 @@ OpenCode IDE
 | `planning` | `all` | 0.3 | max |
 | `gardener` | `all` | 0.2 | max |
 | `brainstorm` | `all` | 0.5 | max |
-| `researcher` | `subagent` | 0.3 | extended |
+| `researcher` | `all` | 0.3 | extended |
 
 ## Permission model
 

@@ -1,4 +1,7 @@
 ---
+title: "Lifecycle Tools"
+id: lifecycle-tools
+type: technical
 status: active
 created: 2026-04-06
 updated: 2026-04-07
@@ -41,7 +44,50 @@ Les custom tools OpenCode sont l'abstraction correcte : exécutés dans le proce
 
 ## 2. Les tools
 
-> **Note :** La spécification ci-dessous décrit le design initial à cinq tools. L'implémentation livrée comprend 19 lifecycle tools organisés en familles : `project_state`, `spec_*` (get, create, update, validate, list, delete, format), `plan_*` (get, create, update, validate, block_done, list, delete, format), et `brief_*` (get, create, update, delete, list). Les deux tools `spec_format` et `plan_format` retournent le format canonique attendu pour les specs et exec-plans respectivement — raw string, pas du JSON, pour consommation directe par le LLM.
+L'implémentation comprend **20 lifecycle tools** organisés en quatre familles. Tous sont implémentés dans `tools/lifecycle.js` comme fonctions ESM nommées (`export async function specGet(...)`, etc.) — pas d'objet groupé. Chaque tool reçoit `projectRoot` et `paths` via la closure de `TeamLeadPlugin` dans `index.js`.
+
+### Famille `global` (1 tool)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `project_state` | `projectState` | Rapport d'état de tous les artefacts (specs + active plans). Briefs exclus. |
+
+### Famille `spec_*` (7 tools)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `spec_get` | `specGet` | Récupère une spec par id — retourne chemin, contenu, frontmatter |
+| `spec_create` | `specCreate` | Crée un nouveau fichier spec. Refuse d'écraser l'existant. |
+| `spec_update` | `specUpdate` | Met à jour une spec par remplacement chirurgical oldString → newString |
+| `spec_validate` | `specValidate` | Valide la structure d'une spec (frontmatter, champs requis, body non vide) |
+| `spec_list` | `specList` | Liste toutes les specs avec leur métadonnées |
+| `spec_delete` | `specDelete` | Supprime une spec par id |
+| `spec_format` | `specFormat` | Retourne le format canonique attendu — raw string, pas du JSON |
+
+### Famille `plan_*` (8 tools)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `plan_get` | `planGet` | Récupère un exec-plan par id — retourne chemin, contenu, frontmatter, comptage des blocs |
+| `plan_create` | `planCreate` | Crée un exec-plan. `functional_objective` requis. |
+| `plan_update` | `planUpdate` | Met à jour un plan par remplacement chirurgical oldString → newString |
+| `plan_validate` | `planValidate` | Valide la structure d'un plan (functional_objective, building blocks, ≥ 1 bloc) |
+| `plan_block_done` | `planBlockDone` | Coche un bloc dans un plan (`[ ]` → `[x]`) |
+| `plan_list` | `planList` | Liste tous les exec-plans avec métadonnées et progression des blocs |
+| `plan_delete` | `planDelete` | Supprime un exec-plan par id |
+| `plan_format` | `planFormat` | Retourne le format canonique attendu — raw string, pas du JSON |
+
+### Famille `brief_*` (4 tools)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `brief_get` | `briefGet` | Récupère un brief par id |
+| `brief_create` | `briefCreate` | Crée un nouveau brief |
+| `brief_update` | `briefUpdate` | Met à jour un brief par remplacement chirurgical oldString → newString |
+| `brief_delete` | `briefDelete` | Supprime un brief par id |
+| `brief_list` | `briefList` | Liste tous les briefs avec métadonnées |
+
+> **Note :** `brief_list` est le 20ème tool — portant le total à 20, pas 19.
 
 ### `project_state`
 
@@ -309,48 +355,43 @@ La relation brief ↔ exec-plan est **bidirectionnelle et optionnelle** : chaque
 
 ### Structure des fichiers
 
-Les tools sont déclarés dans un fichier séparé pour garder `index.js` lisible :
-
 ```
 opencode-team-lead/
-├── index.js            # Point d'entrée — importe et expose les tools
+├── index.js              # Point d'entrée — importe et expose les tools
 ├── tools/
-│   └── lifecycle.js    # Implémentation des 5 tools
+│   ├── lifecycle.js      # Implémentation des 20 lifecycle tools (fonctions nommées)
+│   └── artifact-guard.js # Guard — LIFECYCLE_TOOLS Set + checkArtifactAccess()
 └── agents/
     └── prompt.md
 ```
 
-`tools/lifecycle.js` exporte un objet `lifecycleTools` consommé par `index.js`.
+`tools/artifact-guard.js` exporte le `Set` `LIFECYCLE_TOOLS` (les 20 noms de tools) et la fonction `checkArtifactAccess` utilisée dans le hook `tool.execute.before`. Tout appel direct `read`/`edit`/`write`/`bash`/`glob`/`grep` ciblant `docs/specs/`, `docs/exec-plans/`, ou `docs/briefs/` est bloqué sauf si le caller est un des 20 lifecycle tools.
 
-### Pattern d'export dans `index.js`
+### Pattern d'export réel dans `tools/lifecycle.js`
+
+Les fonctions sont exportées **nommément** — pas d'objet groupé :
 
 ```js
-import { tool } from "@opencode-ai/plugin"
-import { lifecycleTools } from "./tools/lifecycle.js"
-
-export const TeamLeadPlugin = async ({ directory, worktree }) => {
-  const projectRoot = worktree ?? directory ?? "."
-
-  return {
-    config: async (input) => { /* ... */ },
-
-    event: async ({ event }) => { /* ... */ },
-
-    tool: {
-      project_state: tool({
-        description: "...",
-        args: {},
-        async execute(_args, context) {
-          return JSON.stringify(await lifecycleTools.projectState(context.worktree, paths))
-        },
-      }),
-      // ... quatre autres tools
-    },
-  }
-}
+export async function specGet(projectRoot, paths, id) { … }
+export async function specCreate(projectRoot, paths, title, type, content) { … }
+export async function planCreate(projectRoot, paths, { title, functional_objective, content, brief }) { … }
+export function specFormat() { … }  // pure, synchrone
+// … etc.
 ```
 
-`paths` est capturé dans la closure de `TeamLeadPlugin` et passé directement à chaque fonction `execute`. Les fonctions dans `lifecycle.js` sont des fonctions pures qui reçoivent `projectRoot` et `paths` et retournent des données.
+### Pattern d'import dans `index.js`
+
+```js
+import {
+  projectState, specGet, specCreate, specUpdate, specValidate, specList, specDelete,
+  planGet, planCreate, planUpdate, planValidate, planBlockDone, planList, planDelete,
+  briefGet, briefCreate, briefUpdate, briefDelete, briefList,
+  specFormat, planFormat,
+} from "./tools/lifecycle.js";
+import { checkArtifactAccess } from "./tools/artifact-guard.js";
+```
+
+`paths` est capturé dans la closure de `TeamLeadPlugin` et passé directement à chaque `execute`. Pas de `context` — `projectRoot` est résolu une fois au démarrage via `worktree` ou `directory`.
 
 ### Chemins configurables
 
@@ -396,40 +437,37 @@ const paths = {
 
 ### Permissions team-lead
 
-Les tools sont déclarés dans `experimental.primary_tools` dans la config team-lead pour que le team-lead les voie en priorité. Les permissions sont ajoutées au `defaultPermission` du team-lead :
+Les 20 lifecycle tools sont listés dans `defaultPermission` du team-lead dans `index.js` :
 
 ```js
 const defaultPermission = {
   "*": "deny",
-  // ... permissions existantes ...
+  // … autres permissions (task, question, read, edit docs/**, …)
   project_state: "allow",
-  mark_block_done: "allow",
-  complete_plan: "allow",
-  register_spec: "allow",
-  check_artifacts: "allow",
+  spec_get: "allow",
+  spec_create: "allow",
+  spec_update: "allow",
+  spec_validate: "allow",
+  spec_list: "allow",
+  spec_delete: "allow",
+  spec_format: "allow",
+  plan_get: "allow",
+  plan_create: "allow",
+  plan_update: "allow",
+  plan_validate: "allow",
+  plan_block_done: "allow",
+  plan_list: "allow",
+  plan_delete: "allow",
+  plan_format: "allow",
+  brief_get: "allow",
+  brief_create: "allow",
+  brief_update: "allow",
+  brief_delete: "allow",
+  brief_list: "allow",
 }
 ```
 
 Les utilisateurs peuvent les surcharger via leur `opencode.json` (même mécanique que les autres permissions — `mergePermissions` existant).
-
-### `experimental.primary_tools`
-
-```js
-input.agent["team-lead"] = {
-  // ...
-  experimental: {
-    primary_tools: [
-      "project_state",
-      "mark_block_done",
-      "complete_plan",
-      "register_spec",
-      "check_artifacts",
-    ],
-  },
-}
-```
-
-Cela place les tools lifecycle en tête de la liste des tools disponibles pour le team-lead, sans exclure les autres.
 
 ---
 

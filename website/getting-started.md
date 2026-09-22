@@ -107,6 +107,6 @@ See [Architecture](/architecture) for the full permission matrix.
 
 ## Lifecycle tools
 
-The team-lead automatically manages project artifacts using five built-in tools — no delegation, no sub-agent overhead. These tools track exec-plans, specs, and briefs for continuity across sessions.
+The team-lead automatically manages project artifacts using 20 lifecycle tools — no delegation, no sub-agent overhead. These tools track exec-plans, specs, and briefs for continuity across sessions.
 
 See [Lifecycle Tools](/lifecycle-tools) for the full reference.

@@ -86,7 +86,6 @@ These tools are mechanical and deterministic. They enforce consistency at zero L
 ### 4. Review
 - **Every code, architecture, infra, or security change MUST be reviewed before reporting success**
 - **NEVER spawn reviewer agents directly** — always delegate to `review-manager`. It selects the right reviewers, spawns them in parallel, and synthesizes their verdicts. You just send it the mission and get back a structured review.
-- Documentation-only or cosmetic changes MAY skip review at your discretion
 - **Delegate the review to the `review-manager` agent** — it will spawn specialized reviewer sub-agents, synthesize their findings, and handle disagreements
 - Provide the review-manager with: what changed, which files, the original requirements, and what trade-offs were made
 - If the review-manager returns **APPROVED**: proceed to Synthesize & Report
@@ -248,15 +247,6 @@ The review-manager handles everything else: reviewer selection, prompt crafting,
 - **APPROVED** → Proceed to Synthesize & Report
 - **CHANGES_REQUESTED** → Re-delegate fixes to the original producer with the review-manager's feedback, then request a second review via review-manager
 - **BLOCKED** → Stop. Report the blocker to the user with the review-manager's full reasoning. Do NOT fix BLOCKED issues without user input.
-
-### When to Skip Review
-
-You MAY skip the review phase (and the review-manager) when ALL of these are true:
-- The change is documentation-only (no code, no config, no infra)
-- The change has no security implications
-- The user explicitly requested speed over thoroughness
-
-When skipping, note it in your report: *"Review skipped — documentation-only change."*
 
 ## Error Handling & Retry
 

@@ -4,7 +4,7 @@
 
 `opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il n'a aucune dépendance npm — uniquement des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
 
-Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec trois hooks : `config`, `event`, et `tool`.
+Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec deux hooks : `config` et `tool.execute.before`.
 
 ## Le hook `config`
 
@@ -61,7 +61,7 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 | Outil | Accès |
 |---|---|
 | `task`, `todowrite`, `todoread`, `skill`, `question` | allow |
-| `distill`, `prune`, `compress` | allow (gestion contexte via DCP) |
+| `compress` | allow (gestion contexte) |
 | `read` | allow sur tous les fichiers |
 | `edit` / `write` | allow uniquement sur `docs/**` |
 | `bash` | allow uniquement pour les commandes git (`git status*`, `git diff*`, `git log*`, `git add*`, `git commit*`, `git push*`, `git tag*`) |
@@ -85,11 +85,19 @@ Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`,
 
 - `agents/prompt.md` → team-lead
 - `agents/review-manager.md` → review-manager
-- `agents/requirements-reviewer.md`, `agents/code-reviewer.md`, `agents/security-reviewer.md`, `agents/bug-finder.md` → reviewers + bug-finder
+- `agents/requirements-reviewer.md` → requirements-reviewer
+- `agents/code-reviewer.md` → code-reviewer
+- `agents/security-reviewer.md` → security-reviewer
+- `agents/bug-finder.md` → bug-finder
 - `agents/harness.md` → harness
 - `agents/planning.md` → planning
 - `agents/gardener.md` → gardener
 - `agents/brainstorm.md` → brainstorm
+- `agents/researcher.md` → researcher
+- `agents/spec-validator.md` → spec-validator
+- `agents/plan-validator.md` → plan-validator
+- `agents/spec-reviewer.md` → spec-reviewer
+- `agents/spec-writer.md` → spec-writer
 
 Avantage : les prompts sont modifiables et diffables indépendamment du code.
 

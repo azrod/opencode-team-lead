@@ -12,7 +12,7 @@ An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestr
 Two hooks power the plugin:
 
 - **`config`** — registers all agents into OpenCode's config, merging your overrides from `opencode.json` on top of plugin defaults
-- **`tool.execute.before`** — guards `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` against direct access; these directories are only reachable through the 19 lifecycle tools
+- **`tool.execute.before`** — guards `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` against direct access; these directories are only reachable through the 20 lifecycle tools
 
 ## Agents
 
@@ -81,7 +81,7 @@ Restart OpenCode — the plugin loads and registers all agents automatically.
 
 ## Lifecycle Tools
 
-The team-lead has direct access to 19 lifecycle tools — the only way to read or write artifacts in `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/`. Direct tool access to these directories is blocked at runtime by the plugin's `tool.execute.before` hook.
+The team-lead has direct access to 20 lifecycle tools — the only way to read or write artifacts in `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/`. Direct tool access to these directories is blocked at runtime by the plugin's `tool.execute.before` hook.
 
 ### Protected zones
 
