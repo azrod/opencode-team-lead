@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
 
 ### Changed
+- The team-lead now proactively proposes creating an exec-plan when a request involves 3+ distinct non-trivial steps, multiple agents, or work likely to span several sessions — even when the intent is perfectly clear. Previously, exec-plans were only suggested for ambiguous requests.
 - `plan_create`, `plan_update`, `spec_create`, and `spec_update` now return a suggestion to run a validation review once the artifact is complete — rather than falsely claiming to auto-trigger a validator.
 - Gardener agent is now a dual-mode maintenance agent: Bootstrap mode (< 3 active specs) discovers functional domains and delegates spec drafting to `spec-writer`; Maintenance mode (≥ 3 specs) is a pure audit orchestrator — it spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead without editing files or opening PRs.
 - Two recurring documentation patterns identified as harness candidates: (1) frontmatter `status` field diverging from body text in spec files, (2) lifecycle tool count hardcoded in multiple docs — both risk silent drift on future changes.

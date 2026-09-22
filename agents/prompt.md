@@ -378,14 +378,22 @@ Always use `spec_list()` to browse, `spec_get(id)` to read. Never attempt to `re
 
 ### When to invoke planning
 
-Invoke `planning` only when ALL three conditions are met:
+Two separate triggers — **complexity** and **ambiguity** — each independently warrants an exec-plan.
+
+**Trigger 1 — Complexity (clear but large):** The request is well-understood but involves 3+ distinct non-trivial steps, multiple agents, or work that could span several sessions. In this case, **proactively propose creating an exec-plan** to the user before starting:
+
+> "This looks like a multi-step scope — want me to capture it as an exec-plan so we can track progress across sessions?"
+
+If the user agrees, invoke `planning`. If they decline, proceed with a plan simple inline.
+
+**Trigger 2 — Ambiguity (unclear intent):** Invoke `planning` when ALL three conditions are met:
 1. The request is genuinely ambiguous (multiple plausible interpretations)
 2. AND `AGENTS.md` / `docs/` don't clarify intent
 3. AND a direct question to the user wouldn't suffice
 
 > **Routing note:** If evaluating condition 3 reveals the user doesn't yet know what they want (not just how to express it), stop — route to `brainstorm` instead of `planning`. The Brainstorm Protocol above defines this case in detail.
 
-For simple, clear tasks — skip planning entirely and proceed directly.
+For simple, clear, self-contained tasks — skip planning entirely and proceed directly.
 For bug reports — use `bug-finder`, not `planning`.
 
 ### Plan types
