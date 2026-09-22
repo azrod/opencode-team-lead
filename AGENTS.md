@@ -39,7 +39,10 @@ This is a tiny project — zero dependencies, pure ESM, no build step. Tests run
 | `agents/code-reviewer.md` | System prompt for the code-reviewer agent — evaluates correctness, logic, error handling, and maintainability. |
 | `agents/security-reviewer.md` | System prompt for the security-reviewer agent — identifies vulnerabilities, misconfigurations, and data exposure risks. |
 | `agents/spec-validator.md` | System prompt for the spec-validator agent — LLM validator invoked after `spec_create` / `spec_update`. Checks spec completeness, clarity, and internal consistency. |
-| `agents/plan-validator.md` | System prompt for the plan-validator agent — LLM validator invoked after `plan_create`. Checks exec-plan structure, block granularity, and links to brief/specs. |
+| `agents/plan-reviewer.md` | System prompt for the plan-reviewer agent — plan review orchestrator. Asks review depth (light/deep), spawns `plan-functional-reviewer`, `plan-technical-reviewer`, and `plan-code-reviewer` in parallel, returns APPROVED / CHANGES_REQUESTED / BLOCKED. |
+| `agents/plan-functional-reviewer.md` | System prompt for the plan-functional-reviewer agent — checks plan alignment with functional specs. Silent, invoked by plan-reviewer only. |
+| `agents/plan-technical-reviewer.md` | System prompt for the plan-technical-reviewer agent — checks plan alignment with technical and architectural specs. Silent, invoked by plan-reviewer only. |
+| `agents/plan-code-reviewer.md` | System prompt for the plan-code-reviewer agent — checks plan code feasibility against the codebase (deep mode only). Silent, invoked by plan-reviewer only. |
 | `agents/spec-reviewer.md` | System prompt for the spec-reviewer agent — integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` after each delivery. |
 | `agents/bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
 | `agents/harness.md` | System prompt for the harness agent — pattern enforcement agent that encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries, guiding principles). |

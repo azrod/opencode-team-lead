@@ -23,7 +23,10 @@ Agents are split into two modes:
 | `code-reviewer` | `subagent` | Evaluates logic, error handling, API design, maintainability. |
 | `security-reviewer` | `subagent` | Identifies vulnerabilities across 7 threat categories. |
 | `spec-validator` | `subagent` | LLM validator invoked after `spec_create`/`spec_update`. Checks completeness, clarity, and consistency. |
-| `plan-validator` | `subagent` | LLM validator invoked after `plan_create`. Checks exec-plan structure and block granularity. |
+| `plan-reviewer` | `subagent` | Plan review orchestrator. Asks review depth (light/deep), spawns sub-reviewers in parallel, returns APPROVED / CHANGES_REQUESTED / BLOCKED. |
+| `plan-functional-reviewer` | `subagent` | Checks plan alignment with functional specs. Silent, invoked by `plan-reviewer` only. |
+| `plan-technical-reviewer` | `subagent` | Checks plan alignment with technical and architectural specs. Silent, invoked by `plan-reviewer` only. |
+| `plan-code-reviewer` | `subagent` | Checks plan code feasibility against the codebase (deep mode only). Silent, invoked by `plan-reviewer` only. |
 | `spec-reviewer` | `subagent` | Integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` / `SPEC_VIOLATION` after each delivery. |
 | `bug-finder` | `subagent` | Structured investigation. Forces root-cause before any fix. |
 | `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
@@ -45,7 +48,7 @@ Agents are split into two modes:
 - [Spec-Writer](/agents/spec-writer) — canonical spec authoring, delegated by team-lead or gardener
 - [Researcher](/agents/researcher) — external knowledge retrieval
 
-> `spec-validator` and `plan-validator` invocation is documented in [Lifecycle Tools](/lifecycle-tools). `spec-reviewer` is part of the [Review Cluster](/agents/review-cluster).
+> `spec-validator` invocation is documented in [Lifecycle Tools](/lifecycle-tools). `plan-reviewer` and its sub-reviewers are invoked via `plan_validate`. `spec-reviewer` is part of the [Review Cluster](/agents/review-cluster).
 
 ## How delegation flows
 

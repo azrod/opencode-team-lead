@@ -374,13 +374,24 @@ const SUBAGENT_DEFS = [
     },
   },
   {
-    id: "plan-validator",
-    file: "plan-validator.md",
-    description:
-      "Structural clarity checker for exec-plans — verifies functional objective present, " +
-      "blocks are atomic and actionable with verifiable 'Done when' criteria, " +
-      "and dependencies are coherent. Returns APPROVED or REJECTED. " +
-      "Invoked automatically on plan creation only.",
+    id: "plan-reviewer",
+    file: "plan-reviewer.md",
+    description: "Plan review orchestrator — coordinates plan-functional-reviewer, plan-technical-reviewer, and plan-code-reviewer. Asks the user for review depth (light or deep), spawns sub-reviewers in parallel, arbitrates verdicts, and returns APPROVED / CHANGES_REQUESTED / BLOCKED. Never reviews anything directly.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "subagent",
+    color: "warning",
+    permission: {
+      "*": "deny",
+      task: { "*": "deny", "plan-*-reviewer": "allow" },
+      question: "allow",
+      plan_get: "allow",
+    },
+  },
+  {
+    id: "plan-functional-reviewer",
+    file: "plan-functional-reviewer.md",
+    description: "Checks whether an exec-plan's functional objective and building blocks align with the project's active functional specs. Returns APPROVED / CHANGES_REQUESTED / BLOCKED. Does not touch technical specs or code.",
     temperature: 0.1,
     variant: "max",
     mode: "subagent",
@@ -389,7 +400,41 @@ const SUBAGENT_DEFS = [
     permission: {
       "*": "deny",
       plan_get: "allow",
-      plan_list: "allow",
+      spec_list: "allow",
+      spec_get: "allow",
+    },
+  },
+  {
+    id: "plan-technical-reviewer",
+    file: "plan-technical-reviewer.md",
+    description: "Checks whether an exec-plan respects the project's technical and architectural specs — patterns, interfaces, documented constraints. Returns APPROVED / CHANGES_REQUESTED / BLOCKED. Does not touch functional specs or code.",
+    temperature: 0.1,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: true,
+    permission: {
+      "*": "deny",
+      plan_get: "allow",
+      spec_list: "allow",
+      spec_get: "allow",
+    },
+  },
+  {
+    id: "plan-code-reviewer",
+    file: "plan-code-reviewer.md",
+    description: "Checks whether an exec-plan's building blocks are feasible given the existing codebase. Only explores code zones explicitly mentioned in the plan — never scans the full codebase. Used in deep review mode only. Returns APPROVED / CHANGES_REQUESTED / BLOCKED.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "subagent",
+    color: "info",
+    silent: true,
+    permission: {
+      "*": "deny",
+      plan_get: "allow",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
     },
   },
   {
@@ -755,7 +800,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
         },
       },
       plan_create: {
-        description: "Create a new exec-plan. functional_objective is required. After creation, call plan_validate to trigger the LLM plan-validator agent. Call plan_format() first if unsure of the expected structure — especially the building blocks syntax.",
+        description: "Create a new exec-plan. functional_objective is required. After creation, call plan_validate to check structure, then delegate to plan-reviewer for a full semantic review. Call plan_format() first if unsure of the expected structure — especially the building blocks syntax.",
         args: {
           title: tool.schema.string().describe("Plan title"),
           functional_objective: tool.schema.string().describe("2-4 sentences describing the user problem being solved"),

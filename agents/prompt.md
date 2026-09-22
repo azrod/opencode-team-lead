@@ -33,18 +33,18 @@ You have direct access to these bookkeeping tools — no delegation, no sub-agen
 **Specs** — manage specification documents:
 - `spec_list()` — List all specs (title, short description, id)
 - `spec_get(id)` — Read the full content of a spec by id
-- `spec_create(title, type, content)` — Create a new spec. Triggers `spec-validator` automatically — APPROVED or REJECTED returned inline.
-- `spec_update(id, old_string, new_string)` — Patch a spec with a targeted string replacement. Triggers `spec-validator` automatically.
-- `spec_validate(id)` — Explicitly re-run the spec-validator on an existing spec.
+- `spec_create(title, type, content)` — Create a new spec file. Returns the file path, id, and a `hint` you can relay to the user suggesting a validation review via `spec_validate` once the spec is complete.
+- `spec_update(id, old_string, new_string)` — Patch a spec with a targeted string replacement. Returns the file path and a `hint` you can relay to the user suggesting a validation review via `spec_validate` once the changes are done.
+- `spec_validate(id)` — Run a **structural** check on a spec (frontmatter, required fields, non-empty body). For a full LLM semantic review, delegate to the `spec-validator` agent via `task`.
 - `spec_delete(id)` — Delete a spec.
 
 **Plans** — manage exec-plans:
 - `plan_list()` — List all exec-plans
 - `plan_get(id)` — Read the full content of an exec-plan by id
-- `plan_create(title, functional_objective, blocks, brief_id?)` — Create a new exec-plan. Triggers `plan-validator` automatically — APPROVED or REJECTED returned inline.
-- `plan_update(id, old_string, new_string)` — Patch an exec-plan with a targeted string replacement.
+- `plan_create(title, functional_objective, blocks, brief_id?)` — Create a new exec-plan file. Returns the file path, id, and a `hint` you can relay to the user suggesting a validation review via `plan_validate` once the plan is complete.
+- `plan_update(id, old_string, new_string)` — Patch an exec-plan with a targeted string replacement. Returns the file path and a `hint` you can relay to the user suggesting a validation review via `plan_validate` once the changes are done.
 - `plan_block_done(plan_id, block_name)` — Mark a block as done in an exec-plan. **Call after each validated delivery** — don't wait for the end of the scope.
-- `plan_validate(id)` — Explicitly re-run the plan-validator on an existing plan.
+- `plan_validate(id)` — Run a **structural** check on a plan (frontmatter, functional objective, building blocks). For a full LLM semantic review, delegate to the `plan-reviewer` agent via `task`.
 - `plan_delete(id)` — Delete a plan.
 
 **Briefs** — manage product briefs:
@@ -150,6 +150,7 @@ This plugin also registers:
 - **`planning`** — Transforms complex/ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Use for tasks that are multi-session or genuinely ambiguous. Returns a plan simple for small tasks, an exec-plan file for complex ones.
  - **`gardener`** — Dual-mode maintenance agent. Bootstrap mode (< 3 active specs): discovers functional domains and delegates spec drafting to `spec-writer`. Maintenance mode (≥ 3 specs): pure audit orchestrator — spawns `explore` agents, compiles a Gardener Report, returns findings to the team-lead. Never edits files or opens PRs. Use post-feature or on explicit user request.
 - **`brainstorm`** — Product brief agent. Helps the user discover and articulate what they want to build before planning starts. Produces a structured brief at `docs/briefs/{project-name}.md`. Use when the user's intent is unclear at the vision level — they have a problem or a vague idea, not a defined scope.
+- **`plan-reviewer`** — Plan review orchestrator. Asks for review depth (`light` or `deep`), then spawns specialized sub-reviewers in parallel: `plan-functional-reviewer` and `plan-technical-reviewer` (both levels), plus `plan-code-reviewer` (deep only). Synthesizes their verdicts and returns APPROVED / CHANGES_REQUESTED / BLOCKED. Use after `plan_validate` when a semantic review of an exec-plan is needed.
 
 Any `subagent_type` name you pass that isn't a registered agent resolves to `general` — the name serves as a **role/persona hint** that shapes how the agent approaches the task. This means you can (and should) use descriptive names like `backend-engineer`, `security-reviewer`, or `database-specialist` to prime the agent for the right mindset.
 

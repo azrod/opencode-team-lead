@@ -152,7 +152,7 @@ After `spec_update`, the team-lead must call `spec_validate(id)` to re-validate 
 ```
 
 ::: warning Always follow with plan_validate
-After `plan_create`, the team-lead must call `plan_validate(id)` to invoke the LLM plan-validator agent. The validator checks block granularity, structure, and links to brief/specs.
+After `plan_create`, the team-lead must call `plan_validate(id)` to invoke the `plan-reviewer` cluster. It checks block granularity, structure, alignment with specs, and optionally code feasibility.
 :::
 
 ---
@@ -177,9 +177,10 @@ After `plan_create`, the team-lead must call `plan_validate(id)` to invoke the L
 Unlike `spec_validate` — which must be called after both `spec_create` and `spec_update` — `plan_validate` is only required after `plan_create`. Incremental block edits via `plan_update` do not need a re-validation pass.
 :::
 
-**What it does:** Invokes the `plan-validator` LLM agent, which checks:
+**What it does:** Invokes the `plan-reviewer` cluster (orchestrator + `plan-functional-reviewer`, `plan-technical-reviewer`, and optionally `plan-code-reviewer` in deep mode), which checks:
 - Block structure — each block is actionable and atomic
 - Block granularity — not too coarse, not too fine
+- Alignment — plan consistent with functional and technical specs
 - Links — brief_id and spec references resolve correctly
 
 **Returns:** Validator verdict with findings and suggestions.

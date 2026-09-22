@@ -195,7 +195,12 @@ export async function specCreate(projectRoot, paths, title, type = "technical", 
     throw err;
   }
 
-  return { created: true, file: relPath, id };
+  return {
+    created: true,
+    file: relPath,
+    id,
+    hint: `Spec created. Once you're done building it, you can suggest to the user to run a validation review (spec_validate).`,
+  };
 }
 
 /**
@@ -231,7 +236,11 @@ export async function specUpdate(projectRoot, paths, id, oldString, newString) {
   await writeFile(absPath, updated, "utf-8");
 
   const relPath = absPath.slice(resolve(projectRoot).length + 1);
-  return { file: relPath, updated: true };
+  return {
+    file: relPath,
+    updated: true,
+    hint: `Spec updated. Once you're done with changes, you can suggest to the user to run a validation review (spec_validate).`,
+  };
 }
 
 /**
@@ -397,7 +406,12 @@ export async function planCreate(projectRoot, paths, { title, functional_objecti
     throw err;
   }
 
-  return { created: true, file: relPath, id };
+  return {
+    created: true,
+    file: relPath,
+    id,
+    hint: `Plan created. Once you're done shaping it, you can suggest to the user to run a validation review (plan_validate).`,
+  };
 }
 
 /**
@@ -433,7 +447,11 @@ export async function planUpdate(projectRoot, paths, id, oldString, newString) {
   await writeFile(absPath, updated, "utf-8");
 
   const relPath = absPath.slice(resolve(projectRoot).length + 1);
-  return { file: relPath, updated: true };
+  return {
+    file: relPath,
+    updated: true,
+    hint: "Plan updated. Once you're done with changes, you can suggest to the user to run a validation review (plan_validate).",
+  };
 }
 
 /**

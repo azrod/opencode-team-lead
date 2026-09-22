@@ -24,7 +24,10 @@ Two hooks power the plugin:
 | `code-reviewer` | Evaluates correctness, logic, error handling, and maintainability |
 | `security-reviewer` | Identifies vulnerabilities, misconfigurations, and data exposure risks |
 | `spec-validator` | LLM validator invoked after `spec_create`/`spec_update` — checks completeness, clarity, and consistency |
-| `plan-validator` | LLM validator invoked after `plan_create` — checks exec-plan structure, block granularity, and links |
+| `plan-reviewer` | Plan review orchestrator — asks review depth (light/deep), spawns `plan-functional-reviewer`, `plan-technical-reviewer`, and `plan-code-reviewer` in parallel, returns APPROVED / CHANGES_REQUESTED / BLOCKED |
+| `plan-functional-reviewer` | Checks plan alignment with functional specs. Silent, invoked by `plan-reviewer` only |
+| `plan-technical-reviewer` | Checks plan alignment with technical and architectural specs. Silent, invoked by `plan-reviewer` only |
+| `plan-code-reviewer` | Checks plan code feasibility against the codebase (deep mode only). Silent, invoked by `plan-reviewer` only |
 | `spec-reviewer` | Integrated into the review-manager pool — decides whether specs need creation or update after each delivery |
 | `bug-finder` | Structured bug investigation — forces root-cause analysis before any fix |
 | `brainstorm` | Phase 0 thinking partner — helps articulate what you want to build before planning starts |
@@ -112,7 +115,7 @@ Any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these path
 | `plan_get` | `plan_get(id) → JSON` | Read an exec-plan by id |
 | `plan_create` | `plan_create(title, functional_objective, content?, brief_id?) → JSON` | Create an exec-plan — always follow with `plan_validate(id)` |
 | `plan_update` | `plan_update(id, old_string, new_string) → JSON` | Edit an exec-plan |
-| `plan_validate` | `plan_validate(id) → JSON` | Invoke the `plan-validator` LLM agent to check structure and block granularity |
+| `plan_validate` | `plan_validate(id) → JSON` | Invoke the `plan-reviewer` cluster to check structure, block granularity, and alignment with specs |
 | `plan_block_done` | `plan_block_done(plan_id, block_name) → JSON` | Mark a block complete in an exec-plan |
 | `plan_delete` | `plan_delete(id) → JSON` | Delete an exec-plan |
 

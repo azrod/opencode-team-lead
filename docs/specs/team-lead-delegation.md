@@ -14,7 +14,7 @@ Décrit le comportement du team-lead une fois les agents `harness` et `planning`
 
 ## Agents disponibles
 
-14 agents enregistrés dans `SUBAGENT_DEFS` dans `index.js` :
+17 agents enregistrés dans `SUBAGENT_DEFS` dans `index.js` :
 
 | Agent | Rôle | Mode | Spec |
 |-------|------|------|------|
@@ -29,7 +29,10 @@ Décrit le comportement du team-lead une fois les agents `harness` et `planning`
 | `brainstorm` | Phase 0 discovery — aide l'utilisateur à formuler ce qu'il veut construire. Produit un brief dans `docs/briefs/`. | all | — |
 | `researcher` | Cherche et synthétise des informations externes (web, docs officiels, APIs). Read-only, nœud feuille. | all | [researcher-agent.md](researcher-agent.md) |
 | `spec-validator` | Vérificateur sémantique — cohérence interne et compatibilité avec le corpus de specs existant. Retourne APPROVED ou REJECTED. | subagent | [spec-validator-agent](spec-validator-agent.md) |
-| `plan-validator` | Vérificateur structurel des exec-plans — functional_objective, blocs atomiques, critères Done when vérifiables. | subagent | [plan-validator-agent](plan-validator-agent.md) |
+| `plan-reviewer` | Orchestrateur de review de plan — demande la profondeur de review (light/deep), spawne les sub-reviewers, retourne APPROVED / CHANGES_REQUESTED / BLOCKED. | subagent | [plan-validator-agent](plan-validator-agent.md) |
+| `plan-functional-reviewer` | Vérifie l'alignement du plan avec les specs fonctionnelles actives. Sub-reviewer silencieux, invoqué par plan-reviewer uniquement. | subagent | [plan-validator-agent](plan-validator-agent.md) |
+| `plan-technical-reviewer` | Vérifie l'alignement du plan avec les specs techniques et architecturales. Sub-reviewer silencieux, invoqué par plan-reviewer uniquement. | subagent | [plan-validator-agent](plan-validator-agent.md) |
+| `plan-code-reviewer` | Vérifie la faisabilité des blocs du plan contre le codebase existant (mode deep uniquement). Sub-reviewer silencieux, invoqué par plan-reviewer uniquement. | subagent | [plan-validator-agent](plan-validator-agent.md) |
 | `spec-reviewer` | Revieweur post-livraison de couverture spec — retourne NO_ACTION_NEEDED, SPEC_CREATE_NEEDED, ou SPEC_UPDATE_NEEDED. | subagent | [spec-reviewer-agent](spec-reviewer-agent.md) |
 | `spec-writer` | Rédige des specs conformes au format canonique. Délégué par le team-lead ou le gardener. | subagent | [spec-writer-agent](spec-writer-agent.md) |
 

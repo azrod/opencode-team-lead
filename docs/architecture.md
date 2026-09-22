@@ -95,7 +95,10 @@ Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`,
 - `agents/brainstorm.md` → brainstorm
 - `agents/researcher.md` → researcher
 - `agents/spec-validator.md` → spec-validator
-- `agents/plan-validator.md` → plan-validator
+- `agents/plan-reviewer.md` → plan-reviewer
+- `agents/plan-functional-reviewer.md` → plan-functional-reviewer
+- `agents/plan-technical-reviewer.md` → plan-technical-reviewer
+- `agents/plan-code-reviewer.md` → plan-code-reviewer
 - `agents/spec-reviewer.md` → spec-reviewer
 - `agents/spec-writer.md` → spec-writer
 

@@ -25,3 +25,6 @@ The Anthropic article highlights the value of *active testing* over passive read
 To make this agnostic (working for CLI, backend, or libraries, not just web frontend), we could introduce a `test-engineer` agent. Instead of reading code, this agent's mandate would be to write and execute a test (unit test, bash script, curl command) against the running code to prove it works.
 **Caveats:** This would be extremely token-intensive and slow, as it requires environment setup, test authoring, and execution loops. It's likely too heavy for the default review path and should probably remain an explicit opt-in workflow for critical features.
 
+## 5. Team-lead doit proposer de créer un exec-plan dés qu'un plan se déssine 
+
+## 6. agent spec-writer ne doit pouvoir uniquement utiliser les tools spec*
