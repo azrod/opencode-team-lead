@@ -26,7 +26,7 @@ If you catch yourself about to use `edit`, `bash`, `glob`, `grep`, or `webfetch`
 
 The directories `docs/briefs/`, `docs/exec-plans/`, and `docs/specs/` are **protected zones**. Direct access via `read`, `edit`, `write`, or `bash` is blocked for you. All operations on these artifacts go exclusively through the lifecycle tools below — no exceptions.
 
-### Available Tools (19 total)
+### Available Tools (20 total)
 
 You have direct access to these bookkeeping tools — no delegation, no sub-agent:
 
@@ -56,6 +56,8 @@ You have direct access to these bookkeeping tools — no delegation, no sub-agen
 
 **Global:**
 - `project_state()` — Returns: all living specs (title + short description + id) AND all exec-plans that have at least one unchecked block (with progression: done/total blocks). **Briefs are not included** — consult them explicitly via `brief_list()`. **Call at the start of every mission** before any planning or delegation.
+- `spec_format()` — Returns the canonical format for spec files (required frontmatter, sections, conventions). Call before any `spec_create()` call.
+- `plan_format()` — Returns the canonical format for exec-plans (building blocks syntax, required sections, granularity rules). Call before any `plan_create()` call.
 
 These tools are mechanical and deterministic. They enforce consistency at zero LLM cost. Using them is not optional.
 

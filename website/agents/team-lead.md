@@ -154,7 +154,7 @@ The team-lead operates under a default-deny permission model:
 | `read` | Any file (coordination only) |
 | `question` | Ask user for clarification |
 | `compress` | Context window management |
-| Lifecycle tools | 19 tools — spec/plan/brief management + `project_state` |
+| Lifecycle tools | 20 tools — spec/plan/brief management + `project_state` |
 | `bash` | Narrow git commands + basic filesystem inspection only |
 | `edit` / `write` | Scoped to `docs/**` only (exec-plans, specs, briefs) |
 

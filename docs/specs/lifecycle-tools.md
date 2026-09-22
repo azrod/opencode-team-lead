@@ -77,7 +77,7 @@ L'implémentation comprend **20 lifecycle tools** organisés en quatre familles.
 | `plan_delete` | `planDelete` | Supprime un exec-plan par id |
 | `plan_format` | `planFormat` | Retourne le format canonique attendu — raw string, pas du JSON |
 
-### Famille `brief_*` (4 tools)
+### Famille `brief_*` (5 tools)
 
 | Tool | Fonction JS | Description |
 |---|---|---|
@@ -141,171 +141,7 @@ Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `ope
 - Exec-plans : glob `{paths.execPlans}/*.md`, frontmatter YAML parsé, blocs `- [x]` et `- [ ]` comptés, champ `brief` vérifié sur disque si présent
 - Briefs : glob `{paths.briefs}/*.md`, frontmatter YAML parsé (`project`, `type`, `status`, `exec_plan`), champ `exec_plan` vérifié sur disque si présent
 
-**Warnings inline :** Si un exec-plan a tous les blocs cochés mais `status: active`, le champ `warning` est peuplé pour signaler au team-lead qu'un appel `complete_plan` est attendu.
-
----
-
-### `mark_block_done`
-
-**Signature :** `mark_block_done(plan_file, block_name)`
-
-**Arguments :**
-- `plan_file` — chemin relatif à `projectRoot`, ex: `docs/exec-plans/auth-system.md`
-- `block_name` — nom du bloc tel qu'il apparaît dans l'exec-plan, ex: `"Bloc 2: login flow"` ou une sous-chaîne non-ambiguë
-
-**Rôle :** Cocher un bloc spécifique dans un exec-plan (`[ ]` → `[x]`). Le team-lead l'appelle après chaque livraison de sous-tâche validée.
-
-**Comportement :**
-
-1. Lire le fichier `plan_file`
-2. Trouver la ligne correspondant à `block_name` (match sur sous-chaîne)
-3. Remplacer `- [ ]` par `- [x]` sur cette ligne uniquement
-4. Écrire le fichier
-5. Recompter les blocs cochés/total
-6. Si tous les blocs sont maintenant cochés → inclure dans la réponse : `"Tous les blocs sont done. Appelle complete_plan('${plan_file}') pour clore ce scope."`
-
-**Erreurs :**
-- Fichier introuvable → erreur explicite avec le chemin attendu
-- Bloc introuvable (aucune ligne ne matche `block_name`) → erreur explicite, liste les blocs disponibles
-- Ambiguïté (plusieurs lignes matchent) → erreur explicite, demande une sous-chaîne plus précise
-- Bloc déjà coché → idempotent, pas d'erreur — retourner simplement l'état courant
-
-**Réponse :**
-```json
-{
-  "file": "docs/exec-plans/auth-system.md",
-  "block": "Bloc 2: login flow",
-  "was": "unchecked",
-  "now": "checked",
-  "blocks": { "total": 4, "checked": 3 },
-  "all_done": false
-}
-```
-
----
-
-### `complete_plan`
-
-**Signature :** `complete_plan(plan_file)`
-
-**Arguments :**
-- `plan_file` — chemin relatif à `projectRoot`
-
-**Rôle :** Passer le `status` d'un exec-plan de `active` à `completed` dans son frontmatter YAML. Le team-lead l'appelle quand un scope est livré et reviewé.
-
-**Comportement :**
-
-1. Lire le fichier
-2. Vérifier que tous les blocs sont cochés — si ce n'est pas le cas : erreur explicite avec la liste des blocs non cochés
-3. Remplacer `status: active` (ou `status: draft`) par `status: completed` dans le frontmatter
-4. Mettre à jour `updated: <date ISO>` dans le frontmatter
-5. Écrire le fichier
-
-**Erreurs :**
-- Fichier introuvable → erreur explicite
-- Blocs non cochés → erreur explicite : `"3 blocs non cochés : [liste]. Utilise mark_block_done avant de compléter le plan."`
-- Frontmatter absent ou malformé → erreur explicite
-
-**Réponse :**
-```json
-{
-  "file": "docs/exec-plans/auth-system.md",
-  "status": "completed",
-  "updated": "2026-04-06"
-}
-```
-
-**Note :** Le fichier n'est pas supprimé — les exec-plans complétés restent dans `docs/exec-plans/` comme référence historique (conformément à la spec `planning-agent.md`).
-
----
-
-### `register_spec`
-
-**Signature :** `register_spec(specFile, title)`
-
-**Arguments :**
-- `specFile` — nom de fichier ou chemin relatif à `paths.specs`, ex: `auth.md` ou `docs/specs/auth.md`
-- `title` — titre de la spec, ex: `"Spec : Système d'auth"`
-
-**Rôle :** Initialiser un fichier de spec vide avec frontmatter minimal. Le team-lead ou le harness l'appelle quand une nouvelle spec doit exister sur disque.
-
-**Comportement :**
-
-1. Résoudre le chemin absolu dans `paths.specs` de `context.worktree`
-2. Vérifier que le fichier n'existe pas déjà → erreur explicite si présent (pas d'écrasement)
-3. Créer le dossier parent si absent
-4. Écrire le fichier avec le frontmatter minimal :
-   ```markdown
-   ---
-   title: "Spec : Système d'auth"
-   status: draft
-   created: 2026-04-06
-   ---
-
-   # Spec : Système d'auth
-   ```
-5. Retourner le chemin créé
-
-**Ce que le tool ne fait PAS :** pas de registry externe, pas d'écriture dans `AGENTS.md`. La source de vérité est le dossier — `project_state` le découvre par glob.
-
-**Erreurs :**
-- Fichier déjà existant → `"Le fichier 'docs/specs/auth.md' existe déjà."`
-
-**Réponse :**
-```json
-{
-  "created": true,
-  "file": "docs/specs/auth.md"
-}
-```
-
----
-
-### `check_artifacts`
-
-**Signature :** `check_artifacts()`
-
-**Arguments :** aucun
-
-**Rôle :** Scan de consistance transversal — détecter les incohérences entre les artefacts de gestion. Le team-lead l'appelle en début de mission ou le gardener l'utilise dans ses sweeps de maintenance.
-
-**Comportement :**
-
-Glob des trois dossiers dans `context.worktree`, lit les frontmatters. Détecte les problèmes suivants :
-
-| Type | Condition | Sévérité |
-|---|---|---|
-| `plan_stale_status` | Exec-plan avec tous les blocs cochés mais `status != completed` | bloquant |
-| `plan_missing_brief` | Exec-plan avec champ `brief` absent ou vide | warning |
-| `plan_brief_dead` | Exec-plan avec `brief` pointant vers un fichier inexistant | bloquant |
-| `brief_missing_plan` | Brief avec champ `exec_plan` absent ou vide | warning |
-| `brief_plan_dead` | Brief avec `exec_plan` pointant vers un fichier inexistant | bloquant |
-| `spec_stale_draft` | Spec avec `status: draft` et `created` il y a plus de 30 jours | warning |
-
-**Réponse :**
-```json
-{
-  "problems": [
-    {
-      "type": "plan_stale_status",
-      "file": "docs/exec-plans/auth-system.md",
-      "severity": "blocking",
-      "detail": "tous les blocs sont cochés mais status est 'active'",
-      "suggestion": "complete_plan('docs/exec-plans/auth-system.md')"
-    },
-    {
-      "type": "spec_stale_draft",
-      "file": "docs/specs/old-idea.md",
-      "severity": "warning",
-      "detail": "status: draft depuis 45 jours",
-      "suggestion": "promouvoir en 'active' ou supprimer si abandonné"
-    }
-  ],
-  "summary": "2 problèmes détectés (1 bloquant, 1 warning)"
-}
-```
-
-Si aucun problème : `{ "problems": [], "summary": "Tous les artefacts sont cohérents." }`
+**Warnings inline :** Si un exec-plan a tous les blocs cochés mais `status: active`, le champ `warning` est peuplé pour signaler la situation au team-lead.
 
 ---
 
@@ -478,34 +314,21 @@ Les utilisateurs peuvent les surcharger via leur `opencode.json` (même mécaniq
 | Moment | Tool | Condition |
 |---|---|---|
 | Début de toute mission | `project_state` | Systématique — donne la vue complète avant de planifier |
-| Début de mission | `check_artifacts` | Systématique — détecte les incohérences avant de commencer |
-| Après validation d'une livraison de sous-tâche | `mark_block_done` | Dès qu'un bloc d'un exec-plan est livré et approuvé par le review-manager |
-| Après livraison complète d'un scope | `complete_plan` | Quand tous les blocs sont cochés et le review final est APPROVED |
-| Après écriture d'une nouvelle spec | `register_spec` | Systématique — le team-lead ou le harness l'appelle dans la même session |
-| Maintenance périodique | `check_artifacts` | Gardener l'utilise dans ses sweeps |
+| Après validation d'une livraison de sous-tâche | `plan_block_done` | Dès qu'un bloc d'un exec-plan est livré et approuvé par le review-manager |
+| Modification chirurgicale d'un plan | `plan_update` | Pour toute modification de contenu dans un exec-plan existant |
+| Création ou mise à jour d'une spec | `spec_create` / `spec_update` | Quand une décision architecturale ou un comportement doit être documenté |
 
-### Changements dans `agents/prompt.md`
+### Workflow réel du team-lead
 
-La section "Outils disponibles" (ou équivalent) du team-lead doit être mise à jour pour documenter les 5 tools et leurs déclencheurs. Points clés à ajouter :
+Le team-lead appelle `plan_block_done(plan_id, block_name)` pour cocher un bloc dans un exec-plan après chaque livraison validée — sans attendre la fin du scope. Exemple :
 
-1. **Début de mission** — appeler `project_state` + `check_artifacts` avant toute délégation. Ce n'est pas optionnel.
-2. **Après chaque livraison** — `mark_block_done` est la "fermeture de boucle" d'un bloc. Le team-lead ne doit pas attendre la fin du scope pour le faire.
-3. **Complétion de scope** — `complete_plan` est bloquant tant que des blocs sont non cochés. Le tool l'enforcer lui-même, mais le team-lead doit comprendre la séquence.
-4. **Nouvelle spec** — `register_spec` fait partie du workflow de livraison d'une spec, pas une tâche post-hoc.
-
-Exemple de section à ajouter dans `prompt.md` :
-
-```markdown
-## Lifecycle Tools
-
-Tu as accès à des tools de bookkeeping directs — pas de délégation, pas de sous-agent :
-
-- `project_state()` — vue complète des exec-plans, specs, briefs. Appelle en début de mission.
-- `check_artifacts()` — scan de consistance. Appelle en début de mission et après chaque scope.
-- `mark_block_done(plan_file, block_name)` — coche un bloc. Appelle après chaque livraison validée.
-- `complete_plan(plan_file)` — clôt un exec-plan. Appelle quand tous les blocs sont done.
-- `register_spec(specFile, title)` — crée le fichier de spec. Appelle quand une nouvelle spec doit être initialisée.
 ```
+plan_block_done("auth-feature", "Tests unitaires")
+```
+
+Pour toute modification chirurgicale d'un exec-plan (mise à jour du decision log, correction de contenu), le team-lead utilise `plan_update(id, old_string, new_string)`.
+
+Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title, type, content)` ou `spec_update(id, old_string, new_string)`. Ces tools déclenchent automatiquement le `spec-validator` — le résultat (APPROVED ou REJECTED) est retourné inline.
 
 ---
 

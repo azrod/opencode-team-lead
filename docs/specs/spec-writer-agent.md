@@ -50,7 +50,7 @@ The team-lead delegates "document the artifact-guard module" to the spec-writer.
 3. Reads `tools/artifact-guard.js` and relevant sections of `index.js`.
 4. Creates the spec with `spec_create("Artifact Guard", "technical", content)`.
 5. Calls `spec_validate("artifact-guard")` — receives `APPROVED`.
-6. Returns: id `artifact-guard`, verdict `APPROVED`, summary: "Documents the guard module that intercepts direct filesystem access to protected artifact directories. Key invariant: all 19 lifecycle tools bypass the guard unconditionally."
+6. Returns: id `artifact-guard`, verdict `APPROVED`, summary: "Documents the guard module that intercepts direct filesystem access to protected artifact directories. Key invariant: all 20 lifecycle tools bypass the guard unconditionally."
 
 **Scenario: domain already covered**
 

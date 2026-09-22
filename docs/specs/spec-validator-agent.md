@@ -33,7 +33,7 @@ The agent's default is charitable: missing detail, sparse content, or unusual st
 - The agent must not reject a spec for incomplete coverage, style issues, word choice, or missing sections.
 - The agent must not reject speculatively — if it cannot point to a specific contradiction, it must approve.
 - The agent operates as `mode: subagent`, `silent: true`, `temperature: 0.1` — it is invisible to the user and produces deterministic, low-variance output.
-- The agent is triggered by `spec_validate` only — never called directly by the user or team-lead as a conversational agent.
+- The agent is triggered when `spec_validate` is called — which happens automatically after `spec_create`/`spec_update`, or explicitly. Never called as a conversational agent.
 - Permitted tools: `spec_list`, `spec_get`, `read`, `glob`, `grep`. No write access.
 - The agent never creates, updates, or deletes specs. It reads and judges.
 
