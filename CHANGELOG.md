@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `plan-reviewer` cluster — orchestrator + three specialized sub-reviewers (`plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer`). Supports two review depths: `light` (spec coherence only) and `deep` (spec coherence + codebase feasibility). Returns APPROVED / CHANGES_REQUESTED / BLOCKED.
+- `spec_format()` and `plan_format()` lifecycle tools — return the canonical format for specs and exec-plans inline, so agents always know the expected structure before calling `spec_create` or `plan_create`
+- `spec-writer` agent — specialized in writing high-quality specs conforming to the canonical format; delegates from team-lead or gardener
+- 20 lifecycle tools replace the previous 5, organized by domain: 6 spec tools (`spec_list`, `spec_get`, `spec_create`, `spec_update`, `spec_validate`, `spec_delete`), 7 plan tools (`plan_list`, `plan_get`, `plan_create`, `plan_update`, `plan_validate`, `plan_block_done`, `plan_delete`), 5 brief tools (`brief_list`, `brief_get`, `brief_create`, `brief_update`, `brief_delete`), `project_state` (now returns specs + plans with unchecked blocks only, no briefs), and `plan_format` / `spec_format` (return the canonical format for agents before creating artifacts)
+- Two new agents: `spec-validator` (checks spec completeness and consistency after `spec_create`/`spec_update`) and `spec-reviewer` (integrated into the review-manager pool — decides whether specs need creation or update after each delivery)
+- Artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`) are now protected at runtime — any direct `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is blocked by the plugin. All access goes through the 20 lifecycle tools.
+- The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
+
+### Changed
+- The team-lead now proactively proposes creating an exec-plan when a request involves 3+ distinct non-trivial steps, multiple agents, or work likely to span several sessions — even when the intent is perfectly clear. Previously, exec-plans were only suggested for ambiguous requests.
+- `plan_create`, `plan_update`, `spec_create`, and `spec_update` now return a suggestion to run a validation review once the artifact is complete — rather than falsely claiming to auto-trigger a validator.
+- Gardener agent is now a dual-mode maintenance agent: Bootstrap mode (< 3 active specs) discovers functional domains and delegates spec drafting to `spec-writer`; Maintenance mode (≥ 3 specs) is a pure audit orchestrator — it spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead without editing files or opening PRs.
+- Two recurring documentation patterns identified as harness candidates: (1) frontmatter `status` field diverging from body text in spec files, (2) lifecycle tool count hardcoded in multiple docs — both risk silent drift on future changes.
+
+### Removed
+- `plan-validator` agent replaced by the `plan-reviewer` cluster.
+- `mark_block_done`, `complete_plan`, `register_spec`, and `check_artifacts` have been removed and replaced by the new domain-specific lifecycle tools (`plan_block_done`, `spec_create`, etc.)
+
 ## [1.0.0] - 2026-08-19
 
 ### Added
@@ -35,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before the team-lead to produce a structured product brief at `docs/briefs/{project-name}.md`.
 - New `harness` agent — encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI workflows, AGENTS.md entries, guiding principles). Triggered by the user, the team-lead post-feature, or the Gardener on recurring drift.
 - New `planning` agent — transforms complex or ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Returns inline plan simples for small tasks; full exec-plans for multi-session work.
-- New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Opens targeted PRs; updates `QUALITY_SCORE.md`; escalates recurring patterns to `harness`.
+- New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Escalates recurring patterns to `harness`.
 - The team-lead now knows when to invoke `planning` (complex/ambiguous requests) and when to suggest `harness` post-delivery (recurring patterns).
 - Five lifecycle tools now available directly to the team-lead — no delegation needed for project bookkeeping: `project_state` (full artifact inventory), `check_artifacts` (consistency scan), `mark_block_done` (check a block in an exec-plan), `complete_plan` (close a scope), and `register_spec` (create a new spec file). The team-lead calls these at mission start and after each delivery automatically.
 - Exec-plans now support an optional `brief:` frontmatter field to trace the brainstorm → implementation link bidirectionally.

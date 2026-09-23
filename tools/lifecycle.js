@@ -1,11 +1,10 @@
 // tools/lifecycle.js
-// Five deterministic bookkeeping tools for exec-plans, specs, and briefs.
+// Nineteen deterministic bookkeeping tools for exec-plans, specs, and briefs.
 // All functions are pure: they receive projectRoot + paths, do their work, and return data.
 // No LLM involvement, no delegation — these run directly in the plugin process.
 
-import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
-import { join, dirname, isAbsolute, resolve, sep } from "node:path";
-import { existsSync } from "node:fs";
+import { readFile, writeFile, mkdir, readdir, unlink } from "node:fs/promises";
+import { join, dirname, isAbsolute, resolve, sep, basename } from "node:path";
 
 // ── YAML frontmatter helpers ─────────────────────────────────────────────────
 
@@ -25,38 +24,13 @@ function parseFrontmatter(content) {
     const colonIdx = line.indexOf(":");
     if (colonIdx === -1) continue;
     const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, "");
+    const value = line.slice(colonIdx + 1).trim()
+      .replace(/^["']|["']$/g, "")
+      .replace(/\\"/g, '"')
+      .replace(/\\'/g, "'");
     if (key) result[key] = value;
   }
   return result;
-}
-
-/**
- * Replace or insert a key:value pair in the frontmatter block of a markdown string.
- * Creates the frontmatter block if absent.
- *
- * @param {string} content
- * @param {string} key
- * @param {string} value
- * @returns {string}
- */
-function setFrontmatterField(content, key, value) {
-  const eol = content.includes("\r\n") ? "\r\n" : "\n";
-  const fmMatch = content.match(/^(---\r?\n)([\s\S]*?)(\r?\n---)/);
-  if (!fmMatch) {
-    return `---${eol}${key}: ${value}${eol}---${eol}${eol}${content}`;
-  }
-  const [full, open, body, close] = fmMatch;
-  const lines = body.split(/\r?\n/);
-  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const keyRegex = new RegExp(`^${escapedKey}\\s*:`, "m");
-  const idx = lines.findIndex((l) => keyRegex.test(l));
-  if (idx !== -1) {
-    lines[idx] = `${key}: ${value}`;
-  } else {
-    lines.push(`${key}: ${value}`);
-  }
-  return content.replace(full, `${open}${lines.join(eol)}${close}`);
 }
 
 // ── Path helpers ─────────────────────────────────────────────────────────────
@@ -123,96 +97,429 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// ── project_state ────────────────────────────────────────────────────────────
+// ── ID / slug helpers ────────────────────────────────────────────────────────
 
 /**
- * Produce a structured report of the current state of management artifacts.
+ * Generate a filesystem-safe id from a human title.
+ * Lowercases, replaces spaces with dashes, strips non-alphanumeric/dash chars.
  *
- * @param {string} projectRoot  Absolute path to the project root
- * @param {{ specs: string, execPlans: string, briefs: string }} paths
- * @returns {Promise<object>}
+ * @param {string} title
+ * @returns {string}
  */
-export async function projectState(projectRoot, paths) {
-  const [specFiles, planFiles, briefFiles] = await Promise.all([
-    listMdFiles(projectRoot, paths.specs),
-    listMdFiles(projectRoot, paths.execPlans),
-    listMdFiles(projectRoot, paths.briefs),
-  ]);
+function titleToId(title) {
+  return title
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
-  // ── specs ────────────────────────────────────────────────────────────────
+/**
+ * Find the absolute path of a .md file in `dir` whose name (without extension)
+ * matches `id` (case-insensitive). Throws if not found.
+ *
+ * @param {string} projectRoot
+ * @param {string} dir  Relative directory path
+ * @param {string} id   Filename without extension
+ * @returns {Promise<string>}
+ */
+async function resolveById(projectRoot, dir, id) {
+  const absDir = join(projectRoot, dir);
+  let entries;
+  try {
+    entries = await readdir(absDir, { withFileTypes: true });
+  } catch {
+    throw new Error(`Directory not found: ${dir} (looking for id "${id}")`);
+  }
+  const target = id.toLowerCase();
+  const match = entries.find(
+    (e) => e.isFile() && e.name.endsWith(".md") && e.name.slice(0, -3).toLowerCase() === target
+  );
+  if (!match) {
+    throw new Error(`Artifact with id "${id}" not found in ${dir}`);
+  }
+  const finalPath = join(absDir, match.name);
+  return resolveArtifact(projectRoot, finalPath);
+}
+
+// ── SPECS ────────────────────────────────────────────────────────────────────
+
+/**
+ * Get a spec by id (filename without extension).
+ *
+ * @param {string} projectRoot
+ * @param {{ specs: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ file: string, content: string, frontmatter: Record<string, string> }>}
+ */
+export async function specGet(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.specs, id);
+  let content;
+  try {
+    content = await readFile(absPath, "utf-8");
+  } catch {
+    throw new Error(`Spec file not found: ${absPath}`);
+  }
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return { file: relPath, content, frontmatter: parseFrontmatter(content) };
+}
+
+/**
+ * Create a new spec file.
+ *
+ * @param {string} projectRoot
+ * @param {{ specs: string }} paths
+ * @param {string} title
+ * @param {"technical"|"functional"|"architectural"} [type]
+ * @param {string|null} [content]
+ * @returns {Promise<{ created: true, file: string, id: string }>}
+ */
+export async function specCreate(projectRoot, paths, title, type = "technical", content = null) {
+  const id = titleToId(title);
+  if (!id) throw new Error(`Cannot derive id from title: "${title}"`);
+  const relPath = join(paths.specs, `${id}.md`);
+  const absPath = resolveArtifact(projectRoot, relPath);
+
+  await mkdir(dirname(absPath), { recursive: true });
+
+  const headingTitle = title.replace(/[\r\n]/g, " ");
+  const safeTitle = headingTitle.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const safeType = `"${(type ?? "technical").replace(/[\r\n]/g, " ").replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  const frontmatter = `---\ntitle: "${safeTitle}"\nid: ${id}\ntype: ${safeType}\nstatus: draft\ncreated: ${today()}\n---\n`;
+  const body = content != null ? `\n${content}` : `\n# ${headingTitle}\n`;
+  try {
+    await writeFile(absPath, frontmatter + body, { encoding: "utf-8", flag: "wx" });
+  } catch (err) {
+    if (err.code === "EEXIST") throw new Error(`Spec "${id}" already exists at ${relPath}`);
+    throw err;
+  }
+
+  return {
+    created: true,
+    file: relPath,
+    id,
+    hint: `Spec created. Once you're done building it, you can suggest to the user to run a validation review (spec_validate).`,
+  };
+}
+
+/**
+ * Update a spec by replacing oldString with newString.
+ *
+ * @param {string} projectRoot
+ * @param {{ specs: string }} paths
+ * @param {string} id
+ * @param {string} oldString
+ * @param {string} newString
+ * @returns {Promise<{ file: string, updated: true }>}
+ */
+export async function specUpdate(projectRoot, paths, id, oldString, newString) {
+  const absPath = await resolveById(projectRoot, paths.specs, id);
+  let content;
+  try {
+    content = await readFile(absPath, "utf-8");
+  } catch {
+    throw new Error(`Spec file not found: ${absPath}`);
+  }
+
+  const occurrences = content.split(oldString).length - 1;
+  if (occurrences === 0) {
+    throw new Error(`oldString not found in spec "${id}"`);
+  }
+  if (occurrences > 1) {
+    throw new Error(
+      `Found ${occurrences} matches for oldString in spec "${id}". Provide more surrounding context to make it unique.`
+    );
+  }
+
+  const updated = content.replace(oldString, () => newString);
+  await writeFile(absPath, updated, "utf-8");
+
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return {
+    file: relPath,
+    updated: true,
+    hint: `Spec updated. Once you're done with changes, you can suggest to the user to run a validation review (spec_validate).`,
+  };
+}
+
+/**
+ * Validate a spec structurally (no LLM).
+ *
+ * @param {string} projectRoot
+ * @param {{ specs: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ file: string, valid: boolean, issues: string[] }>}
+ */
+export async function specValidate(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.specs, id);
+  let content;
+  try {
+    content = await readFile(absPath, "utf-8");
+  } catch {
+    throw new Error(`Spec file not found: ${absPath}`);
+  }
+
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  const issues = [];
+  const fm = parseFrontmatter(content);
+  const hasFrontmatter = /^---\r?\n/.test(content);
+
+  if (!hasFrontmatter) {
+    issues.push("Frontmatter block is missing");
+  } else {
+    if (!fm.title) issues.push("Frontmatter field 'title' is missing or empty");
+    if (!fm.id) issues.push("Frontmatter field 'id' is missing or empty");
+  }
+
+  // Body check: strip frontmatter and see if non-whitespace content remains
+  const bodyWithoutFm = hasFrontmatter
+    ? content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "")
+    : content;
+  if (!bodyWithoutFm.trim()) {
+    issues.push("Spec body is empty (no content beyond frontmatter)");
+  }
+
+  return { file: relPath, valid: issues.length === 0, issues };
+}
+
+/**
+ * List all specs.
+ *
+ * @param {string} projectRoot
+ * @param {{ specs: string }} paths
+ * @returns {Promise<{ specs: Array<{ file: string, title: string|null, id: string|null, type: string|null, status: string|null, created: string|null }> }>}
+ */
+export async function specList(projectRoot, paths) {
+  const files = await listMdFiles(projectRoot, paths.specs);
   const specs = await Promise.all(
-    specFiles.map(async (file) => {
-      const content = await readFile(join(projectRoot, file), "utf-8");
+    files.map(async (file) => {
+      let content;
+      try {
+        content = await readFile(join(projectRoot, file), "utf-8");
+      } catch (err) {
+        return { file, error: `unreadable: ${err.message}` };
+      }
       const fm = parseFrontmatter(content);
       return {
         file,
         title: fm.title ?? null,
         id: fm.id ?? null,
-        criticality: fm.criticality ?? null,
+        type: fm.type ?? null,
         status: fm.status ?? null,
         created: fm.created ?? null,
       };
     })
   );
-
-  // ── exec-plans ───────────────────────────────────────────────────────────
-  const exec_plans = await Promise.all(
-    planFiles.map(async (file) => {
-      const content = await readFile(join(projectRoot, file), "utf-8");
-      const fm = parseFrontmatter(content);
-      const { total, checked } = countBlocks(content);
-      const entry = {
-        file,
-        status: fm.status ?? null,
-        brief: fm.brief ?? null,
-        brief_exists: fm.brief ? existsSync(resolveArtifact(projectRoot, fm.brief)) : null,
-        blocks: { total, checked },
-      };
-      if (total > 0 && checked === total && fm.status !== "completed") {
-        entry.warning = "all blocks are checked but status != completed";
-      }
-      return entry;
-    })
-  );
-
-  // ── briefs ───────────────────────────────────────────────────────────────
-  const briefs = await Promise.all(
-    briefFiles.map(async (file) => {
-      const content = await readFile(join(projectRoot, file), "utf-8");
-      const fm = parseFrontmatter(content);
-      return {
-        file,
-        project: fm.project ?? null,
-        type: fm.type ?? null,
-        status: fm.status ?? null,
-        exec_plan: fm.exec_plan ?? null,
-        exec_plan_exists: fm.exec_plan ? existsSync(resolveArtifact(projectRoot, fm.exec_plan)) : null,
-      };
-    })
-  );
-
-  return { specs, exec_plans, briefs };
+  return { specs };
 }
 
-// ── mark_block_done ──────────────────────────────────────────────────────────
-
 /**
- * Check a specific block in an exec-plan ([ ] → [x]).
+ * Delete a spec by id.
  *
  * @param {string} projectRoot
- * @param {string} planFile  Relative path to the exec-plan
- * @param {string} blockName  Substring to match against block lines
- * @returns {Promise<object>}
+ * @param {{ specs: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ deleted: true, file: string }>}
  */
-export async function markBlockDone(projectRoot, planFile, blockName) {
-  const absPath = resolveArtifact(projectRoot, planFile);
+export async function specDelete(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.specs, id);
+  try {
+    await unlink(absPath);
+  } catch {
+    throw new Error(`Failed to delete spec "${id}" at ${absPath}`);
+  }
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return { deleted: true, file: relPath };
+}
+
+// ── PLANS ────────────────────────────────────────────────────────────────────
+
+/**
+ * Get a plan by id.
+ *
+ * @param {string} projectRoot
+ * @param {{ execPlans: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ file: string, content: string, frontmatter: Record<string, string>, blocks: { total: number, checked: number } }>}
+ */
+export async function planGet(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.execPlans, id);
   let content;
   try {
     content = await readFile(absPath, "utf-8");
   } catch {
-    throw new Error(`File not found: ${planFile}`);
+    throw new Error(`Plan file not found: ${absPath}`);
+  }
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  const { total, checked } = countBlocks(content);
+  return {
+    file: relPath,
+    content,
+    frontmatter: parseFrontmatter(content),
+    blocks: { total, checked },
+  };
+}
+
+/**
+ * Create a new exec-plan.
+ *
+ * @param {string} projectRoot
+ * @param {{ execPlans: string }} paths
+ * @param {{ title: string, functional_objective: string, content?: string|null, brief?: string|null }} options
+ * @returns {Promise<{ created: true, file: string, id: string }>}
+ */
+export async function planCreate(projectRoot, paths, { title, functional_objective, content = null, brief = null }) {
+  if (!functional_objective || !functional_objective.trim()) {
+    throw new Error(
+      `planCreate requires a non-empty 'functional_objective'. Provide 2-4 sentences describing what success looks like.`
+    );
+  }
+  if (!title || !title.trim()) {
+    throw new Error(`planCreate requires a non-empty 'title'.`);
   }
 
+  const id = titleToId(title);
+  if (!id) throw new Error(`Cannot derive id from title: "${title}"`);
+  const relPath = join(paths.execPlans, `${id}.md`);
+  const absPath = resolveArtifact(projectRoot, relPath);
+
+  await mkdir(dirname(absPath), { recursive: true });
+
+  const safeBrief = brief ? `"${brief.replace(/[\r\n]/g, " ").replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` : null;
+  const lines = ["---", `created: ${today()}`];
+  if (safeBrief) lines.push(`brief: ${safeBrief}`);
+  lines.push("---", "");
+  lines.push("## Goal", "");
+  lines.push(title, "");
+  lines.push("## Functional objective", "");
+  lines.push(functional_objective.trim(), "");
+  lines.push("## Scope", "");
+  if (content) lines.push(content.trim(), "");
+  lines.push("## Building blocks", "");
+  lines.push("## Decision log", "");
+
+  try {
+    await writeFile(absPath, lines.join("\n"), { encoding: "utf-8", flag: "wx" });
+  } catch (err) {
+    if (err.code === "EEXIST") throw new Error(`Plan "${id}" already exists at ${relPath}`);
+    throw err;
+  }
+
+  return {
+    created: true,
+    file: relPath,
+    id,
+    hint: `Plan created. Once you're done shaping it, you can suggest to the user to run a validation review (plan_validate).`,
+  };
+}
+
+/**
+ * Update a plan by replacing oldString with newString.
+ *
+ * @param {string} projectRoot
+ * @param {{ execPlans: string }} paths
+ * @param {string} id
+ * @param {string} oldString
+ * @param {string} newString
+ * @returns {Promise<{ file: string, updated: true }>}
+ */
+export async function planUpdate(projectRoot, paths, id, oldString, newString) {
+  const absPath = await resolveById(projectRoot, paths.execPlans, id);
+  let content;
+  try {
+    content = await readFile(absPath, "utf-8");
+  } catch {
+    throw new Error(`Plan file not found: ${absPath}`);
+  }
+
+  const occurrences = content.split(oldString).length - 1;
+  if (occurrences === 0) {
+    throw new Error(`oldString not found in plan "${id}"`);
+  }
+  if (occurrences > 1) {
+    throw new Error(
+      `Found ${occurrences} matches for oldString in plan "${id}". Provide more surrounding context to make it unique.`
+    );
+  }
+
+  const updated = content.replace(oldString, () => newString);
+  await writeFile(absPath, updated, "utf-8");
+
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return {
+    file: relPath,
+    updated: true,
+    hint: "Plan updated. Once you're done with changes, you can suggest to the user to run a validation review (plan_validate).",
+  };
+}
+
+/**
+ * Validate a plan structurally (no LLM).
+ *
+ * @param {string} projectRoot
+ * @param {{ execPlans: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ file: string, valid: boolean, issues: string[] }>}
+ */
+export async function planValidate(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.execPlans, id);
+  let content;
+  try {
+    content = await readFile(absPath, "utf-8");
+  } catch {
+    throw new Error(`Plan file not found: ${absPath}`);
+  }
+
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  const issues = [];
+  const hasFrontmatter = /^---\r?\n/.test(content);
+
+  if (!hasFrontmatter) {
+    issues.push("Frontmatter block is missing");
+  }
+
+  // Check for ## Functional objective section with content
+  const foMatch = content.match(/## Functional objective\r?\n+([\s\S]*?)(?=\n##|\s*$)/);
+  if (!foMatch) {
+    issues.push("Section '## Functional objective' is missing");
+  } else if (!foMatch[1].trim()) {
+    issues.push("Section '## Functional objective' is present but empty");
+  }
+
+  // Check for ## Building blocks section
+  if (!/## Building blocks/.test(content)) {
+    issues.push("Section '## Building blocks' is missing");
+  }
+
+  // Check for at least one block
+  const hasBlock = /- \[[ x]\] /i.test(content);
+  if (!hasBlock) {
+    issues.push("No task blocks found (expected at least one '- [ ]' or '- [x]')");
+  }
+
+  return { file: relPath, valid: issues.length === 0, issues };
+}
+
+/**
+ * Mark a block as done in a plan ([ ] → [x]).
+ *
+ * @param {string} projectRoot
+ * @param {{ execPlans: string }} paths
+ * @param {string} planId
+ * @param {string} blockName
+ * @returns {Promise<object>}
+ */
+export async function planBlockDone(projectRoot, paths, planId, blockName) {
+  const absPath = await resolveById(projectRoot, paths.execPlans, planId);
+  let content;
+  try {
+    content = await readFile(absPath, "utf-8");
+  } catch {
+    throw new Error(`Plan file not found: ${absPath}`);
+  }
+
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
   const eol = content.includes("\r\n") ? "\r\n" : "\n";
   const lines = content.split(/\r?\n/);
   const blockPattern = /^- \[[ x]\] /i;
@@ -227,14 +534,14 @@ export async function markBlockDone(projectRoot, planFile, blockName) {
       .filter((l) => blockPattern.test(l))
       .map((l) => l.replace(/^- \[[ x]\] /i, "").trim());
     throw new Error(
-      `Block "${blockName}" not found in ${planFile}.\nAvailable blocks:\n${availableBlocks.map((b) => `  - ${b}`).join("\n")}`
+      `Block "${blockName}" not found in ${relPath}.\nAvailable blocks:\n${availableBlocks.map((b) => `  - ${b}`).join("\n")}`
     );
   }
 
   if (matchingIndices.length > 1) {
     const matches = matchingIndices.map((i) => lines[i].trim());
     throw new Error(
-      `"${blockName}" matches multiple blocks in ${planFile} — be more specific:\n${matches.map((m) => `  - ${m}`).join("\n")}`
+      `"${blockName}" matches multiple blocks in ${relPath} — be more specific:\n${matches.map((m) => `  - ${m}`).join("\n")}`
     );
   }
 
@@ -249,7 +556,7 @@ export async function markBlockDone(projectRoot, planFile, blockName) {
   const all_done = total > 0 && checked === total;
 
   const result = {
-    file: planFile,
+    file: relPath,
     block: blockName,
     was: wasChecked ? "checked" : "unchecked",
     now: "checked",
@@ -258,219 +565,491 @@ export async function markBlockDone(projectRoot, planFile, blockName) {
   };
 
   if (all_done) {
-    result.hint = `All blocks are done. Call complete_plan('${planFile}') to close this scope.`;
+    result.hint = `All blocks are done. Use plan_update('${basename(relPath, ".md")}') to update the plan status or add notes.`;
   }
 
   return result;
 }
 
-// ── complete_plan ────────────────────────────────────────────────────────────
-
 /**
- * Set an exec-plan's status to "completed" in its frontmatter.
- * Refuses if unchecked blocks remain.
+ * List all plans.
  *
  * @param {string} projectRoot
- * @param {string} planFile  Relative path to the exec-plan
- * @returns {Promise<object>}
+ * @param {{ execPlans: string }} paths
+ * @returns {Promise<{ plans: Array<{ file: string, title: string|null, brief: string|null, blocks: { total: number, checked: number } }> }>}
  */
-export async function completePlan(projectRoot, planFile) {
-  const absPath = resolveArtifact(projectRoot, planFile);
+export async function planList(projectRoot, paths) {
+  const files = await listMdFiles(projectRoot, paths.execPlans);
+  const plans = await Promise.all(
+    files.map(async (file) => {
+      let content;
+      try {
+        content = await readFile(join(projectRoot, file), "utf-8");
+      } catch (err) {
+        return { file, error: `unreadable: ${err.message}` };
+      }
+      const fm = parseFrontmatter(content);
+      const { total, checked } = countBlocks(content);
+
+      // Try to extract title from ## Goal section
+      const goalMatch = content.match(/## Goal\r?\n+([^\n#]+)/);
+      const title = goalMatch ? goalMatch[1].trim() : (fm.title ?? null);
+
+      return {
+        file,
+        title,
+        brief: fm.brief ?? null,
+        blocks: { total, checked },
+      };
+    })
+  );
+  return { plans };
+}
+
+/**
+ * Delete a plan by id.
+ *
+ * @param {string} projectRoot
+ * @param {{ execPlans: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ deleted: true, file: string }>}
+ */
+export async function planDelete(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.execPlans, id);
+  try {
+    await unlink(absPath);
+  } catch {
+    throw new Error(`Failed to delete plan "${id}" at ${absPath}`);
+  }
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return { deleted: true, file: relPath };
+}
+
+// ── BRIEFS ───────────────────────────────────────────────────────────────────
+
+/**
+ * Get a brief by id.
+ *
+ * @param {string} projectRoot
+ * @param {{ briefs: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ file: string, content: string, frontmatter: Record<string, string> }>}
+ */
+export async function briefGet(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.briefs, id);
   let content;
   try {
     content = await readFile(absPath, "utf-8");
   } catch {
-    throw new Error(`File not found: ${planFile}`);
+    throw new Error(`Brief file not found: ${absPath}`);
   }
-
-  const fm = parseFrontmatter(content);
-  const hasFrontmatter = /^---\r?\n/.test(content);
-  if (!hasFrontmatter) throw new Error(`Frontmatter missing in ${planFile}.`);
-  if (fm.status === undefined || fm.status === "") throw new Error(`Field 'status' missing in ${planFile}.`);
-
-  const { unchecked } = countBlocks(content);
-  if (unchecked.length > 0) {
-    throw new Error(
-      `${unchecked.length} unchecked block(s) in ${planFile}. Use mark_block_done before completing the plan:\n${unchecked.map((b) => `  - ${b}`).join("\n")}`
-    );
-  }
-
-  let updated = setFrontmatterField(content, "status", "completed");
-  const date = today();
-  updated = setFrontmatterField(updated, "updated", date);
-
-  await writeFile(absPath, updated, "utf-8");
-
-  return {
-    file: planFile,
-    status: "completed",
-    updated: date,
-  };
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return { file: relPath, content, frontmatter: parseFrontmatter(content) };
 }
 
-// ── register_spec ────────────────────────────────────────────────────────────
-
 /**
- * Create a new spec file with minimal frontmatter. Refuses to overwrite.
+ * Create a new brief.
  *
  * @param {string} projectRoot
- * @param {{ specs: string }} paths
- * @param {string} specFile  Filename or relative path within paths.specs
- * @param {string} title
- * @returns {Promise<object>}
+ * @param {{ briefs: string }} paths
+ * @param {{ title: string, content?: string|null, exec_plan?: string|null }} options
+ * @returns {Promise<{ created: true, file: string, id: string }>}
  */
-export async function registerSpec(projectRoot, paths, specFile, title) {
-  // Resolve: if specFile is already a path that includes the specs dir, use as-is;
-  // otherwise, place it inside paths.specs.
-  let relPath;
-  const relDir = dirname(specFile);
-  if (relDir !== ".") {
-    relPath = specFile;
-  } else {
-    relPath = join(paths.specs, specFile);
+export async function briefCreate(projectRoot, paths, { title, content = null, exec_plan = null }) {
+  if (!title || !title.trim()) {
+    throw new Error(`briefCreate requires a non-empty 'title'.`);
   }
 
+  const id = titleToId(title);
+  if (!id) throw new Error(`Cannot derive id from title: "${title}"`);
+  const relPath = join(paths.briefs, `${id}.md`);
   const absPath = resolveArtifact(projectRoot, relPath);
-
-  if (existsSync(absPath)) {
-    throw new Error(`File '${relPath}' already exists.`);
-  }
 
   await mkdir(dirname(absPath), { recursive: true });
 
-  const safeTitle = title.replace(/[\r\n]/g, " ").replace(/"/g, '\\"');
-  const frontmatter = `---\ntitle: "${safeTitle}"\nstatus: draft\ncreated: ${today()}\n---\n\n# ${safeTitle}\n`;
-  await writeFile(absPath, frontmatter, "utf-8");
+  const headingTitle = title.replace(/[\r\n]/g, " ");
+  const safeTitle = headingTitle.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  const safeExecPlan = exec_plan ? `"${exec_plan.replace(/[\r\n]/g, " ").replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` : null;
+  const lines = ["---", `title: "${safeTitle}"`, `id: ${id}`, `created: ${today()}`];
+  if (safeExecPlan) lines.push(`exec_plan: ${safeExecPlan}`);
+  lines.push("---", "", `# ${headingTitle}`, "");
+  if (content) lines.push(content.trim(), "");
 
-  return {
-    created: true,
-    file: relPath,
-  };
+  try {
+    await writeFile(absPath, lines.join("\n"), { encoding: "utf-8", flag: "wx" });
+  } catch (err) {
+    if (err.code === "EEXIST") throw new Error(`Brief "${id}" already exists at ${relPath}`);
+    throw err;
+  }
+
+  return { created: true, file: relPath, id };
 }
 
-// ── check_artifacts ──────────────────────────────────────────────────────────
-
 /**
- * Cross-artifact consistency scan.
+ * Update a brief by replacing oldString with newString.
  *
  * @param {string} projectRoot
- * @param {{ specs: string, execPlans: string, briefs: string }} paths
- * @returns {Promise<object>}
+ * @param {{ briefs: string }} paths
+ * @param {string} id
+ * @param {string} oldString
+ * @param {string} newString
+ * @returns {Promise<{ file: string, updated: true }>}
  */
-export async function checkArtifacts(projectRoot, paths) {
-  const problems = [];
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+export async function briefUpdate(projectRoot, paths, id, oldString, newString) {
+  const absPath = await resolveById(projectRoot, paths.briefs, id);
+  let content;
+  try {
+    content = await readFile(absPath, "utf-8");
+  } catch {
+    throw new Error(`Brief file not found: ${absPath}`);
+  }
 
-  const [planFiles, briefFiles, specFiles] = await Promise.all([
-    listMdFiles(projectRoot, paths.execPlans),
-    listMdFiles(projectRoot, paths.briefs),
+  const occurrences = content.split(oldString).length - 1;
+  if (occurrences === 0) {
+    throw new Error(`oldString not found in brief "${id}"`);
+  }
+  if (occurrences > 1) {
+    throw new Error(
+      `Found ${occurrences} matches for oldString in brief "${id}". Provide more surrounding context to make it unique.`
+    );
+  }
+
+  const updated = content.replace(oldString, () => newString);
+  await writeFile(absPath, updated, "utf-8");
+
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return { file: relPath, updated: true };
+}
+
+/**
+ * Delete a brief by id.
+ *
+ * @param {string} projectRoot
+ * @param {{ briefs: string }} paths
+ * @param {string} id
+ * @returns {Promise<{ deleted: true, file: string }>}
+ */
+export async function briefDelete(projectRoot, paths, id) {
+  const absPath = await resolveById(projectRoot, paths.briefs, id);
+  try {
+    await unlink(absPath);
+  } catch {
+    throw new Error(`Failed to delete brief "${id}" at ${absPath}`);
+  }
+  const relPath = absPath.slice(resolve(projectRoot).length + 1);
+  return { deleted: true, file: relPath };
+}
+
+/**
+ * List all briefs.
+ *
+ * @param {string} projectRoot
+ * @param {{ briefs: string }} paths
+ * @returns {Promise<{ briefs: Array<{ file: string, title: string|null, id: string|null, exec_plan: string|null, created: string|null }> }>}
+ */
+export async function briefList(projectRoot, paths) {
+  const files = await listMdFiles(projectRoot, paths.briefs);
+  const briefs = await Promise.all(
+    files.map(async (file) => {
+      let content;
+      try {
+        content = await readFile(join(projectRoot, file), "utf-8");
+      } catch (err) {
+        return { file, error: `unreadable: ${err.message}` };
+      }
+      const fm = parseFrontmatter(content);
+      return {
+        file,
+        title: fm.title ?? null,
+        id: fm.id ?? null,
+        exec_plan: fm.exec_plan ?? null,
+        created: fm.created ?? null,
+      };
+    })
+  );
+  return { briefs };
+}
+
+// ── FORMAT TEMPLATES ─────────────────────────────────────────────────────────
+
+/**
+ * Return the canonical format expected for a spec file.
+ * Pure function — no parameters, no I/O, no side effects.
+ *
+ * @returns {string}
+ */
+export function specFormat() {
+  return [
+    "# Spec format — canonical reference",
+    "",
+    "## Frontmatter (required)",
+    "",
+    "```yaml",
+    "---",
+    'title: "Human-readable title"',
+    "id: slug-derived-from-title        # auto-generated by spec_create",
+    "type: technical                    # technical | functional | architectural",
+    "status: draft                      # draft | active | deprecated",
+    "created: YYYY-MM-DD                # auto-generated by spec_create",
+    "---",
+    "```",
+    "",
+    "## Required sections (in order)",
+    "",
+    "The body must contain these top-level sections (h2 headings), in this order:",
+    "",
+    "- `## Purpose` — One paragraph. Answers: why does this spec exist? What problem does it solve?",
+    "  Not a feature description — a statement of intent.",
+    "",
+    "- `## Behavior` — The core of the spec. Describes what the system does, not how it does it.",
+    "  Use prose. Concrete, specific, falsifiable statements.",
+    "  Bullet lists are acceptable here when enumerating distinct cases.",
+    "",
+    "- `## Constraints` — Hard limits and non-negotiable invariants. Things the implementation must not violate.",
+    '  Example: "Must not exceed 512 KB per artifact", "Must be idempotent on repeated calls".',
+    "",
+    "- `## Examples` — At least one concrete example showing the spec in action.",
+    "  Code blocks, input/output pairs, or narrative walkthroughs — whatever is clearest.",
+    "",
+    "## Optional sections",
+    "",
+    "The following sections are optional (h2 headings, placed after the required ones):",
+    "",
+    "- `## Rationale` — Why this design was chosen over alternatives. Only needed when the decision is non-obvious.",
+    "",
+    "- `## Non-goals` — What this spec explicitly does NOT cover. Prevents scope creep and misinterpretation.",
+    "",
+    "## Style rules",
+    "",
+    "- Target length: 100–400 lines depending on complexity",
+    "- Write in prose first, lists only for genuinely enumerable items",
+    "- Concrete examples > abstract descriptions",
+    "- Every constraint should be mechanically verifiable (testable or lint-enforceable)",
+    "",
+    "## What a spec is NOT",
+    "",
+    '- Not a ticket or user story ("As a user, I want…")',
+    "- Not a verbose design doc with every alternative explored",
+    "- Not pseudo-code or implementation instructions",
+    "- Not a changelog entry",
+    "",
+    "## Minimal valid example",
+    "",
+    "```markdown",
+    "---",
+    'title: "Artifact Guard"',
+    "id: artifact-guard",
+    "type: technical",
+    "status: active",
+    "created: 2026-01-01",
+    "---",
+    "",
+    "# Artifact Guard",
+    "",
+    "## Purpose",
+    "",
+    "Prevent agents from directly reading or modifying protected artifact directories",
+    "(docs/specs/, docs/exec-plans/, docs/briefs/) except through the 19 lifecycle tools.",
+    "",
+    "## Behavior",
+    "",
+    "The guard intercepts read, edit, write, bash, glob, and grep calls at the",
+    "tool.execute.before hook. If the target path falls inside a protected directory",
+    "and the caller is not a lifecycle tool, the call is rejected with a descriptive error.",
+    "",
+    "Lifecycle tools always bypass the guard — they are the intended access path.",
+    "",
+    "## Constraints",
+    "",
+    "- Must block access even when paths use backslashes or leading slashes.",
+    "- Must NOT block access for any of the 19 lifecycle tools.",
+    "- Must NOT block access to paths that merely share a prefix (e.g. docs/specs-extra/).",
+    "",
+    "## Examples",
+    "",
+    "```js",
+    "// Blocked: direct read on protected path",
+    'checkArtifactAccess({ tool: "read", args: { filePath: "docs/specs/auth.md" } }, dirs);',
+    "// → Error: \"Direct 'read' access to 'docs/specs/auth.md' is blocked. Use spec_get …\"",
+    "",
+    "// Allowed: lifecycle tool",
+    'checkArtifactAccess({ tool: "spec_get", args: { filePath: "docs/specs/auth.md" } }, dirs);',
+    "// → null",
+    "```",
+    "```",
+  ].join("\n");
+}
+
+/**
+ * Return the canonical format expected for an exec-plan file.
+ * Pure function — no parameters, no I/O, no side effects.
+ *
+ * @returns {string}
+ */
+export function planFormat() {
+  return [
+    "# Exec-plan format — canonical reference",
+    "",
+    "## Frontmatter",
+    "",
+    "```yaml",
+    "---",
+    "created: YYYY-MM-DD    # auto-generated by plan_create",
+    'brief: "brief-id"      # optional — id of the associated product brief',
+    "---",
+    "```",
+    "",
+    "## Required sections (in this order)",
+    "",
+    "The plan must contain these top-level sections (h2 headings), in this order:",
+    "",
+    "- `## Goal` — One line. The plan title restated as a declarative sentence.",
+    "",
+    "- `## Functional objective` — 2–4 sentences answering: what user problem does this plan solve?",
+    "  Write from the user's perspective. No implementation details here.",
+    "  This section is what plan_validate checks for completeness.",
+    "",
+    "- `## Scope` — Two h3 subsections:",
+    "  - `### In scope` — Bulleted list of what this plan covers. Be specific.",
+    "  - `### Out of scope` — Bulleted list of what this plan explicitly does NOT cover.",
+    "    Prevents creep and clarifies handoff boundaries.",
+    "",
+    "- `## Building blocks`",
+    "One entry per deliverable. Each block follows this format:",
+    "",
+    "```markdown",
+    "- [ ] **Bloc N — Short title**",
+    "",
+    "  One paragraph describing what this block delivers and why.",
+    "",
+    "  Done when:",
+    "  - Criterion 1 (mechanically verifiable — a test passes, a file exists, a command succeeds)",
+    "  - Criterion 2",
+    "  - Criterion 3",
+    "```",
+    "",
+    "Granularity rules:",
+    "- Each block = 1 atomic deliverable (one PR, one feature, one migration)",
+    "- 1–3 days of work maximum per block",
+    "- No circular dependencies between blocks",
+    '- "Done when" criteria must be verifiable without human interpretation',
+    "",
+    "- `## Decision log` — Record significant choices made during planning or execution.",
+    "  Format: date + decision + rationale. Can be empty at creation.",
+    "",
+    "## Minimal valid example",
+    "",
+    "```markdown",
+    "---",
+    "created: 2026-01-01",
+    "---",
+    "",
+    "## Goal",
+    "",
+    "Add lifecycle tools spec_format and plan_format to the plugin.",
+    "",
+    "## Functional objective",
+    "",
+    "Agents that create specs or exec-plans have no reference for the expected format",
+    "and invent their own structure. This plan adds two zero-parameter tools that return",
+    "the canonical format inline, eliminating format drift without requiring any external",
+    "documentation lookup.",
+    "",
+    "## Scope",
+    "",
+    "### In scope",
+    "- specFormat() function in tools/lifecycle.js",
+    "- planFormat() function in tools/lifecycle.js",
+    "- Registration of spec_format and plan_format in index.js",
+    "- Addition to LIFECYCLE_TOOLS in artifact-guard.js",
+    "- Tests in tests/lifecycle.test.js",
+    "",
+    "### Out of scope",
+    "- Changes to agent prompts",
+    "- Website documentation updates",
+    "",
+    "## Building blocks",
+    "",
+    "- [ ] **Bloc 1 — Implement specFormat and planFormat**",
+    "",
+    "  Add two exported pure functions to tools/lifecycle.js that return the canonical",
+    "  markdown format for specs and exec-plans respectively.",
+    "",
+    "  Done when:",
+    '  - specFormat() returns a non-empty string containing "## Purpose", "## Behavior", "## Constraints", "## Examples"',
+    '  - planFormat() returns a non-empty string containing "## Functional objective", "## Building blocks", "- [ ]"',
+    "  - npm test passes",
+    "",
+    "- [ ] **Bloc 2 — Register tools in index.js and artifact-guard.js**",
+    "",
+    "  Expose spec_format and plan_format as lifecycle tools with appropriate descriptions.",
+    "  Add them to LIFECYCLE_TOOLS so they bypass the artifact guard.",
+    "",
+    "  Done when:",
+    "  - spec_format and plan_format appear in the tool map in index.js",
+    '  - "spec_format" and "plan_format" are in the LIFECYCLE_TOOLS Set',
+    "  - npm test passes with >= 94 tests, 0 failures",
+    "",
+    "## Decision log",
+    "",
+    "2026-01-01 — Pure string return (no I/O) chosen over reading from a template file.",
+    "Rationale: fewer failure modes, no file dependency, faster execution.",
+    "```",
+  ].join("\n");
+}
+
+// ── GLOBAL ───────────────────────────────────────────────────────────────────
+
+/**
+ * Produce a structured report of the current state of management artifacts.
+ * Returns specs (all) and active_plans (only plans with unchecked blocks).
+ * Briefs are excluded — consult them explicitly via briefList().
+ *
+ * @param {string} projectRoot  Absolute path to the project root
+ * @param {{ specs: string, execPlans: string, briefs: string }} paths
+ * @returns {Promise<{ specs: Array, active_plans: Array }>}
+ */
+export async function projectState(projectRoot, paths) {
+  const [specFiles, planFiles] = await Promise.all([
     listMdFiles(projectRoot, paths.specs),
+    listMdFiles(projectRoot, paths.execPlans),
   ]);
 
-  // ── exec-plans ───────────────────────────────────────────────────────────
-  for (const file of planFiles) {
-    let content;
-    try {
-      content = await readFile(join(projectRoot, file), "utf-8");
-    } catch (err) {
-      problems.push({ type: "unreadable_file", file, severity: "blocking", detail: err.message });
-      continue;
-    }
-    const fm = parseFrontmatter(content);
-    const { total, checked, unchecked } = countBlocks(content);
-
-    if (total > 0 && checked === total && fm.status !== "completed") {
-      problems.push({
-        type: "plan_stale_status",
-        file,
-        severity: "blocking",
-        detail: `all blocks are checked but status is '${fm.status}'`,
-        suggestion: `complete_plan('${file}')`,
-      });
-    }
-
-    if (!fm.brief) {
-      problems.push({
-        type: "plan_missing_brief",
-        file,
-        severity: "warning",
-        detail: "field 'brief' absent or empty",
-        suggestion: "add brief: <path> in the frontmatter",
-      });
-    } else if (!existsSync(resolveArtifact(projectRoot, fm.brief))) {
-      problems.push({
-        type: "plan_brief_dead",
-        file,
-        severity: "blocking",
-        detail: `brief '${fm.brief}' does not exist on disk`,
-        suggestion: "fix the path or create the missing brief",
-      });
-    }
-  }
-
-  // ── briefs ───────────────────────────────────────────────────────────────
-  for (const file of briefFiles) {
-    let content;
-    try {
-      content = await readFile(join(projectRoot, file), "utf-8");
-    } catch (err) {
-      problems.push({ type: "unreadable_file", file, severity: "blocking", detail: err.message });
-      continue;
-    }
-    const fm = parseFrontmatter(content);
-
-    if (!fm.exec_plan) {
-      problems.push({
-        type: "brief_missing_plan",
-        file,
-        severity: "warning",
-        detail: "field 'exec_plan' absent or empty",
-        suggestion: "add exec_plan: <path> in the frontmatter",
-      });
-    } else if (!existsSync(resolveArtifact(projectRoot, fm.exec_plan))) {
-      problems.push({
-        type: "brief_plan_dead",
-        file,
-        severity: "blocking",
-        detail: `exec_plan '${fm.exec_plan}' does not exist on disk`,
-        suggestion: "fix the path or create the missing exec-plan",
-      });
-    }
-  }
-
   // ── specs ────────────────────────────────────────────────────────────────
-  for (const file of specFiles) {
-    let content;
-    try {
-      content = await readFile(join(projectRoot, file), "utf-8");
-    } catch (err) {
-      problems.push({ type: "unreadable_file", file, severity: "blocking", detail: err.message });
-      continue;
-    }
-    const fm = parseFrontmatter(content);
-
-    if (fm.status === "draft" && fm.created) {
-      const created = new Date(fm.created);
-      if (!isNaN(created.getTime()) && Date.now() - created.getTime() > THIRTY_DAYS_MS) {
-        const ageDays = Math.floor((Date.now() - created.getTime()) / (24 * 60 * 60 * 1000));
-        problems.push({
-          type: "spec_stale_draft",
-          file,
-          severity: "warning",
-          detail: `status: draft for ${ageDays} days`,
-          suggestion: "promote to 'active' or delete if abandoned",
-        });
+  const specs = await Promise.all(
+    specFiles.map(async (file) => {
+      let content;
+      try {
+        content = await readFile(join(projectRoot, file), "utf-8");
+      } catch (err) {
+        return { file, error: `unreadable: ${err.message}` };
       }
-    }
-  }
+      const fm = parseFrontmatter(content);
+      return {
+        file,
+        title: fm.title ?? null,
+        id: fm.id ?? null,
+        type: fm.type ?? null,
+        status: fm.status ?? null,
+        created: fm.created ?? null,
+      };
+    })
+  );
 
-  const blocking = problems.filter((p) => p.severity === "blocking").length;
-  const warning = problems.filter((p) => p.severity === "warning").length;
+  // ── active plans (at least one unchecked block) ──────────────────────────
+  const allPlans = await Promise.all(
+    planFiles.map(async (file) => {
+      let content;
+      try {
+        content = await readFile(join(projectRoot, file), "utf-8");
+      } catch (err) {
+        return { file, blocks: { total: 0, checked: 0 }, error: `unreadable: ${err.message}` };
+      }
+      const { total, checked } = countBlocks(content);
+      return { file, blocks: { total, checked } };
+    })
+  );
+  const active_plans = allPlans.filter((p) => p.blocks.total === 0 || p.blocks.checked < p.blocks.total);
 
-  const summary =
-    problems.length === 0
-      ? "All artifacts are consistent."
-      : `${problems.length} problem(s) detected (${blocking} blocking, ${warning} warning(s))`;
-
-  return { problems, summary };
+  return { specs, active_plans };
 }

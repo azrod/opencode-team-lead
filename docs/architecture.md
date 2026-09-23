@@ -4,7 +4,7 @@
 
 `opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il n'a aucune dépendance npm — uniquement des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
 
-Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec trois hooks : `config`, `event`, et `tool`.
+Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec deux hooks : `config` et `tool.execute.before`.
 
 ## Le hook `config`
 
@@ -47,7 +47,7 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 | `bug-finder` | `all` | 0.2 | max | Investigation structurée de bugs. Force l'analyse root-cause avant toute correction. |
 | `harness` | `all` | 0.2 | max | Encode les patterns récurrents en artifacts d'enforcement mécaniques (lint rules, CI checks, AGENTS.md entries). |
 | `planning` | `all` | 0.3 | max | Transforme les requêtes complexes ou ambiguës en work contracts structurés sur disque (exec-plans). |
-| `gardener` | `all` | 0.2 | max | Maintenance périodique — corrige les docs stales, détecte la dérive de code, ouvre des PRs ciblées. |
+| `gardener` | `all` | 0.2 | max | Maintenance périodique — mode Bootstrap : découvre les domaines fonctionnels et délègue à `spec-writer`. Mode Maintenance : audite docs et specs, compile un Gardener Report structuré, retourne les findings au team-lead. Ne modifie aucun fichier directement. |
 | `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
 
 Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`silent: true`) — un fichier manquant ne fait pas planter le plugin.
@@ -61,7 +61,7 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 | Outil | Accès |
 |---|---|
 | `task`, `todowrite`, `todoread`, `skill`, `question` | allow |
-| `distill`, `prune`, `compress` | allow (gestion contexte via DCP) |
+| `compress` | allow (gestion contexte) |
 | `read` | allow sur tous les fichiers |
 | `edit` / `write` | allow uniquement sur `docs/**` |
 | `bash` | allow uniquement pour les commandes git (`git status*`, `git diff*`, `git log*`, `git add*`, `git commit*`, `git push*`, `git tag*`) |
@@ -75,6 +75,8 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 
 **brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `edit` (`docs/briefs/**` uniquement). Pas de bash.
 
+**gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
+
 La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
 
 ## Chargement des prompts
@@ -83,11 +85,22 @@ Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`,
 
 - `agents/prompt.md` → team-lead
 - `agents/review-manager.md` → review-manager
-- `agents/requirements-reviewer.md`, `agents/code-reviewer.md`, `agents/security-reviewer.md`, `agents/bug-finder.md` → reviewers + bug-finder
+- `agents/requirements-reviewer.md` → requirements-reviewer
+- `agents/code-reviewer.md` → code-reviewer
+- `agents/security-reviewer.md` → security-reviewer
+- `agents/bug-finder.md` → bug-finder
 - `agents/harness.md` → harness
 - `agents/planning.md` → planning
 - `agents/gardener.md` → gardener
 - `agents/brainstorm.md` → brainstorm
+- `agents/researcher.md` → researcher
+- `agents/spec-validator.md` → spec-validator
+- `agents/plan-reviewer.md` → plan-reviewer
+- `agents/plan-functional-reviewer.md` → plan-functional-reviewer
+- `agents/plan-technical-reviewer.md` → plan-technical-reviewer
+- `agents/plan-code-reviewer.md` → plan-code-reviewer
+- `agents/spec-reviewer.md` → spec-reviewer
+- `agents/spec-writer.md` → spec-writer
 
 Avantage : les prompts sont modifiables et diffables indépendamment du code.
 

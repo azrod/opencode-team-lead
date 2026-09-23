@@ -7,17 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `plan-reviewer` cluster — orchestrator + three specialized sub-reviewers (`plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer`). Supports two review depths: `light` (spec coherence only) and `deep` (spec coherence + codebase feasibility). Returns APPROVED / CHANGES_REQUESTED / BLOCKED.
+- `spec_format()` and `plan_format()` lifecycle tools — return the canonical format for specs and exec-plans inline, so agents always know the expected structure before calling `spec_create` or `plan_create`
+- `spec-writer` agent — specialized in writing high-quality specs conforming to the canonical format; delegates from team-lead or gardener
+- 20 lifecycle tools replace the previous 5, organized by domain: 6 spec tools (`spec_list`, `spec_get`, `spec_create`, `spec_update`, `spec_validate`, `spec_delete`), 7 plan tools (`plan_list`, `plan_get`, `plan_create`, `plan_update`, `plan_validate`, `plan_block_done`, `plan_delete`), 5 brief tools (`brief_list`, `brief_get`, `brief_create`, `brief_update`, `brief_delete`), `project_state` (now returns specs + plans with unchecked blocks only, no briefs), and `plan_format` / `spec_format` (return the canonical format for agents before creating artifacts)
+- Two new agents: `spec-validator` (checks spec completeness and consistency after `spec_create`/`spec_update`) and `spec-reviewer` (integrated into the review-manager pool — decides whether specs need creation or update after each delivery)
+- Artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`) are now protected at runtime — any direct `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is blocked by the plugin. All access goes through the 20 lifecycle tools.
+- The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
+
+### Removed
+- `plan-validator` agent replaced by the `plan-reviewer` cluster.
+- `mark_block_done`, `complete_plan`, `register_spec`, and `check_artifacts` have been removed and replaced by the new domain-specific lifecycle tools (`plan_block_done`, `spec_create`, etc.)
+
+## [1.0.0] - 2026-08-19
+
+### Added
+- Documentation portal (`website/`) — VitePress static site with marketing homepage, per-agent pages, lifecycle tools reference, architecture, decisions, principles, and changelog. Deployed automatically to GitHub Pages on push to `main`.
+- Documentation website now generates LLM-friendly artifacts (`llms.txt`, `llms-full.txt`, per-page `.md` files) via `vitepress-plugin-llms`, making the docs easily ingested by AI agents.
+- The team-lead now proactively suggests the `gardener` agent after scope delivery, before releases, and when multiple doc files were touched in a session — rather than waiting for the user to ask. A dedicated Gardener Protocol section defines the triggers, rules, and how to handle its results (including escalation to `harness` when recurring patterns are detected).
+
 ### Changed
+- The team-lead's context management instructions now reference only `compress` — `distill` and `prune` were removed since they don't exist in OpenCode's toolset.
 - Reviewer agents (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) now access files directly via `read`, `glob`, and `grep` — sub-agent spawning is blocked by the default `"*": "deny"` rule.
 - The `review-manager` now accesses files directly via `read`, `glob`, and `grep` instead of delegating to an `explore` sub-agent. Its `task` permission is constrained to `*-reviewer` agents only.
 - The `bug-finder` agent now investigates directly via `read`, `glob`, and `grep` — sub-agent delegation via `task` has been removed. The agent reports its findings back to the caller instead of applying fixes itself.
 - The `harness` and `planning` agents now require user confirmation before spawning any sub-agent (`task: ask`).
 
 ### Fixed
-- The `planning` and `brainstorm` agents no longer fail with permission errors when their target directories (`docs/exec-plans/`, `docs/briefs/`, `docs/specs/`) don't exist in the user's project — the plugin now creates them automatically on session start via a `session.created` event hook.
+- The `brainstorm` and `planning` agents can now create files in projects without a git repository. Previously, OpenCode resolved permissions against `instance.worktree` which defaults to `/` when no git repo exists — causing the relative path to include the full system path prefix and never match `docs/briefs/**` or `docs/exec-plans/**`. All `docs/` permission patterns now use a `**/docs/` prefix to match regardless of worktree depth.
 
 ### Removed
 - The scratchpad working-memory file (`.opencode/scratchpad.md`) has been removed. The team-lead now tracks session progress via `todowrite` and resumes work by re-reading exec-plans and specs, rather than maintaining a separate persistent memory file.
+- The `session.created` event hook that auto-created `docs/exec-plans/`, `docs/briefs/`, and `docs/specs/` directories has been removed — the `write` tool creates parent directories automatically, and the root permission bug (non-git projects) has been fixed separately.
 
 ## [0.9.0] - 2026-05-04
 
@@ -26,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `brainstorm` agent — helps developers discover and articulate what they want to build before planning starts. Run it before the team-lead to produce a structured product brief at `docs/briefs/{project-name}.md`.
 - New `harness` agent — encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI workflows, AGENTS.md entries, guiding principles). Triggered by the user, the team-lead post-feature, or the Gardener on recurring drift.
 - New `planning` agent — transforms complex or ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Returns inline plan simples for small tasks; full exec-plans for multi-session work.
-- New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Opens targeted PRs; updates `QUALITY_SCORE.md`; escalates recurring patterns to `harness`.
+- New `gardener` agent — periodic maintenance agent that fixes stale documentation and detects code drift against established rules. Escalates recurring patterns to `harness`.
 - The team-lead now knows when to invoke `planning` (complex/ambiguous requests) and when to suggest `harness` post-delivery (recurring patterns).
 - Five lifecycle tools now available directly to the team-lead — no delegation needed for project bookkeeping: `project_state` (full artifact inventory), `check_artifacts` (consistency scan), `mark_block_done` (check a block in an exec-plan), `complete_plan` (close a scope), and `register_spec` (create a new spec file). The team-lead calls these at mission start and after each delivery automatically.
 - Exec-plans now support an optional `brief:` frontmatter field to trace the brainstorm → implementation link bidirectionally.
@@ -43,11 +65,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Lifecycle tools (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`) now return valid responses — previously the `execute` functions returned raw objects instead of strings, causing the OpenCode plugin API to silently discard their output.
 - Harness agent now has full `bash`, `read`, `write`, `edit`, `glob`, and `grep` permissions — previously it was registered with a restricted command allowlist and scoped file targets, which prevented it from running arbitrary lint commands or writing enforcement artifacts outside the predefined list.
-- The harness agent no longer writes human-facing checklists to `AGENTS.md` — it now correctly identifies them as documentation and routes them to CI checks or `docs/guiding-principles.md` instead.
+- The harness agent no longer writes human-facing checklists to `AGENTS.md` — it now correctly identifies them as documentation and routes them to CI checks or `docs/guiding-principles.md` instead. An unwired script in the repo is also no longer treated as a valid enforcement artifact.
 - Brainstorm agent now enforces a hard stop before responding to the user — the `docs/briefs/` scan is mandatory regardless of how much context the user provides at session start, preventing the agent from skipping existing brief detection.
 - Planning agent write/edit permissions now correctly allow files directly in `docs/exec-plans/` (not just subdirectories).
 - Planning agent can now read `AGENTS.md`, `README.md`, and `docs/**` — the `"*": "deny"` in the `read` sub-object was blocking all file reads.
 - Lifecycle tools (`project_state`, `register_spec`, `mark_block_done`, `complete_plan`, `check_artifacts`) now work correctly when OpenCode passes `worktree="/"` — the plugin falls back to `directory` instead of treating the filesystem root as the project root.
+- Planning agent can now read project files and create exec-plans — permission rules were blocking `read` access and missing `glob`/`grep` tools needed for codebase exploration.
 - Removed invalid `write` permission key from all agent configs — OpenCode's permission system uses `edit` to govern all file modifications (write, edit, patch); the separate `write` key was silently ignored, causing new file creation to be blocked by the top-level `"*": "deny"` rule.
 
 ### Removed
@@ -92,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.2] - 2026-03-19
 
 ### Changed
-- The team-lead agent identifier was established as `team-lead`.
+- The team-lead agent was given the name **Orion** — referenced throughout the system prompt and documentation (since removed).
 
 ## [0.6.1] - 2026-03-13
 
@@ -142,7 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of the team-lead orchestrator plugin for OpenCode.
 - npm package with installation docs.
 
-[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/azrod/opencode-team-lead/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/azrod/opencode-team-lead/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/azrod/opencode-team-lead/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/azrod/opencode-team-lead/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/azrod/opencode-team-lead/compare/v0.6.2...v0.7.0

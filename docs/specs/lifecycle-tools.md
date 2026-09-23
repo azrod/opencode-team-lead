@@ -1,4 +1,7 @@
 ---
+title: "Lifecycle Tools"
+id: lifecycle-tools
+type: technical
 status: active
 created: 2026-04-06
 updated: 2026-04-07
@@ -39,7 +42,52 @@ Les custom tools OpenCode sont l'abstraction correcte : exécutés dans le proce
 
 ---
 
-## 2. Les cinq tools
+## 2. Les tools
+
+L'implémentation comprend **20 lifecycle tools** organisés en quatre familles. Tous sont implémentés dans `tools/lifecycle.js` comme fonctions ESM nommées (`export async function specGet(...)`, etc.) — pas d'objet groupé. Chaque tool reçoit `projectRoot` et `paths` via la closure de `TeamLeadPlugin` dans `index.js`.
+
+### Famille `global` (1 tool)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `project_state` | `projectState` | Rapport d'état de tous les artefacts (specs + active plans). Briefs exclus. |
+
+### Famille `spec_*` (7 tools)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `spec_get` | `specGet` | Récupère une spec par id — retourne chemin, contenu, frontmatter |
+| `spec_create` | `specCreate` | Crée un nouveau fichier spec. Refuse d'écraser l'existant. |
+| `spec_update` | `specUpdate` | Met à jour une spec par remplacement chirurgical oldString → newString |
+| `spec_validate` | `specValidate` | Valide la structure d'une spec (frontmatter, champs requis, body non vide) |
+| `spec_list` | `specList` | Liste toutes les specs avec leur métadonnées |
+| `spec_delete` | `specDelete` | Supprime une spec par id |
+| `spec_format` | `specFormat` | Retourne le format canonique attendu — raw string, pas du JSON |
+
+### Famille `plan_*` (8 tools)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `plan_get` | `planGet` | Récupère un exec-plan par id — retourne chemin, contenu, frontmatter, comptage des blocs |
+| `plan_create` | `planCreate` | Crée un exec-plan. `functional_objective` requis. |
+| `plan_update` | `planUpdate` | Met à jour un plan par remplacement chirurgical oldString → newString |
+| `plan_validate` | `planValidate` | Valide la structure d'un plan (functional_objective, building blocks, ≥ 1 bloc) |
+| `plan_block_done` | `planBlockDone` | Coche un bloc dans un plan (`[ ]` → `[x]`) |
+| `plan_list` | `planList` | Liste tous les exec-plans avec métadonnées et progression des blocs |
+| `plan_delete` | `planDelete` | Supprime un exec-plan par id |
+| `plan_format` | `planFormat` | Retourne le format canonique attendu — raw string, pas du JSON |
+
+### Famille `brief_*` (5 tools)
+
+| Tool | Fonction JS | Description |
+|---|---|---|
+| `brief_get` | `briefGet` | Récupère un brief par id |
+| `brief_create` | `briefCreate` | Crée un nouveau brief |
+| `brief_update` | `briefUpdate` | Met à jour un brief par remplacement chirurgical oldString → newString |
+| `brief_delete` | `briefDelete` | Supprime un brief par id |
+| `brief_list` | `briefList` | Liste tous les briefs avec métadonnées |
+
+> **Note :** `brief_list` est le 20ème tool — portant le total à 20, pas 19.
 
 ### `project_state`
 
@@ -93,171 +141,7 @@ Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `ope
 - Exec-plans : glob `{paths.execPlans}/*.md`, frontmatter YAML parsé, blocs `- [x]` et `- [ ]` comptés, champ `brief` vérifié sur disque si présent
 - Briefs : glob `{paths.briefs}/*.md`, frontmatter YAML parsé (`project`, `type`, `status`, `exec_plan`), champ `exec_plan` vérifié sur disque si présent
 
-**Warnings inline :** Si un exec-plan a tous les blocs cochés mais `status: active`, le champ `warning` est peuplé pour signaler au team-lead qu'un appel `complete_plan` est attendu.
-
----
-
-### `mark_block_done`
-
-**Signature :** `mark_block_done(plan_file, block_name)`
-
-**Arguments :**
-- `plan_file` — chemin relatif à `projectRoot`, ex: `docs/exec-plans/auth-system.md`
-- `block_name` — nom du bloc tel qu'il apparaît dans l'exec-plan, ex: `"Bloc 2: login flow"` ou une sous-chaîne non-ambiguë
-
-**Rôle :** Cocher un bloc spécifique dans un exec-plan (`[ ]` → `[x]`). Le team-lead l'appelle après chaque livraison de sous-tâche validée.
-
-**Comportement :**
-
-1. Lire le fichier `plan_file`
-2. Trouver la ligne correspondant à `block_name` (match sur sous-chaîne)
-3. Remplacer `- [ ]` par `- [x]` sur cette ligne uniquement
-4. Écrire le fichier
-5. Recompter les blocs cochés/total
-6. Si tous les blocs sont maintenant cochés → inclure dans la réponse : `"Tous les blocs sont done. Appelle complete_plan('${plan_file}') pour clore ce scope."`
-
-**Erreurs :**
-- Fichier introuvable → erreur explicite avec le chemin attendu
-- Bloc introuvable (aucune ligne ne matche `block_name`) → erreur explicite, liste les blocs disponibles
-- Ambiguïté (plusieurs lignes matchent) → erreur explicite, demande une sous-chaîne plus précise
-- Bloc déjà coché → idempotent, pas d'erreur — retourner simplement l'état courant
-
-**Réponse :**
-```json
-{
-  "file": "docs/exec-plans/auth-system.md",
-  "block": "Bloc 2: login flow",
-  "was": "unchecked",
-  "now": "checked",
-  "blocks": { "total": 4, "checked": 3 },
-  "all_done": false
-}
-```
-
----
-
-### `complete_plan`
-
-**Signature :** `complete_plan(plan_file)`
-
-**Arguments :**
-- `plan_file` — chemin relatif à `projectRoot`
-
-**Rôle :** Passer le `status` d'un exec-plan de `active` à `completed` dans son frontmatter YAML. Le team-lead l'appelle quand un scope est livré et reviewé.
-
-**Comportement :**
-
-1. Lire le fichier
-2. Vérifier que tous les blocs sont cochés — si ce n'est pas le cas : erreur explicite avec la liste des blocs non cochés
-3. Remplacer `status: active` (ou `status: draft`) par `status: completed` dans le frontmatter
-4. Mettre à jour `updated: <date ISO>` dans le frontmatter
-5. Écrire le fichier
-
-**Erreurs :**
-- Fichier introuvable → erreur explicite
-- Blocs non cochés → erreur explicite : `"3 blocs non cochés : [liste]. Utilise mark_block_done avant de compléter le plan."`
-- Frontmatter absent ou malformé → erreur explicite
-
-**Réponse :**
-```json
-{
-  "file": "docs/exec-plans/auth-system.md",
-  "status": "completed",
-  "updated": "2026-04-06"
-}
-```
-
-**Note :** Le fichier n'est pas supprimé — les exec-plans complétés restent dans `docs/exec-plans/` comme référence historique (conformément à la spec `planning-agent.md`).
-
----
-
-### `register_spec`
-
-**Signature :** `register_spec(specFile, title)`
-
-**Arguments :**
-- `specFile` — nom de fichier ou chemin relatif à `paths.specs`, ex: `auth.md` ou `docs/specs/auth.md`
-- `title` — titre de la spec, ex: `"Spec : Système d'auth"`
-
-**Rôle :** Initialiser un fichier de spec vide avec frontmatter minimal. Le team-lead ou le harness l'appelle quand une nouvelle spec doit exister sur disque.
-
-**Comportement :**
-
-1. Résoudre le chemin absolu dans `paths.specs` de `context.worktree`
-2. Vérifier que le fichier n'existe pas déjà → erreur explicite si présent (pas d'écrasement)
-3. Créer le dossier parent si absent
-4. Écrire le fichier avec le frontmatter minimal :
-   ```markdown
-   ---
-   title: "Spec : Système d'auth"
-   status: draft
-   created: 2026-04-06
-   ---
-
-   # Spec : Système d'auth
-   ```
-5. Retourner le chemin créé
-
-**Ce que le tool ne fait PAS :** pas de registry externe, pas d'écriture dans `AGENTS.md`. La source de vérité est le dossier — `project_state` le découvre par glob.
-
-**Erreurs :**
-- Fichier déjà existant → `"Le fichier 'docs/specs/auth.md' existe déjà."`
-
-**Réponse :**
-```json
-{
-  "created": true,
-  "file": "docs/specs/auth.md"
-}
-```
-
----
-
-### `check_artifacts`
-
-**Signature :** `check_artifacts()`
-
-**Arguments :** aucun
-
-**Rôle :** Scan de consistance transversal — détecter les incohérences entre les artefacts de gestion. Le team-lead l'appelle en début de mission ou le gardener l'utilise dans ses sweeps de maintenance.
-
-**Comportement :**
-
-Glob des trois dossiers dans `context.worktree`, lit les frontmatters. Détecte les problèmes suivants :
-
-| Type | Condition | Sévérité |
-|---|---|---|
-| `plan_stale_status` | Exec-plan avec tous les blocs cochés mais `status != completed` | bloquant |
-| `plan_missing_brief` | Exec-plan avec champ `brief` absent ou vide | warning |
-| `plan_brief_dead` | Exec-plan avec `brief` pointant vers un fichier inexistant | bloquant |
-| `brief_missing_plan` | Brief avec champ `exec_plan` absent ou vide | warning |
-| `brief_plan_dead` | Brief avec `exec_plan` pointant vers un fichier inexistant | bloquant |
-| `spec_stale_draft` | Spec avec `status: draft` et `created` il y a plus de 30 jours | warning |
-
-**Réponse :**
-```json
-{
-  "problems": [
-    {
-      "type": "plan_stale_status",
-      "file": "docs/exec-plans/auth-system.md",
-      "severity": "blocking",
-      "detail": "tous les blocs sont cochés mais status est 'active'",
-      "suggestion": "complete_plan('docs/exec-plans/auth-system.md')"
-    },
-    {
-      "type": "spec_stale_draft",
-      "file": "docs/specs/old-idea.md",
-      "severity": "warning",
-      "detail": "status: draft depuis 45 jours",
-      "suggestion": "promouvoir en 'active' ou supprimer si abandonné"
-    }
-  ],
-  "summary": "2 problèmes détectés (1 bloquant, 1 warning)"
-}
-```
-
-Si aucun problème : `{ "problems": [], "summary": "Tous les artefacts sont cohérents." }`
+**Warnings inline :** Si un exec-plan a tous les blocs cochés mais `status: active`, le champ `warning` est peuplé pour signaler la situation au team-lead.
 
 ---
 
@@ -307,48 +191,43 @@ La relation brief ↔ exec-plan est **bidirectionnelle et optionnelle** : chaque
 
 ### Structure des fichiers
 
-Les tools sont déclarés dans un fichier séparé pour garder `index.js` lisible :
-
 ```
 opencode-team-lead/
-├── index.js            # Point d'entrée — importe et expose les tools
+├── index.js              # Point d'entrée — importe et expose les tools
 ├── tools/
-│   └── lifecycle.js    # Implémentation des 5 tools
+│   ├── lifecycle.js      # Implémentation des 20 lifecycle tools (fonctions nommées)
+│   └── artifact-guard.js # Guard — LIFECYCLE_TOOLS Set + checkArtifactAccess()
 └── agents/
     └── prompt.md
 ```
 
-`tools/lifecycle.js` exporte un objet `lifecycleTools` consommé par `index.js`.
+`tools/artifact-guard.js` exporte le `Set` `LIFECYCLE_TOOLS` (les 20 noms de tools) et la fonction `checkArtifactAccess` utilisée dans le hook `tool.execute.before`. Tout appel direct `read`/`edit`/`write`/`bash`/`glob`/`grep` ciblant `docs/specs/`, `docs/exec-plans/`, ou `docs/briefs/` est bloqué sauf si le caller est un des 20 lifecycle tools.
 
-### Pattern d'export dans `index.js`
+### Pattern d'export réel dans `tools/lifecycle.js`
+
+Les fonctions sont exportées **nommément** — pas d'objet groupé :
 
 ```js
-import { tool } from "@opencode-ai/plugin"
-import { lifecycleTools } from "./tools/lifecycle.js"
-
-export const TeamLeadPlugin = async ({ directory, worktree }) => {
-  const projectRoot = worktree ?? directory ?? "."
-
-  return {
-    config: async (input) => { /* ... */ },
-
-    event: async ({ event }) => { /* ... */ },
-
-    tool: {
-      project_state: tool({
-        description: "...",
-        args: {},
-        async execute(_args, context) {
-          return JSON.stringify(await lifecycleTools.projectState(context.worktree, paths))
-        },
-      }),
-      // ... quatre autres tools
-    },
-  }
-}
+export async function specGet(projectRoot, paths, id) { … }
+export async function specCreate(projectRoot, paths, title, type, content) { … }
+export async function planCreate(projectRoot, paths, { title, functional_objective, content, brief }) { … }
+export function specFormat() { … }  // pure, synchrone
+// … etc.
 ```
 
-`paths` est capturé dans la closure de `TeamLeadPlugin` et passé directement à chaque fonction `execute`. Les fonctions dans `lifecycle.js` sont des fonctions pures qui reçoivent `projectRoot` et `paths` et retournent des données.
+### Pattern d'import dans `index.js`
+
+```js
+import {
+  projectState, specGet, specCreate, specUpdate, specValidate, specList, specDelete,
+  planGet, planCreate, planUpdate, planValidate, planBlockDone, planList, planDelete,
+  briefGet, briefCreate, briefUpdate, briefDelete, briefList,
+  specFormat, planFormat,
+} from "./tools/lifecycle.js";
+import { checkArtifactAccess } from "./tools/artifact-guard.js";
+```
+
+`paths` est capturé dans la closure de `TeamLeadPlugin` et passé directement à chaque `execute`. Pas de `context` — `projectRoot` est résolu une fois au démarrage via `worktree` ou `directory`.
 
 ### Chemins configurables
 
@@ -394,40 +273,37 @@ const paths = {
 
 ### Permissions team-lead
 
-Les tools sont déclarés dans `experimental.primary_tools` dans la config team-lead pour que le team-lead les voie en priorité. Les permissions sont ajoutées au `defaultPermission` du team-lead :
+Les 20 lifecycle tools sont listés dans `defaultPermission` du team-lead dans `index.js` :
 
 ```js
 const defaultPermission = {
   "*": "deny",
-  // ... permissions existantes ...
+  // … autres permissions (task, question, read, edit docs/**, …)
   project_state: "allow",
-  mark_block_done: "allow",
-  complete_plan: "allow",
-  register_spec: "allow",
-  check_artifacts: "allow",
+  spec_get: "allow",
+  spec_create: "allow",
+  spec_update: "allow",
+  spec_validate: "allow",
+  spec_list: "allow",
+  spec_delete: "allow",
+  spec_format: "allow",
+  plan_get: "allow",
+  plan_create: "allow",
+  plan_update: "allow",
+  plan_validate: "allow",
+  plan_block_done: "allow",
+  plan_list: "allow",
+  plan_delete: "allow",
+  plan_format: "allow",
+  brief_get: "allow",
+  brief_create: "allow",
+  brief_update: "allow",
+  brief_delete: "allow",
+  brief_list: "allow",
 }
 ```
 
 Les utilisateurs peuvent les surcharger via leur `opencode.json` (même mécanique que les autres permissions — `mergePermissions` existant).
-
-### `experimental.primary_tools`
-
-```js
-input.agent["team-lead"] = {
-  // ...
-  experimental: {
-    primary_tools: [
-      "project_state",
-      "mark_block_done",
-      "complete_plan",
-      "register_spec",
-      "check_artifacts",
-    ],
-  },
-}
-```
-
-Cela place les tools lifecycle en tête de la liste des tools disponibles pour le team-lead, sans exclure les autres.
 
 ---
 
@@ -438,34 +314,21 @@ Cela place les tools lifecycle en tête de la liste des tools disponibles pour l
 | Moment | Tool | Condition |
 |---|---|---|
 | Début de toute mission | `project_state` | Systématique — donne la vue complète avant de planifier |
-| Début de mission | `check_artifacts` | Systématique — détecte les incohérences avant de commencer |
-| Après validation d'une livraison de sous-tâche | `mark_block_done` | Dès qu'un bloc d'un exec-plan est livré et approuvé par le review-manager |
-| Après livraison complète d'un scope | `complete_plan` | Quand tous les blocs sont cochés et le review final est APPROVED |
-| Après écriture d'une nouvelle spec | `register_spec` | Systématique — le team-lead ou le harness l'appelle dans la même session |
-| Maintenance périodique | `check_artifacts` | Gardener l'utilise dans ses sweeps |
+| Après validation d'une livraison de sous-tâche | `plan_block_done` | Dès qu'un bloc d'un exec-plan est livré et approuvé par le review-manager |
+| Modification chirurgicale d'un plan | `plan_update` | Pour toute modification de contenu dans un exec-plan existant |
+| Création ou mise à jour d'une spec | `spec_create` / `spec_update` | Quand une décision architecturale ou un comportement doit être documenté |
 
-### Changements dans `agents/prompt.md`
+### Workflow réel du team-lead
 
-La section "Outils disponibles" (ou équivalent) du team-lead doit être mise à jour pour documenter les 5 tools et leurs déclencheurs. Points clés à ajouter :
+Le team-lead appelle `plan_block_done(plan_id, block_name)` pour cocher un bloc dans un exec-plan après chaque livraison validée — sans attendre la fin du scope. Exemple :
 
-1. **Début de mission** — appeler `project_state` + `check_artifacts` avant toute délégation. Ce n'est pas optionnel.
-2. **Après chaque livraison** — `mark_block_done` est la "fermeture de boucle" d'un bloc. Le team-lead ne doit pas attendre la fin du scope pour le faire.
-3. **Complétion de scope** — `complete_plan` est bloquant tant que des blocs sont non cochés. Le tool l'enforcer lui-même, mais le team-lead doit comprendre la séquence.
-4. **Nouvelle spec** — `register_spec` fait partie du workflow de livraison d'une spec, pas une tâche post-hoc.
-
-Exemple de section à ajouter dans `prompt.md` :
-
-```markdown
-## Lifecycle Tools
-
-Tu as accès à des tools de bookkeeping directs — pas de délégation, pas de sous-agent :
-
-- `project_state()` — vue complète des exec-plans, specs, briefs. Appelle en début de mission.
-- `check_artifacts()` — scan de consistance. Appelle en début de mission et après chaque scope.
-- `mark_block_done(plan_file, block_name)` — coche un bloc. Appelle après chaque livraison validée.
-- `complete_plan(plan_file)` — clôt un exec-plan. Appelle quand tous les blocs sont done.
-- `register_spec(specFile, title)` — crée le fichier de spec. Appelle quand une nouvelle spec doit être initialisée.
 ```
+plan_block_done("auth-feature", "Tests unitaires")
+```
+
+Pour toute modification chirurgicale d'un exec-plan (mise à jour du decision log, correction de contenu), le team-lead utilise `plan_update(id, old_string, new_string)`.
+
+Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title, type, content)` ou `spec_update(id, old_string, new_string)`. Ces tools déclenchent automatiquement le `spec-validator` — le résultat (APPROVED ou REJECTED) est retourné inline.
 
 ---
 

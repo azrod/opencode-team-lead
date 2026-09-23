@@ -9,9 +9,10 @@ An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestr
 
 ## What it does
 
-One hook powers the plugin:
+Two hooks power the plugin:
 
 - **`config`** — registers all agents into OpenCode's config, merging your overrides from `opencode.json` on top of plugin defaults
+- **`tool.execute.before`** — guards `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` against direct access; these directories are only reachable through the 20 lifecycle tools
 
 ## Agents
 
@@ -22,11 +23,18 @@ One hook powers the plugin:
 | `requirements-reviewer` | Verifies implementation matches the original requirements |
 | `code-reviewer` | Evaluates correctness, logic, error handling, and maintainability |
 | `security-reviewer` | Identifies vulnerabilities, misconfigurations, and data exposure risks |
+| `spec-validator` | LLM validator invoked after `spec_create`/`spec_update` — checks completeness, clarity, and consistency |
+| `plan-reviewer` | Plan review orchestrator — asks review depth (light/deep), spawns `plan-functional-reviewer`, `plan-technical-reviewer`, and `plan-code-reviewer` in parallel, returns APPROVED / CHANGES_REQUESTED / BLOCKED |
+| `plan-functional-reviewer` | Checks plan alignment with functional specs. Silent, invoked by `plan-reviewer` only |
+| `plan-technical-reviewer` | Checks plan alignment with technical and architectural specs. Silent, invoked by `plan-reviewer` only |
+| `plan-code-reviewer` | Checks plan code feasibility against the codebase (deep mode only). Silent, invoked by `plan-reviewer` only |
+| `spec-reviewer` | Integrated into the review-manager pool — decides whether specs need creation or update after each delivery |
 | `bug-finder` | Structured bug investigation — forces root-cause analysis before any fix |
 | `brainstorm` | Phase 0 thinking partner — helps articulate what you want to build before planning starts |
 | `harness` | Encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries) |
 | `planning` | Transforms complex or ambiguous requests into structured exec-plans written to disk |
-| `gardener` | Periodic maintenance — fixes stale docs, detects code drift, escalates patterns to harness |
+| `gardener` | Periodic audit agent — Bootstrap: discovers functional domains, delegates to spec-writer. Maintenance: pure audit orchestrator, compiles Gardener Report, returns findings to team-lead. |
+| `researcher` | External knowledge research — fetches and synthesizes information from the web, official docs, and APIs |
 
 ### The team-lead's workflow
 
@@ -38,7 +46,7 @@ One hook powers the plugin:
 
 ### Review cluster
 
-`review-manager`, `requirements-reviewer`, `code-reviewer`, and `security-reviewer` work together. The team-lead delegates to `review-manager`, which selects the relevant reviewers based on what changed, runs them in parallel, and returns a single verdict. None of these agents are visible in the main agent list — they're only reachable via `task`.
+`review-manager`, `requirements-reviewer`, `code-reviewer`, `security-reviewer`, and `spec-reviewer` work together. The team-lead delegates to `review-manager`, which selects the relevant reviewers based on what changed, runs them in parallel, and returns a single verdict. None of these agents are visible in the main agent list — they're only reachable via `task`.
 
 ### bug-finder
 
@@ -58,7 +66,7 @@ Takes a complex or ambiguous request and writes a structured exec-plan to `docs/
 
 ### gardener
 
-Periodic hygiene agent. Reads docs and code, spots drift (docs that describe deleted features, patterns that have evolved, stale TODOs), fixes what it can, and escalates recurring issues to harness.
+Periodic audit agent. In Bootstrap mode, discovers undocumented functional domains and delegates spec writing to `spec-writer`. In Maintenance mode, operates as a pure audit orchestrator — spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead. Never edits files or opens PRs directly; all corrections are delegated by the team-lead after receiving the report.
 
 ## Installation
 
@@ -76,17 +84,66 @@ Restart OpenCode — the plugin loads and registers all agents automatically.
 
 ## Lifecycle Tools
 
-The team-lead has direct access to five bookkeeping tools that enforce consistency at zero LLM cost — no delegation, no sub-agent:
+The team-lead has direct access to 20 lifecycle tools — the only way to read or write artifacts in `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/`. Direct tool access to these directories is blocked at runtime by the plugin's `tool.execute.before` hook.
 
-| Tool | When the team-lead calls it |
-|------|---------------------|
-| `project_state()` | At the start of every mission — full view of exec-plans, specs, and briefs |
-| `check_artifacts()` | At mission start and after completing each scope — cross-artifact consistency scan |
-| `mark_block_done(plan, block)` | After each validated delivery — marks a block complete in an exec-plan |
-| `complete_plan(plan)` | When all blocks are checked and the final review is APPROVED |
-| `register_spec(file, title)` | When a new spec needs to exist on disk |
+### Protected zones
 
-These are not visible in the OpenCode UI. They run automatically as part of the team-lead's internal workflow.
+The following directories are protected for all agents except via lifecycle tools:
+
+- `docs/specs/` — spec files
+- `docs/exec-plans/` — exec-plan files
+- `docs/briefs/` — product briefs
+
+Any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is intercepted and blocked. The lifecycle tools bypass this guard transparently.
+
+### Spec tools
+
+| Tool | Signature | When used |
+|------|-----------|-----------|
+| `spec_list` | `spec_list() → JSON` | List all specs |
+| `spec_get` | `spec_get(id) → JSON` | Read a spec by id |
+| `spec_create` | `spec_create(title, type?, content?) → JSON` | Create a new spec — always follow with `spec_validate(id)` |
+| `spec_update` | `spec_update(id, old_string, new_string) → JSON` | Edit a spec — always follow with `spec_validate(id)` |
+| `spec_validate` | `spec_validate(id) → JSON` | Invoke the `spec-validator` LLM agent to check completeness and consistency |
+| `spec_delete` | `spec_delete(id) → JSON` | Delete a spec |
+
+### Plan tools
+
+| Tool | Signature | When used |
+|------|-----------|-----------|
+| `plan_list` | `plan_list() → JSON` | List all exec-plans |
+| `plan_get` | `plan_get(id) → JSON` | Read an exec-plan by id |
+| `plan_create` | `plan_create(title, functional_objective, content?, brief_id?) → JSON` | Create an exec-plan — always follow with `plan_validate(id)` |
+| `plan_update` | `plan_update(id, old_string, new_string) → JSON` | Edit an exec-plan |
+| `plan_validate` | `plan_validate(id) → JSON` | Invoke the `plan-reviewer` cluster to check structure, block granularity, and alignment with specs |
+| `plan_block_done` | `plan_block_done(plan_id, block_name) → JSON` | Mark a block complete in an exec-plan |
+| `plan_delete` | `plan_delete(id) → JSON` | Delete an exec-plan |
+
+### Brief tools
+
+| Tool | Signature | When used |
+|------|-----------|-----------|
+| `brief_list` | `brief_list() → JSON` | List all briefs |
+| `brief_get` | `brief_get(id) → JSON` | Read a brief by id |
+| `brief_create` | `brief_create(title, content?, exec_plan_id?) → JSON` | Create a product brief |
+| `brief_update` | `brief_update(id, old_string, new_string) → JSON` | Edit a brief |
+| `brief_delete` | `brief_delete(id) → JSON` | Delete a brief |
+
+### Global
+
+| Tool | Signature | When used |
+|------|-----------|-----------|
+| `project_state` | `project_state() → JSON` | Mandatory at mission start — returns all specs + plans with at least one unchecked block |
+
+### Spec workflow
+
+```
+spec_create(title) → spec_validate(id) → implementation → review (spec-reviewer runs automatically)
+```
+
+The `spec-reviewer` is part of the `review-manager` pool and runs after every delivery. It returns `NO_ACTION_NEEDED`, `SPEC_CREATE_NEEDED`, or `SPEC_UPDATE_NEEDED`.
+
+These tools are not visible in the OpenCode UI. They run automatically as part of the team-lead's internal workflow.
 
 ## Permissions
 
@@ -99,7 +156,7 @@ These are not visible in the OpenCode UI. They run automatically as part of the 
 | `brainstorm` | `task`, `question`, `webfetch`, `read` (all), `edit` (`docs/briefs/**` only) |
 | `harness` | `task` (ask), `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all) |
 | `planning` | `task` (ask), `question`, `read` (all), `glob`, `grep`, `edit` (`docs/exec-plans/**` only) |
-| `gardener` | `question`, `bash` (git log/diff/status/show/blame/shortlog, gh pr create), `read` (all), `edit` (`QUALITY_SCORE.md` only) |
+| `gardener` | `task` (explore + spec-writer only), `bash` (git log/diff/status), `read` (all), `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
 | `researcher` | `read`, `webfetch`, `websearch`, `grep` |
 
 Everything not listed is denied.

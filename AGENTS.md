@@ -31,19 +31,27 @@ This is a tiny project — zero dependencies, pure ESM, no build step. Tests run
 
 | File | Role |
 |------|------|
-| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. One hook: `config` (registers agents and lifecycle tools). |
+| `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers agents and lifecycle tools) and `tool.execute.before` (blocks direct access to protected artifact directories). |
+| `tools/artifact-guard.js` | Guard module called by the `tool.execute.before` hook — intercepts `read`, `edit`, `write`, `bash`, `glob`, and `grep` calls that target `docs/specs/`, `docs/exec-plans/`, or `docs/briefs/`, and blocks them unless the caller is a lifecycle tool. |
 | `agents/prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
 | `agents/review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
 | `agents/requirements-reviewer.md` | System prompt for the requirements-reviewer agent — verifies implementation matches original requirements. |
 | `agents/code-reviewer.md` | System prompt for the code-reviewer agent — evaluates correctness, logic, error handling, and maintainability. |
 | `agents/security-reviewer.md` | System prompt for the security-reviewer agent — identifies vulnerabilities, misconfigurations, and data exposure risks. |
+| `agents/spec-validator.md` | System prompt for the spec-validator agent — LLM validator invoked after `spec_create` / `spec_update`. Checks spec completeness, clarity, and internal consistency. |
+| `agents/plan-reviewer.md` | System prompt for the plan-reviewer agent — plan review orchestrator. Asks review depth (light/deep), spawns `plan-functional-reviewer`, `plan-technical-reviewer`, and `plan-code-reviewer` in parallel, returns APPROVED / CHANGES_REQUESTED / BLOCKED. |
+| `agents/plan-functional-reviewer.md` | System prompt for the plan-functional-reviewer agent — checks plan alignment with functional specs. Silent, invoked by plan-reviewer only. |
+| `agents/plan-technical-reviewer.md` | System prompt for the plan-technical-reviewer agent — checks plan alignment with technical and architectural specs. Silent, invoked by plan-reviewer only. |
+| `agents/plan-code-reviewer.md` | System prompt for the plan-code-reviewer agent — checks plan code feasibility against the codebase (deep mode only). Silent, invoked by plan-reviewer only. |
+| `agents/spec-reviewer.md` | System prompt for the spec-reviewer agent — integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` after each delivery. |
 | `agents/bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
 | `agents/harness.md` | System prompt for the harness agent — pattern enforcement agent that encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries, guiding principles). |
 | `agents/planning.md` | System prompt for the planning agent — transforms complex or ambiguous requests into structured exec-plans on disk. |
-| `agents/gardener.md` | System prompt for the gardener agent — periodic maintenance agent that fixes stale docs and detects code drift, then escalates recurring patterns to harness. |
+| `agents/spec-writer.md` | System prompt for the spec-writer agent — specialized in writing high-quality specs conforming to the canonical format. Delegates from team-lead or gardener (Bootstrap mode). Calls `spec_format()` before `spec_create()`. Temperature 0.3. |
+| `agents/gardener.md` | System prompt for the gardener agent — periodic maintenance agent with two modes: Bootstrap (< 3 active specs — discovers functional domains and delegates to spec-writer) and Maintenance (≥ 3 specs — spawns explore agents, compiles a structured Gardener Report, returns findings to the team-lead. Never modifies files directly). |
 | `agents/brainstorm.md` | System prompt for the brainstorm agent — helps users discover and articulate what they want to build. Produces a product brief at docs/briefs/{project-name}.md. |
 | `skills/spec-writer/` | Bundled skill for writing agent specifications — loaded at init, registered via `skill` hook. Provides templates, examples, and validation checklists. |
-| `package.json` | Standard npm config. Ships `index.js`, the `agents/` directory (all agent prompts), and `README.md`. |
+| `package.json` | Standard npm config. Ships `index.js`, the `agents/` directory (all agent prompts), `tools/`, and `README.md`. |
 | `.github/workflows/publish.yml` | CI: OIDC trusted publishing to npm on `v*` tags, plus GitHub release creation. |
 | `CHANGELOG.md` | Release history in Keep a Changelog format. |
 | `README.md` | User-facing docs — installation, usage, permissions. |
@@ -53,64 +61,64 @@ Full technical details: [`docs/architecture.md`](docs/architecture.md)
 ### How the plugin works
 
 1. **`config` hook** — Injects all agent definitions into OpenCode's config, merging user overrides from `opencode.json` on top of plugin defaults. The `prompt` is always provided by the plugin and cannot be overridden.
-2. The `write` tool creates parent directories automatically — no separate setup step needed for artifact directories.
+2. **`tool.execute.before` hook** — Intercepts any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting `docs/specs/`, `docs/exec-plans/`, or `docs/briefs/`. Blocks the call unless the caller is one of the 20 lifecycle tools. The guard logic lives in `tools/artifact-guard.js`.
+3. The `write` tool creates parent directories automatically — no separate setup step needed for artifact directories.
 
 ### Key design decisions
 
-- Permissions are deny-all by default — the team-lead can delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`distill`/`prune`/`compress`), read files directly (`read`), and run basic git commands. Edit/write access is scoped to `docs/**` only (exec-plans, specs, briefs); analysis and exploration are always delegated to `explore`.
+- Permissions are deny-all by default — the team-lead can delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`compress`), read files directly (`read`), and run basic git commands. Edit/write access is scoped to `docs/**` only (exec-plans, specs, briefs); analysis and exploration are always delegated to `explore`.
+- Access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is exclusively via the 20 lifecycle tools — direct `read`/`edit`/`write`/`bash`/`glob`/`grep` calls targeting these directories are blocked by the `tool.execute.before` hook.
 - Agent prompts are loaded from `agents/*.md` at init time via `readFile`, not inlined — keeps them editable and diffable independently of the code.
 - The plugin merges user config without overwriting it — users can override `temperature`, `color`, `variant`, `mode`, and add permissions.
 - The review-manager uses nested delegation (team-lead → review-manager → reviewers) and runs as `mode: "subagent"` — invisible to the user, only reachable via `task`.
-
 For the rationale behind these decisions, see [`docs/decisions.md`](docs/decisions.md) and [`docs/guiding-principles.md`](docs/guiding-principles.md).
 
 ## Website (Documentation)
 
 ### What it is
 
-A single-page React artifact located in `team-lead-workflow/` that documents the team-lead agent's workflow and philosophy. Deployed automatically to GitHub Pages via `.github/workflows/pages.yml` on every push to `main` that modifies `team-lead-workflow/bundle.html`. The entry point served is `team-lead-workflow/bundle.html`, copied to `index.html` at deploy time.
+A multi-page VitePress documentation site located in `website/`. Deployed automatically to GitHub Pages via `.github/workflows/pages.yml` on every push to `main`.
 
 ### Structure
 
 ```
-team-lead-workflow/
-├── src/
-│   └── App.tsx          # All application code — intro screen + flowchart (single file)
-├── bundle.html          # Pre-built bundle, committed to repo, served by GitHub Pages
-├── package.json
-└── vite.config.ts
+website/
+├── .vitepress/
+│   ├── config.ts        # VitePress configuration — nav, sidebar, theme
+│   └── components/      # Vue components (agent graph diagram, etc.)
+├── agents/              # Per-agent documentation pages
+├── index.md             # Homepage
+├── lifecycle-tools.md   # Lifecycle tools reference
+├── architecture.md      # Architecture overview
+├── getting-started.md   # Installation and first steps
+└── package.json
 ```
 
 ### What the site contains
 
-Two views navigable via a CTA button:
+A multi-page VitePress site with:
 
-1. **Intro screen** — presents the team-lead agent (concept & philosophy, memory management, available agents, typical use cases). Has a FR/EN language toggle (default EN).
-2. **Flowchart view** — interactive SVG diagram of the 5-phase workflow (Understand → Plan → Delegate → Review → Synthesize) with a detail panel on the right. Also supports FR/EN.
+- **Homepage** — feature overview and quick install
+- **Per-agent pages** — detailed documentation for each agent
+- **Lifecycle tools reference** — full API documentation for all 20 lifecycle tools
+- **Architecture, decisions, principles** — technical reference
 
 ### How to update the site
 
-When making changes to the site content or UI:
+When making changes to the site content:
 
-1. Edit `team-lead-workflow/src/App.tsx`
-2. Rebuild the bundle — run from `team-lead-workflow/`:
+1. Edit the relevant `.md` files in `website/` or `website/agents/`
+2. Run the dev server to preview:
    ```bash
-   npm run bundle
+   cd website && npm run dev
    ```
-3. Commit both `src/App.tsx` and `bundle.html`
-4. Push — GitHub Actions deploys automatically
+3. Build and verify:
+   ```bash
+   cd website && npm run build
+   ```
+4. Commit and push — GitHub Actions deploys automatically
 
-> See `team-lead-workflow/README.md` for full development details.
-
-> **Important:** Always commit `bundle.html` along with the source changes. The Pages deployment uses the committed bundle, not a CI build.
-
-### i18n
-
-All user-facing text is translated via a `translations` object in `App.tsx`. To add or change text:
-
-- Find the `translations` constant in `App.tsx`
-- Update both `en` and `fr` keys
-- For the flowchart specifically, update `getFlowchartData(lang)` which returns `{ svgLabels, details, brainstormSvgLabels, brainstormDetails }` for the SVG labels and detail panel content
+> See `website/README.md` for full development details.
 
 ### GitHub Pages setup (one-time)
 
@@ -302,10 +310,10 @@ For the principles behind these rules, see [`docs/guiding-principles.md`](docs/g
 | `eslint.config.js` + `npm run lint` | `node:` protocol prefix on all built-in imports in `*.js` files | Manually / pre-PR |
 | `.github/workflows/checks.yml` job `zero-deps` | No `dependencies` or `devDependencies` in `package.json` | Every push + PR |
 | `.github/workflows/checks.yml` job `changelog-unreleased` | `## [Unreleased]` section must exist in `CHANGELOG.md` | Every push + PR |
-| `.github/workflows/checks.yml` job `agent-write-dirs-exist` | Every `edit` permission target directory declared in `index.js` must exist in the repo | Every push + PR |
 | `.git-hooks/commit-msg` | Commit message is non-empty (guards against `git commit` without `-m`) | On commit (after `sh .git-hooks/install.sh`) |
 | `docs/guiding-principles.md` | Non-interactive git, zero deps, user-facing CHANGELOG, default-deny permissions, external prompts, edit target dirs | Human + Gardener review |
-| `tests/lifecycle.test.js` + `npm test` | Correctness of the 5 lifecycle tool functions | Manually / pre-PR |
+| `index.js` `tool.execute.before` hook + `tools/artifact-guard.js` | Direct `read`/`edit`/`write`/`bash`/`glob`/`grep` access to `docs/specs/`, `docs/exec-plans/`, `docs/briefs/` is blocked unless the caller is a lifecycle tool | Every tool call at runtime |
+| `tests/lifecycle.test.js` + `npm test` | Correctness of all lifecycle tool functions (including `spec_format` and `plan_format`) and the artifact guard | Manually / pre-PR |
 
 ### Installing the git hook
 
@@ -331,7 +339,7 @@ ESLint is run via `npx` — no install needed. The config is a flat `eslint.conf
 npm test
 ```
 
-28 tests covering all 5 lifecycle tool functions (`project_state`, `mark_block_done`, `complete_plan`, `register_spec`, `check_artifacts`). Uses `node:test` + `node:assert/strict` — no external test runner needed.
+106 tests covering all lifecycle tool functions (including `spec_format` and `plan_format`) and the artifact guard. Uses `node:test` + `node:assert/strict` — no external test runner needed.
 
 ## References
 
