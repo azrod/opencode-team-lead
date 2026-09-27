@@ -1,9 +1,9 @@
 ---
 title: "Plan Reviewer Agent Cluster"
-id: plan-reviewer-agent
+id: plan-reviewer-agent-cluster
 type: "technical"
-status: active
-created: 2026-09-22
+status: draft
+created: 2026-09-24
 ---
 
 ## Purpose
@@ -41,7 +41,7 @@ The default is pragmatic: a short plan with one block, a clear objective, and a 
 
 ## Agent Config
 
-| Agent | `temperature` | `silent` |
+| Agent | `temperature` | `hidden` |
 |---|---|---|
 | `plan-reviewer` | `0.2` | `false` |
 | `plan-functional-reviewer` | `0.1` | `true` |
@@ -53,7 +53,7 @@ The default is pragmatic: a short plan with one block, a clear objective, and a 
 - The orchestrator's output starts with `## Plan Review`, followed by `**Verdict**: APPROVED`, `**Verdict**: CHANGES_REQUESTED`, or `**Verdict**: BLOCKED`. No bare first-line verdict — the structured header comes first.
 - A plan with no "Done when" criteria on any block always triggers CHANGES_REQUESTED at minimum.
 - Sub-reviewers must not flag stylistic reasons, missing "nice to have" blocks, sparse prose, or business-level disagreement with the plan's goals.
-- The orchestrator operates as `mode: subagent`, `silent: false`, `temperature: 0.2`. Sub-reviewers operate as `mode: subagent`, `silent: true`.
+- The orchestrator operates as `mode: subagent`, `hidden: false`, `temperature: 0.2`. Sub-reviewers operate as `mode: subagent`, `hidden: true`.
 - The `plan-reviewer` cluster is invoked by the team-lead via `task` after `plan_validate` passes. It is **never triggered automatically** — the team-lead decides when semantic review is warranted. It is **never triggered on plan updates** — plan updates are the team-lead's responsibility.
 - The mechanical structural check (frontmatter present, functional objective section present, at least one building block) remains in the `plan_validate` tool and runs before the cluster is invoked.
 - Permitted tools for sub-reviewers: `plan_get` only. The orchestrator passes the plan id directly — sub-reviewers do not need to list plans. The `plan-code-reviewer` also has read access to the filesystem for codebase feasibility checks.
