@@ -37,6 +37,7 @@ import {
   LIFECYCLE_TOOLS,
   isProtectedPath,
 } from "../tools/artifact-guard.js";
+import { buildToolRegistry } from "../tools/registry.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1559,5 +1560,102 @@ describe("planFormat", () => {
 
   test("is pure — returns same value on repeated calls", () => {
     assert.equal(planFormat(), planFormat());
+  });
+});
+
+
+// ── registry smoke tests ──────────────────────────────────────────────────────
+
+describe("buildToolRegistry — plan hint injection", () => {
+  test("plan_create registry handler injects plan-reviewer hint", async () => {
+    const root = await mkdtemp(join(tmpdir(), "tl-reg-"));
+    try {
+      await mkdir(join(root, "docs", "exec-plans"), { recursive: true });
+      const paths = { specs: "docs/specs", execPlans: "docs/exec-plans", briefs: "docs/briefs" };
+      const registry = buildToolRegistry(root, paths);
+      const raw = await registry.plan_create.execute({ title: "Test Plan", functional_objective: "Test objective for registry smoke test." });
+      const result = JSON.parse(raw);
+      assert.ok(typeof result.hint === "string", "hint should be a string");
+      assert.ok(result.hint.includes("plan-reviewer"), "hint should mention plan-reviewer");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("plan_update registry handler injects plan-reviewer hint", async () => {
+    const root = await mkdtemp(join(tmpdir(), "tl-reg-"));
+    try {
+      const dir = join(root, "docs", "exec-plans");
+      await mkdir(dir, { recursive: true });
+      const paths = { specs: "docs/specs", execPlans: "docs/exec-plans", briefs: "docs/briefs" };
+      const planContent = `---
+title: Test Plan
+created: 2026-01-01
+---
+
+## Functional objective
+
+Test.
+
+## Building blocks
+
+- [ ] Block one
+`;
+      await fsWriteFile(join(dir, "test-plan.md"), planContent, "utf-8");
+      const registry = buildToolRegistry(root, paths);
+      const raw = await registry.plan_update.execute({ id: "test-plan", old_string: "Block one", new_string: "Block one updated" });
+      const result = JSON.parse(raw);
+      assert.ok(typeof result.hint === "string", "hint should be a string");
+      assert.ok(result.hint.includes("plan-reviewer"), "hint should mention plan-reviewer");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("plan_validate registry handler injects hint only when valid", async () => {
+    const root = await mkdtemp(join(tmpdir(), "tl-reg-"));
+    try {
+      const dir = join(root, "docs", "exec-plans");
+      await mkdir(dir, { recursive: true });
+      const paths = { specs: "docs/specs", execPlans: "docs/exec-plans", briefs: "docs/briefs" };
+      const validPlan = `---
+title: Test Plan
+created: 2026-01-01
+---
+
+## Functional objective
+
+Test.
+
+## Building blocks
+
+- [ ] Block one
+`;
+      await fsWriteFile(join(dir, "valid-plan.md"), validPlan, "utf-8");
+      const invalidPlan = `---
+title: Bad Plan
+created: 2026-01-01
+---
+
+## Functional objective
+
+Test.
+`;
+      await fsWriteFile(join(dir, "invalid-plan.md"), invalidPlan, "utf-8");
+      const registry = buildToolRegistry(root, paths);
+
+      const rawValid = await registry.plan_validate.execute({ id: "valid-plan" });
+      const validResult = JSON.parse(rawValid);
+      assert.ok(validResult.valid === true, "should be valid");
+      assert.ok(typeof validResult.hint === "string", "valid plan should have a hint");
+      assert.ok(validResult.hint.includes("plan-reviewer"), "hint should mention plan-reviewer");
+
+      const rawInvalid = await registry.plan_validate.execute({ id: "invalid-plan" });
+      const invalidResult = JSON.parse(rawInvalid);
+      assert.ok(invalidResult.valid === false, "should be invalid");
+      assert.ok(!invalidResult.hint, "invalid plan should NOT have a hint");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });

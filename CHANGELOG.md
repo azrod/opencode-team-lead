@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plan_create`, `plan_update`, `spec_create`, and `spec_update` now return a suggestion to run a validation review once the artifact is complete — rather than falsely claiming to auto-trigger a validator.
 - Gardener agent is now a dual-mode maintenance agent: Bootstrap mode (< 3 active specs) discovers functional domains and delegates spec drafting to `spec-writer`; Maintenance mode (≥ 3 specs) is a pure audit orchestrator — it spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead without editing files or opening PRs.
 - Two recurring documentation patterns identified as harness candidates: (1) frontmatter `status` field diverging from body text in spec files, (2) lifecycle tool count hardcoded in multiple docs — both risk silent drift on future changes.
+- `plan_create`, `plan_update`, and `plan_validate` now include a reminder in their response to delegate a semantic review to the `plan-reviewer` agent before starting implementation — so the plan review step is never silently skipped.
 
 ### Removed
 - `plan-validator` agent replaced by the `plan-reviewer` cluster.

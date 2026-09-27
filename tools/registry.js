@@ -1,6 +1,6 @@
 // tools/registry.js
 // Builds and returns the complete tool registry object for the team-lead plugin.
-// All 20 lifecycle tools are defined here.
+// All 21 lifecycle tools are defined here.
 
 import { tool } from "@opencode-ai/plugin/tool";
 import {
@@ -125,7 +125,11 @@ export function buildToolRegistry(projectRoot, paths) {
         brief: tool.schema.string().optional().describe("Optional id of the associated brief"),
       },
       async execute({ title, functional_objective, content, brief }) {
-        try { return JSON.stringify(await planCreate(projectRoot, paths, { title, functional_objective, content: content ?? null, brief: brief ?? null })); }
+        try {
+          const result = await planCreate(projectRoot, paths, { title, functional_objective, content: content ?? null, brief: brief ?? null });
+          const hint = [result.hint, "Once the plan is complete, delegate a full semantic review to the plan-reviewer agent via task before starting implementation."].filter(Boolean).join(" ");
+          return JSON.stringify({ ...result, hint });
+        }
         catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
       },
     },
@@ -137,7 +141,11 @@ export function buildToolRegistry(projectRoot, paths) {
         new_string: tool.schema.string().describe("Replacement string"),
       },
       async execute({ id, old_string, new_string }) {
-        try { return JSON.stringify(await planUpdate(projectRoot, paths, id, old_string, new_string)); }
+        try {
+          const result = await planUpdate(projectRoot, paths, id, old_string, new_string);
+          const hint = [result.hint, "Once the plan is complete, delegate a full semantic review to the plan-reviewer agent via task before starting implementation."].filter(Boolean).join(" ");
+          return JSON.stringify({ ...result, hint });
+        }
         catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
       },
     },
@@ -147,7 +155,12 @@ export function buildToolRegistry(projectRoot, paths) {
         id: tool.schema.string().describe("Plan id"),
       },
       async execute({ id }) {
-        try { return JSON.stringify(await planValidate(projectRoot, paths, id)); }
+        try {
+          const result = await planValidate(projectRoot, paths, id);
+          const response = { ...result };
+          if (result.valid) response.hint = "Structure validated. Delegate a full semantic review to the plan-reviewer agent via task before starting implementation.";
+          return JSON.stringify(response);
+        }
         catch (err) { return JSON.stringify({ error: err instanceof Error ? err.message : String(err) }); }
       },
     },
