@@ -31,7 +31,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
 
   // Prompts loaded once at init — not reloaded on each config hook call.
   const subagentPrompts = await Promise.all(
-    SUBAGENT_DEFS.map((def) => loadAgentPrompt(def.id, def.file, def.silent ?? false)),
+    SUBAGENT_DEFS.map((def) => loadAgentPrompt(def.id, def.file, false)),
   );
 
   // OpenCode sometimes passes worktree="/" (filesystem root) when no git worktree is detected.

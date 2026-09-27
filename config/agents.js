@@ -161,7 +161,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: true,
+    hidden: true,
     permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
   },
   {
@@ -174,7 +174,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: true,
+    hidden: true,
     permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
   },
   {
@@ -187,7 +187,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "error",
-    silent: true,
+    hidden: true,
     permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
   },
   {
@@ -336,7 +336,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: true,
+    hidden: true,
     permission: {
       "*": "deny",
       spec_list: "allow",
@@ -369,7 +369,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: true,
+    hidden: true,
     permission: {
       "*": "deny",
       plan_get: "allow",
@@ -385,7 +385,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: true,
+    hidden: true,
     permission: {
       "*": "deny",
       plan_get: "allow",
@@ -401,7 +401,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: true,
+    hidden: true,
     permission: {
       "*": "deny",
       plan_get: "allow",
@@ -421,7 +421,7 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: true,
+    hidden: true,
     permission: {
       "*": "deny",
       spec_list: "allow",
@@ -442,7 +442,6 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "subagent",
     color: "info",
-    silent: false,
     permission: {
       "*": "deny",
       spec_list: "allow",
@@ -531,7 +530,7 @@ export async function loadAgentPrompt(agentId, fileName, silent = false) {
  * @param {object|null|undefined} userConfig
  */
 export function registerSubagent(input, def, prompt, userConfig) {
-  const { id, description, temperature, variant, mode, color, permission: defaultPermission } = def;
+  const { id, description, temperature, variant, mode, color, hidden, permission: defaultPermission } = def;
   const { soul, ...agentUserConfig } = userConfig ?? {}; // soul is stripped here — not forwarded to OpenCode which doesn't know it
   const agentPrompt = (mode === "all" && soul !== false)
     ? `${prompt}\n\nInstructions from: ~/.config/opencode/AGENTS.md\n${GLOBAL_AGENTS_CONTENT}`
@@ -542,6 +541,7 @@ export function registerSubagent(input, def, prompt, userConfig) {
     variant,
     mode,
     color,
+    ...(hidden !== undefined && { hidden }),
     ...agentUserConfig,
     prompt: agentPrompt,
     permission: mergePermissions(defaultPermission, agentUserConfig.permission),
