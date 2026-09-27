@@ -24,13 +24,13 @@ The only exceptions:
 | `read` | Read raw file content directly for coordination (plans, configs) |
 | `question` | Ask clarifying questions to the user |
 | `compress` | Collapse closed conversation ranges to protect against context loss |
-| Lifecycle tools | 20 domain-specific tools for specs, plans, briefs, and global state |
+| Lifecycle tools | 21 domain-specific tools for specs, plans, briefs, and global state |
 
 Everything else — exploration, editing, running tests, searching — goes to a sub-agent.
 
 ## Lifecycle Tools
 
-The team-lead has direct access to 20 lifecycle tools organized by domain. No delegation, no sub-agent, zero LLM overhead:
+The team-lead has direct access to 21 lifecycle tools organized by domain. No delegation, no sub-agent, zero LLM overhead:
 
 **Specs (6):** `spec_list()`, `spec_get(id)`, `spec_create(title, type?, content?)`, `spec_update(id, old_string, new_string)`, `spec_validate(id)`, `spec_delete(id)`
 
@@ -154,7 +154,7 @@ The team-lead operates under a default-deny permission model:
 | `read` | Any file (coordination only) |
 | `question` | Ask user for clarification |
 | `compress` | Context window management |
-| Lifecycle tools | 20 tools — spec/plan/brief management + `project_state` |
+| Lifecycle tools | 21 tools — spec/plan/brief management + `project_state` |
 | `bash` | Narrow git commands + basic filesystem inspection only |
 | `edit` / `write` | Scoped to `docs/**` only (exec-plans, specs, briefs) |
 

@@ -1,6 +1,6 @@
 # Lifecycle Tools
 
-The team-lead has direct access to 20 lifecycle tools — the only way to interact with artifact directories. Direct tool access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is blocked at runtime by the plugin's `tool.execute.before` hook. All access goes through these tools.
+The team-lead has direct access to 21 lifecycle tools — the only way to interact with artifact directories. Direct tool access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is blocked at runtime by the plugin's `tool.execute.before` hook. All access goes through these tools.
 
 ## Protected Zones
 
@@ -356,6 +356,20 @@ By default, lifecycle tools look for artifacts in:
 
 The `write` tool creates these directories automatically when needed.
 
-::: warning Path configuration is not yet supported
-Custom path configuration via environment variables is not implemented. The paths above are hardcoded.
-:::
+These paths can be overridden via the `team-lead.paths` key in `opencode.json`:
+
+```jsonc
+{
+  "agent": {
+    "team-lead": {
+      "paths": {
+        "specs": "custom/specs",
+        "execPlans": "custom/exec-plans",
+        "briefs": "custom/briefs"
+      }
+    }
+  }
+}
+```
+
+Any key omitted falls back to the default above.

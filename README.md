@@ -12,7 +12,7 @@ An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestr
 Two hooks power the plugin:
 
 - **`config`** — registers all agents into OpenCode's config, merging your overrides from `opencode.json` on top of plugin defaults
-- **`tool.execute.before`** — guards `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` against direct access; these directories are only reachable through the 20 lifecycle tools
+- **`tool.execute.before`** — guards `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` against direct access; these directories are only reachable through the 21 lifecycle tools
 
 ## Agents
 
@@ -34,6 +34,7 @@ Two hooks power the plugin:
 | `harness` | Encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries) |
 | `planning` | Transforms complex or ambiguous requests into structured exec-plans written to disk |
 | `gardener` | Periodic audit agent — Bootstrap: discovers functional domains, delegates to spec-writer. Maintenance: pure audit orchestrator, compiles Gardener Report, returns findings to team-lead. |
+| `spec-writer` | Writes high-quality specs conforming to the canonical format — delegated by team-lead or gardener (Bootstrap mode). |
 | `researcher` | External knowledge research — fetches and synthesizes information from the web, official docs, and APIs |
 
 ### The team-lead's workflow
@@ -84,7 +85,7 @@ Restart OpenCode — the plugin loads and registers all agents automatically.
 
 ## Lifecycle Tools
 
-The team-lead has direct access to 20 lifecycle tools — the only way to read or write artifacts in `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/`. Direct tool access to these directories is blocked at runtime by the plugin's `tool.execute.before` hook.
+The team-lead has direct access to 21 lifecycle tools — the only way to read or write artifacts in `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/`. Direct tool access to these directories is blocked at runtime by the plugin's `tool.execute.before` hook.
 
 ### Protected zones
 
@@ -153,9 +154,10 @@ These tools are not visible in the OpenCode UI. They run automatically as part o
 | `review-manager` | `task` (`*-reviewer` only), `question`, `read`, `glob`, `grep` |
 | `requirements-reviewer` / `code-reviewer` / `security-reviewer` | `read`, `glob`, `grep` |
 | `bug-finder` | `read`, `glob`, `grep`, `question` |
-| `brainstorm` | `task`, `question`, `webfetch`, `read` (all), `edit` (`docs/briefs/**` only) |
+| `brainstorm` | `task`, `question`, `webfetch`, `read` (all), lifecycle tools (`brief_create`, `brief_update`) |
 | `harness` | `task` (ask), `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all) |
-| `planning` | `task` (ask), `question`, `read` (all), `glob`, `grep`, `edit` (`docs/exec-plans/**` only) |
+| `planning` | `task` (ask), `question`, `read` (all), `glob`, `grep`, lifecycle tools (`plan_create`, `plan_update`) |
+| `spec-writer` | `task`, `read` (all), `glob`, `grep`, lifecycle tools (`spec_create`, `spec_update`, `spec_format`, `spec_validate`) |
 | `gardener` | `task` (explore + spec-writer only), `bash` (git log/diff/status), `read` (all), `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
 | `researcher` | `read`, `webfetch`, `websearch`, `grep` |
 

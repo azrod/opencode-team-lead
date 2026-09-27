@@ -25,7 +25,7 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 | `plan-technical-reviewer` | subagent | Vérifie l'alignement du plan avec les specs techniques et architecturales. Silencieux, invoqué par `plan-reviewer` uniquement |
 | `plan-code-reviewer` | subagent | Vérifie la faisabilité des blocs contre le codebase (mode deep uniquement). Silencieux, invoqué par `plan-reviewer` uniquement |
 | `spec-reviewer` | subagent | Intégré dans le pool du review-manager — retourne `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` après chaque livraison |
-| `spec-writer` | all | Rédaction de specs de haute qualité conformes au format canonique — délégué par le team-lead ou le gardener (mode Bootstrap) |
+| `spec-writer` | subagent | Rédaction de specs de haute qualité conformes au format canonique — délégué par le team-lead ou le gardener (mode Bootstrap) |
 
 ## Abandonné
 
@@ -39,7 +39,7 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 
 ## Custom Tools (Lifecycle)
 
-Vingt outils de bookkeeping injectés directement dans OpenCode — accessibles par le team-lead sans délégation :
+Vingt-et-un outils de bookkeeping injectés directement dans OpenCode — accessibles par le team-lead sans délégation :
 
 ### Global
 

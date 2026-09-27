@@ -2,9 +2,11 @@
 
 ## Ce qu'est le plugin
 
-`opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il n'a aucune dépendance npm — uniquement des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
+`opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il a une dépendance runtime — `@opencode-ai/plugin` (le SDK hôte du plugin OpenCode) — plus des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
 
 Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec deux hooks : `config` et `tool.execute.before`.
+
+L'enregistrement des agents est délégué à `config/agents.js`, qui contient `SUBAGENT_DEFS` (17 définitions d'agents) et exporte `registerSubagent()`. L'enregistrement des lifecycle tools est géré par `tools/registry.js` (21 outils).
 
 ## Le hook `config`
 
@@ -50,7 +52,7 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 | `gardener` | `all` | 0.2 | max | Maintenance périodique — mode Bootstrap : découvre les domaines fonctionnels et délègue à `spec-writer`. Mode Maintenance : audite docs et specs, compile un Gardener Report structuré, retourne les findings au team-lead. Ne modifie aucun fichier directement. |
 | `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
 
-Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`silent: true`) — un fichier manquant ne fait pas planter le plugin.
+Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`hidden: true`) — un fichier manquant ne fait pas planter le plugin.
 
 ## Le modèle de permissions
 
@@ -64,16 +66,16 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 | `compress` | allow (gestion contexte) |
 | `read` | allow sur tous les fichiers |
 | `edit` / `write` | allow uniquement sur `docs/**` |
-| `bash` | allow uniquement pour les commandes git (`git status*`, `git diff*`, `git log*`, `git add*`, `git commit*`, `git push*`, `git tag*`) |
+| `bash` | allow uniquement pour les commandes git (`git status*`, `git diff*`, `git log*`, `git add*`, `git commit*`, `git push*`, `git tag*`) et commandes de lecture (`ls`, `ls *`, `head *`, `echo *`) |
 | Tout le reste | deny |
 
-**review-manager** : `task` + `question` uniquement.
+**review-manager** : `task` (filtré sur `*-reviewer` uniquement), `question`, `read`, `glob`, `grep`.
 
 **Reviewers spécialisés** (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) : `read`, `glob`, `grep` uniquement — lecture directe, pas de délégation.
 
 **bug-finder** : `read`, `glob`, `grep`, `question` — lecture directe, pas de délégation.
 
-**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `edit` (`docs/briefs/**` uniquement). Pas de bash.
+**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), lifecycle tools (`brief_create`, `brief_update`). Pas d'accès `edit` direct — les briefs sont créés et mis à jour exclusivement via les lifecycle tools. Pas de bash.
 
 **gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
 
@@ -128,7 +130,7 @@ Le `prompt` est toujours fourni par le plugin et ne peut pas être overridé par
 
 ## Dépendances
 
-Aucune dépendance npm. Uniquement :
+Une dépendance runtime : `@opencode-ai/plugin` — le SDK hôte du plugin OpenCode. Uniquement des builtins Node.js au-delà :
 
 - `node:fs/promises` — lecture des fichiers de prompts
 - `node:path` — résolution de chemins

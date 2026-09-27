@@ -261,15 +261,15 @@ const paths = {
 
 `paths` est ensuite transmis à chaque tool via sa closure ou via `context` (à trancher à l'implémentation).
 
-### `peerDependency` sur `@opencode-ai/plugin`
+### Dépendance sur `@opencode-ai/plugin`
 
 ```json
-"peerDependencies": {
-  "@opencode-ai/plugin": "*"
+"dependencies": {
+  "@opencode-ai/plugin": "^1.3.17"
 }
 ```
 
-`@opencode-ai/plugin` est fourni par l'hôte OpenCode — il est toujours présent dans l'environnement d'exécution du plugin. L'ajouter en `dependency` installerait une copie supplémentaire dans `node_modules/opencode-team-lead/`, ce qui violerait la contrainte zero-deps du CI (job `zero-deps` dans `.github/workflows/checks.yml`). En `peerDependency`, on déclare l'attente sans embarquer le package — zéro violation CI, zéro doublon à runtime.
+`@opencode-ai/plugin` est déclaré en `dependency` runtime. Le job CI `zero-deps` (`.github/workflows/checks.yml`) contient une exception explicite pour ce package — il vérifie l'absence de dépendances tierces, pas celle des dépendances first-party nécessaires au fonctionnement du plugin hôte.
 
 ### Permissions team-lead
 
@@ -337,7 +337,7 @@ Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title,
 - **Création d'exec-plans** — c'est le rôle de l'agent `planning`. Les tools lifecycle ne créent pas d'exec-plans.
 - **Création de briefs** — c'est le rôle de l'agent `brainstorm`.
 - **Mise à jour du decision log** — Le team-lead le fait directement dans le fichier exec-plan (via sous-agent si besoin) ; le decision log reste dans l'exec-plan.
-- **Suppression d'artefacts** — les tools lifecycle ne suppriment rien.
+- **Suppression d'artefacts** — `spec_delete`, `plan_delete`, `brief_delete` suppriment des artefacts mais ne touchent pas au contenu des autres artefacts ni au code.
 - **Validation du contenu** des specs ou briefs — `check_artifacts` vérifie l'existence et la cohérence des références, pas la qualité du contenu.
 - **Sync git** — les tools écrivent sur disque mais ne commitent pas. Le commit reste sous contrôle de l'utilisateur ou du team-lead via ses permissions git.
 - **Support multi-repo / monorepo** — les tools opèrent dans `projectRoot` unique.

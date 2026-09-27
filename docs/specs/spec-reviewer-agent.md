@@ -41,7 +41,7 @@ The agent's default is restraint: most code changes do not warrant a spec. When 
 - The agent must not flag `SPEC_CREATE_NEEDED` for bug fixes, refactors, new tests, or configuration tweaks.
 - The agent must not draft specs — it identifies needs and suggests coverage areas, but does not write spec content.
 - The agent must not block on behavior that is not covered by any existing spec; it can flag `SPEC_CREATE_NEEDED` at most.
-- The agent operates as `mode: subagent`, `silent: true`, `temperature: 0.2` — it is invisible to the user.
+- The agent operates as `mode: subagent`, `hidden: true`, `temperature: 0.2` — it is invisible to the user in the `@` autocomplete menu.
 - Permitted tools: `spec_list`, `spec_get`, `read`, `glob`, `grep`. No write access.
 
 ## Examples

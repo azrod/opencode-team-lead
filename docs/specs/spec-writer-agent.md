@@ -37,7 +37,7 @@ When the domain is too large for a single spec, the agent returns a decompositio
 - The agent must not make architectural decisions. If the code is ambiguous, the ambiguity is surfaced in the return value — not resolved by the spec.
 - The agent must not delete specs. If a spec is stale, it flags it in the return value.
 - Maximum 2 correction attempts after a `REJECTED` verdict. On the third rejection, the agent stops and reports.
-- The agent operates as `mode: subagent`, `silent: false`, `temperature: 0.3`.
+- The agent operates as `mode: subagent`, `temperature: 0.3`.
 - Permitted tools: `spec_format`, `spec_list`, `spec_get`, `spec_create`, `spec_update`, `spec_validate`, `read`, `glob`, `grep`. No exec-plan tools, no code modification tools.
 
 ## Examples
