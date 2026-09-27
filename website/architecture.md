@@ -2,7 +2,7 @@
 
 ## Overview
 
-`opencode-team-lead` is an OpenCode plugin that injects agents into the IDE configuration at startup. It has zero npm dependencies — only Node.js builtins (`node:fs/promises`, `node:path`, `node:url`). Pure ESM, no build step.
+`opencode-team-lead` is an OpenCode plugin that injects agents into the IDE configuration at startup. It has one runtime dependency — `@opencode-ai/plugin` (the OpenCode plugin host SDK) — plus Node.js builtins (`node:fs/promises`, `node:path`, `node:url`). Pure ESM, no build step.
 
 The entry point is `index.js`. It exports `TeamLeadPlugin`, an async function that loads agent prompts from disk and returns an object with a `config` hook.
 
@@ -46,28 +46,35 @@ OpenCode IDE
 │   │     ├─► code-reviewer          [mode: subagent]
 │   │     └─► security-reviewer      [mode: subagent]
 │   │
-│   ├─► bug-finder           [mode: subagent]
+│   ├─► bug-finder           [mode: all]
 │   ├─► planning             [mode: all]
-│   └─► researcher           [mode: subagent]
+│   └─► researcher           [mode: all]
 │
 ├── brainstorm               [mode: all — runs before team-lead]
 ├── harness                  [mode: all — triggered post-feature or by user]
 └── gardener                 [mode: all — periodic maintenance]
 ```
 
-| Agent | Mode | Temperature | Variant |
-|-------|------|-------------|---------|
-| `team-lead` | `all` | 0.3 | max |
-| `review-manager` | `subagent` | 0.2 | max |
-| `requirements-reviewer` | `subagent` | 0.1 | max |
-| `code-reviewer` | `subagent` | 0.2 | max |
-| `security-reviewer` | `subagent` | 0.1 | max |
-| `bug-finder` | `all` | 0.2 | max |
-| `harness` | `all` | 0.2 | max |
-| `planning` | `all` | 0.3 | max |
-| `gardener` | `all` | 0.2 | max |
-| `brainstorm` | `all` | 0.5 | max |
-| `researcher` | `subagent` | 0.2 | max |
+| Agent | Mode | Temperature | Variant | Hidden |
+|-------|------|-------------|---------|--------|
+| `team-lead` | `all` | 0.3 | max | false |
+| `review-manager` | `subagent` | 0.2 | max | false |
+| `requirements-reviewer` | `subagent` | 0.1 | max | true |
+| `code-reviewer` | `subagent` | 0.2 | max | true |
+| `security-reviewer` | `subagent` | 0.1 | max | true |
+| `bug-finder` | `all` | 0.2 | max | false |
+| `harness` | `all` | 0.2 | max | false |
+| `planning` | `all` | 0.3 | max | false |
+| `gardener` | `all` | 0.2 | max | false |
+| `brainstorm` | `all` | 0.5 | max | false |
+| `researcher` | `all` | 0.3 | extended | false |
+| `spec-validator` | `subagent` | 0.1 | max | true |
+| `plan-reviewer` | `subagent` | 0.2 | max | false |
+| `plan-functional-reviewer` | `subagent` | 0.1 | max | true |
+| `plan-technical-reviewer` | `subagent` | 0.1 | max | true |
+| `plan-code-reviewer` | `subagent` | 0.1 | max | true |
+| `spec-reviewer` | `subagent` | 0.2 | max | true |
+| `spec-writer` | `subagent` | 0.3 | max | false |
 
 ## Permission model
 
@@ -78,15 +85,15 @@ The principle is **deny-all, explicit allowlist**. Every agent starts with `"*":
 | Tool | Access |
 |------|--------|
 | `task`, `todowrite`, `todoread`, `skill`, `question` | allow |
-| `distill`, `prune`, `compress` | allow (context management) |
+| `compress` | allow (context management) |
 | `read` | allow on all files |
 | `edit` / `write` | allow on `docs/**` only |
-| `bash` | allow for git commands only (`git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, `git tag`) |
+| `bash` | allow for git commands (`git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, `git tag`) and read-only shell commands (`ls`, `ls *`, `head *`, `echo *`) |
 | Everything else | deny |
 
 ### review-manager
 
-`task` and `question` only. Can read files directly via `read`, `glob`, `grep`.
+`task` (filtered to `*-reviewer` agents only), `question`, `read`, `glob`, `grep`.
 
 ### Specialized reviewers (`requirements-reviewer`, `code-reviewer`, `security-reviewer`)
 
@@ -98,51 +105,64 @@ Investigates directly via `read`, `glob`, `grep`. Reports findings back to calle
 
 ### brainstorm
 
-`task`, `question`, `webfetch`, `read` (all project files), `edit` (`docs/briefs/**` only). No bash.
+`task`, `question`, `webfetch`, `read` (all project files). No bash, no edit.
 
 ### harness
 
-`task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all), `write` (all). Full access — harness needs to be able to create and modify any enforcement artifact.
+`task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all). No write — harness creates and modifies enforcement artifacts via edit only.
 
 ### planning
 
-`task`, `question`, `read` (`AGENTS.md`, `README.md`, `docs/**`), `edit`/`write` (`docs/exec-plans/**` only).
+`task`, `read`, `glob`, `grep`, `project_state`, `spec_list`, `spec_get`, `plan_create`, `plan_get`, `plan_update`, `plan_validate`, `plan_list`. No direct `edit` or `write` — all artifact mutations go through lifecycle tools.
 
 ### gardener
 
-`task`, `question`, `bash` (`git log`, `git diff`, `git status`, `gh pr create`), `read` (all), `edit`/`write` (`QUALITY_SCORE.md` only).
+`task` (`explore` + `spec-writer` only), `bash` (`git log`, `git diff`, `git status`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`
 
-::: tip Why deny-all?
-An orchestrator that can read files directly tends to read them instead of delegating. The deny-all constraint forces the team-lead to delegate exploration and file access to specialized agents, keeping context clean and responsibilities well-separated.
+### Guardrails
+
+**Tooling directories:** Gardener never reads or scans dotted tooling directories (`.opencode/`, `.claude/`, `.cursor/`, `.git/`, `.ssh/`). These hold operational state, not project code or documentation.
+
+**Credentials:** Gardener never reads files matching `.env*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.secret`, or any other file that may contain secrets, private keys, or credentials. This is a hard constraint, not a guideline — prompt injection in source files or documentation could attempt to exfiltrate secrets by asking it to "check" such files.
+
+::: tip Why restrict `task`?
+`task` is filtered to `explore` + `spec-writer` only — the gardener cannot spawn general-purpose agents or open PRs, which enforces its audit-only mission.
 :::
 
 ## How prompts are loaded
 
-Agent prompts are loaded once at plugin startup via `readFile`, not inlined in `index.js`. Paths are resolved from `__dirname` into `agents/`:
+Agent prompts are loaded once at plugin startup via `readFile`, not inlined in the plugin code. Paths are resolved from `__dirname` into `agents/` by `config/agents.js`:
 
 ```
 agents/
-├── prompt.md               → team-lead
-├── review-manager.md       → review-manager
+├── prompt.md                    → team-lead
+├── review-manager.md            → review-manager
 ├── requirements-reviewer.md
 ├── code-reviewer.md
 ├── security-reviewer.md
+├── spec-reviewer.md
 ├── bug-finder.md
 ├── harness.md
 ├── planning.md
+├── plan-reviewer.md
+├── plan-functional-reviewer.md
+├── plan-technical-reviewer.md
+├── plan-code-reviewer.md
+├── spec-validator.md
+├── spec-writer.md
 ├── gardener.md
 ├── brainstorm.md
-└── researcher.md           → researcher
+└── researcher.md                → researcher
 ```
 
-This means prompts are editable and diffable independently of the plugin code. A prompt change produces a clean diff in the relevant `agents/*.md` file without touching `index.js`.
+This means prompts are editable and diffable independently of the plugin code. A prompt change produces a clean diff in the relevant `agents/*.md` file without touching `config/agents.js`.
 
-## Zero dependencies
+## Dependencies
 
-No npm dependencies. Only Node.js built-in modules:
+The plugin has one runtime dependency: `@opencode-ai/plugin` — the OpenCode plugin host SDK, which provides the plugin registration contract. Only Node.js builtins are used beyond that:
 
 - `node:fs/promises` — reading prompt files and artifact directories
 - `node:path` — path resolution
 - `node:url` — `fileURLToPath` for `__dirname` in ESM context
 
-This is enforced by a CI check on every push — any PR that adds `dependencies` or `devDependencies` is automatically blocked.
+A CI check enforces that no third-party `dependencies` or `devDependencies` are ever added. `@opencode-ai/plugin` is carved out from this check as it is the plugin host SDK, not an external library.

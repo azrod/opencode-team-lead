@@ -5,7 +5,7 @@ created: 2026-04-20
 
 # Spec: Agent `researcher`
 
-**Status:** stable  
+**Status:** implemented  
 **Updated:** 2026-04-20
 
 ## Summary

@@ -5,7 +5,7 @@ created: 2026-04-06
 
 # Spec : Mechanical checks — phase préalable du `review-manager`
 
-**Statut :** draft  
+**Statut :** implemented  
 **Mis à jour :** 2026-04-06 (rev. 2)
 
 ## Résumé

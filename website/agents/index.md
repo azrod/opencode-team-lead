@@ -22,23 +22,33 @@ Agents are split into two modes:
 | `requirements-reviewer` | `subagent` | Verifies implementation matches original requirements. |
 | `code-reviewer` | `subagent` | Evaluates logic, error handling, API design, maintainability. |
 | `security-reviewer` | `subagent` | Identifies vulnerabilities across 7 threat categories. |
+| `spec-validator` | `subagent` | LLM validator invoked after `spec_create`/`spec_update`. Checks completeness, clarity, and consistency. |
+| `plan-reviewer` | `subagent` | Plan review orchestrator. Asks review depth (light/deep), spawns sub-reviewers in parallel, returns APPROVED / CHANGES_REQUESTED / BLOCKED. |
+| `plan-functional-reviewer` | `subagent` | Checks plan alignment with functional specs. Silent, invoked by `plan-reviewer` only. |
+| `plan-technical-reviewer` | `subagent` | Checks plan alignment with technical and architectural specs. Silent, invoked by `plan-reviewer` only. |
+| `plan-code-reviewer` | `subagent` | Checks plan code feasibility against the codebase (deep mode only). Silent, invoked by `plan-reviewer` only. |
+| `spec-reviewer` | `subagent` | Integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` / `SPEC_VIOLATION` after each delivery. |
 | `bug-finder` | `subagent` | Structured investigation. Forces root-cause before any fix. |
 | `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
 | `harness` | `all` | Encodes recurring patterns as permanent enforcement artifacts. |
 | `planning` | `all` | Writes complex requests as exec-plans to disk. |
-| `gardener` | `all` | Periodic maintenance. Fixes stale docs, detects code drift. |
+| `gardener` | `all` | Periodic maintenance. Bootstrap mode: discovers domains and delegates to spec-writer. Maintenance mode: fixes stale docs, detects code drift. |
+| `spec-writer` | `subagent` | Writes high-quality specs conforming to the canonical format. Delegated by team-lead or gardener. |
 | `researcher` | `subagent` | External knowledge retrieval. Searches docs, RFCs, APIs. |
 
 ## Agent Pages
 
 - [team-lead](/agents/team-lead) — the orchestrator at the center of everything
-- [Review Cluster](/agents/review-cluster) — review-manager + requirements, code, and security reviewers
+- [Review Cluster](/agents/review-cluster) — review-manager + requirements, code, security, and spec reviewers
 - [Brainstorm](/agents/brainstorm) — Phase 0 thinking partner for vague ideas
 - [Bug-Finder](/agents/bug-finder) — structured investigation before any fix
 - [Harness](/agents/harness) — pattern encoder that makes recurring mistakes impossible
 - [Planning](/agents/planning) — turns complex requests into reviewable exec-plans
-- [Gardener](/agents/gardener) — periodic hygiene and drift detection
+- [Gardener](/agents/gardener) — periodic hygiene, drift detection, and Bootstrap spec creation
+- [Spec-Writer](/agents/spec-writer) — canonical spec authoring, delegated by team-lead or gardener
 - [Researcher](/agents/researcher) — external knowledge retrieval
+
+> `spec-validator` invocation is documented in [Lifecycle Tools](/lifecycle-tools). `plan-reviewer` and its sub-reviewers are invoked via `plan_validate`. `spec-reviewer` is part of the [Review Cluster](/agents/review-cluster).
 
 ## How delegation flows
 
@@ -49,10 +59,14 @@ User
         ├─► review-manager               (reviews)
         │     ├─► requirements-reviewer
         │     ├─► code-reviewer
-        │     └─► security-reviewer
+        │     ├─► security-reviewer
+        │             └─► spec-reviewer          (always — NO_ACTION_NEEDED / SPEC_CREATE_NEEDED / SPEC_UPDATE_NEEDED / SPEC_VIOLATION)
         ├─► bug-finder                   (when debugging)
         ├─► brainstorm                   (when intent is unclear at vision level)
         ├─► planning                     (when request is ambiguous on structure)
+        ├─► spec-writer                  (when a complex spec needs authoring)
+        ├─► gardener                     (post-delivery maintenance)
+        │     └─► spec-writer            (Bootstrap mode — < 3 active specs)
         └─► researcher                   (when external knowledge needed)
 ```
 

@@ -1,11 +1,14 @@
 ---
+title: "Planning Agent"
+id: planning-agent
+type: technical
 status: implemented
 created: 2026-04-01
 ---
 
 # Spec : Agent `planning`
 
-**Statut :** draft  
+**Statut :** implemented  
 **Mis à jour :** 2026-04-01
 
 ## Résumé
@@ -128,13 +131,24 @@ Le team-lead est responsable de la mise à jour du decision log et du status pen
 
 ## Permissions
 
+L'agent `planning` accède aux exec-plans et specs exclusivement via les lifecycle tools — aucun accès direct `edit`/`write` sur `docs/exec-plans/*`.
+
 | Ressource | Accès |
 |-----------|-------|
-| `task` | allow |
+| `project_state` | allow — état global des artefacts en début de mission |
+| `plan_create` | allow — créer un exec-plan |
+| `plan_get` | allow — lire un exec-plan existant |
+| `plan_update` | allow — mettre à jour un exec-plan |
+| `plan_validate` | allow — valider la structure d'un exec-plan |
+| `plan_list` | allow — lister les exec-plans existants |
+| `spec_list` | allow — consulter les specs existantes |
+| `spec_get` | allow — lire une spec |
+| `task` | ask — délégation avec confirmation |
 | `question` | allow — pour lever les open questions bloquantes |
 | `read` | allow — AGENTS.md, README, docs/ du repo utilisateur |
-| `docs/exec-plans/*` | Écriture uniquement |
-| Reste du projet | Lecture seule, pas d'écriture |
+| `glob` | allow — exploration du repo |
+| `grep` | allow — recherche dans le repo |
+| `edit` / `write` sur `docs/exec-plans/*` | **Non** — accès bloqué par l'artifact guard |
 | `bash` | Non |
 | Web search | Non |
 
