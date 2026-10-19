@@ -10,6 +10,7 @@
 
 Agents are split into two modes:
 
+- **`mode: primary`** — visible and directly selectable by the user; not available through `task` delegation
 - **`mode: all`** — visible in the OpenCode agent list, accessible directly by the user or by the team-lead
 - **`mode: subagent`** — invisible to the user, only reachable via `task` delegation from another agent
 
@@ -32,6 +33,7 @@ Agents are split into two modes:
 | `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
 | `harness` | `all` | Encodes recurring patterns as permanent enforcement artifacts. |
 | `planning` | `all` | Writes complex requests as exec-plans to disk. |
+| `architect` | `primary` | Direct-only architecture advisor. Explains boundaries, trade-offs, and incremental migration without implementing. |
 | `gardener` | `all` | Periodic maintenance. Bootstrap mode: discovers domains and delegates to spec-writer. Maintenance mode: fixes stale docs, detects code drift. |
 | `spec-writer` | `subagent` | Writes high-quality specs conforming to the canonical format. Delegated by team-lead or gardener. |
 | `researcher` | `subagent` | External knowledge retrieval. Searches docs, RFCs, APIs. |
@@ -44,6 +46,7 @@ Agents are split into two modes:
 - [Bug-Finder](/agents/bug-finder) — structured investigation before any fix
 - [Harness](/agents/harness) — pattern encoder that makes recurring mistakes impossible
 - [Planning](/agents/planning) — turns complex requests into reviewable exec-plans
+- [Architect](/agents/architect) — direct architecture advice without implementation access
 - [Gardener](/agents/gardener) — periodic hygiene, drift detection, and Bootstrap spec creation
 - [Spec-Writer](/agents/spec-writer) — canonical spec authoring, delegated by team-lead or gardener
 - [Researcher](/agents/researcher) — external knowledge retrieval
@@ -69,6 +72,8 @@ User
         │     └─► spec-writer            (Bootstrap mode — < 3 active specs)
         └─► researcher                   (when external knowledge needed)
 ```
+
+`architect` is deliberately outside this delegation tree: it is a directly selected `primary` agent, never callable through `task`.
 
 ::: tip Brainstorm — direct or automatic
 You can invoke `brainstorm` directly when you have a vague idea, or let the team-lead invoke it automatically when your request is unclear at the vision level. Either path produces a structured product brief at `docs/briefs/{project-name}.md` that feeds directly into `planning`.

@@ -38,8 +38,9 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
   // In that case, fall back to directory which is always the actual project path.
   const projectRoot = (worktree && worktree !== "/") ? worktree : (directory ?? ".");
 
-  // Resolved once during the config hook and captured in closure for tool handlers.
-  let paths = {
+  // This object is shared with registry closures and the guard. The config hook
+  // updates it in place so both always use the same resolved artifact paths.
+  const paths = {
     specs: "docs/specs",
     execPlans: "docs/exec-plans",
     briefs: "docs/briefs",
@@ -55,11 +56,11 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
 
       // Resolve artifact paths from user config (with defaults).
       const userPaths = userConfig.paths ?? {};
-      paths = {
+      Object.assign(paths, {
         specs: userPaths.specs ?? "docs/specs",
         execPlans: userPaths.execPlans ?? "docs/exec-plans",
         briefs: userPaths.briefs ?? "docs/briefs",
-      };
+      });
 
       const teamLeadPrompt = soul === false
         ? prompt
@@ -142,7 +143,7 @@ export const TeamLeadPlugin = async ({ directory, worktree }) => {
     // ── Tool execute before hook: protect artifact directories ───────
     "tool.execute.before": async ({ tool: toolName, args }) => {
       const protectedDirs = [paths.specs, paths.execPlans, paths.briefs];
-      const err = checkArtifactAccess({ tool: toolName, args }, protectedDirs);
+      const err = checkArtifactAccess({ tool: toolName, args }, protectedDirs, projectRoot);
       if (err) throw err;
     },
   };

@@ -1,6 +1,6 @@
 # Lifecycle Tools
 
-The team-lead has direct access to 21 lifecycle tools — the only way to interact with artifact directories. Direct tool access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is blocked at runtime by the plugin's `tool.execute.before` hook. All access goes through these tools.
+The team-lead has direct access to 21 lifecycle tools — the only way to interact with artifact directories. Direct tool access to configured artifact paths is blocked at runtime by the plugin's `tool.execute.before` hook. All access goes through these tools.
 
 ## Protected Zones
 
@@ -10,7 +10,7 @@ The following directories are protected for all agents:
 - `docs/exec-plans/` — exec-plan files
 - `docs/briefs/` — product briefs
 
-Any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is intercepted and blocked. The lifecycle tools bypass this guard transparently.
+Any `read`, `edit`, `write`, `list`, `bash`, `glob`, or `grep` call targeting these paths or their symlink aliases is intercepted and blocked. Glob patterns with parent-directory traversal are also rejected. The lifecycle tools bypass this guard transparently.
 
 ::: tip When the team-lead calls these
 - `project_state()` is called at the **start of every mission**

@@ -149,6 +149,15 @@ export const SUBAGENT_DEFS = [
       read: "allow",
       glob: "allow",
       grep: "allow",
+      plan_get: "allow",
+      spec_get: "allow",
+      "bash": {
+        "*": "deny",
+        "git status*": "allow",
+        "git log*": "allow",
+        "git diff*": "allow",
+        "rg*": "allow"
+      }
     },
   },
   {
@@ -162,7 +171,21 @@ export const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "info",
     hidden: true,
-    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
+    permission: {
+      "*": "deny",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      plan_get: "allow",
+      spec_get: "allow",
+      "bash": {
+        "*": "deny",
+        "git status*": "allow",
+        "git log*": "allow",
+        "git diff*": "allow",
+        "rg*": "allow"
+      }
+    },
   },
   {
     id: "code-reviewer",
@@ -175,7 +198,21 @@ export const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "info",
     hidden: true,
-    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
+    permission: {
+      "*": "deny",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      plan_get: "allow",
+      spec_get: "allow",
+      "bash": {
+        "*": "deny",
+        "git status*": "allow",
+        "git log*": "allow",
+        "git diff*": "allow",
+        "rg*": "allow"
+      }
+    },
   },
   {
     id: "security-reviewer",
@@ -188,7 +225,21 @@ export const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "error",
     hidden: true,
-    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow" },
+    permission: {
+      "*": "deny",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      plan_get: "allow",
+      spec_get: "allow",
+      "bash": {
+        "*": "deny",
+        "git status*": "allow",
+        "git log*": "allow",
+        "git diff*": "allow",
+        "rg*": "allow"
+      }
+    },
   },
   {
     id: "bug-finder",
@@ -200,7 +251,20 @@ export const SUBAGENT_DEFS = [
     variant: "max",
     mode: "all",
     color: "warning",
-    permission: { "*": "deny", read: "allow", glob: "allow", grep: "allow", question: "allow" },
+    permission: {
+      "*": "deny",
+      read: "allow",
+      glob: "allow",
+      grep: "allow",
+      question: "allow",
+      "bash": {
+        "*": "deny",
+        "git status*": "allow",
+        "git log*": "allow",
+        "git diff*": "allow",
+        "rg*": "allow"
+      }
+    },
   },
   {
     id: "harness",
@@ -255,6 +319,37 @@ export const SUBAGENT_DEFS = [
     },
   },
   {
+    id: "architect",
+    file: "architect.md",
+    description:
+      "Direct architecture advisor — examines system boundaries, coupling, risks, and migration paths. " +
+      "Can formalize accepted architecture decisions as specs or exec-plans, but never implements or delegates work.",
+    temperature: 0.2,
+    variant: "max",
+    mode: "primary",
+    color: "info",
+    permission: {
+      "*": "deny",
+      read: "allow",
+      list: "allow",
+      glob: "allow",
+      grep: "allow",
+      spec_list: "allow",
+      spec_get: "allow",
+      spec_format: "allow",
+      spec_create: "allow",
+      spec_update: "allow",
+      spec_validate: "allow",
+      plan_list: "allow",
+      plan_get: "allow",
+      plan_format: "allow",
+      plan_create: "allow",
+      plan_update: "allow",
+      plan_validate: "allow",
+      webfetch: "allow"
+    },
+  },
+  {
     id: "gardener",
     file: "gardener.md",
     description:
@@ -267,7 +362,11 @@ export const SUBAGENT_DEFS = [
     color: "success",
     permission: {
       "*": "deny",
-      task: { "*": "deny", explore: "allow", "spec-writer": "allow" },
+      task: {
+        "*": "deny",
+        explore: "allow",
+        "spec-writer": "allow"
+      },
       spec_list: "allow",
       spec_get: "allow",
       spec_format: "allow",

@@ -52,6 +52,7 @@ OpenCode IDE
 │
 ├── brainstorm               [mode: all — runs before team-lead]
 ├── harness                  [mode: all — triggered post-feature or by user]
+├── architect                [mode: primary — direct only]
 └── gardener                 [mode: all — periodic maintenance]
 ```
 
@@ -65,6 +66,7 @@ OpenCode IDE
 | `bug-finder` | `all` | 0.2 | max | false |
 | `harness` | `all` | 0.2 | max | false |
 | `planning` | `all` | 0.3 | max | false |
+| `architect` | `primary` | 0.2 | max | false |
 | `gardener` | `all` | 0.2 | max | false |
 | `brainstorm` | `all` | 0.5 | max | false |
 | `researcher` | `all` | 0.3 | extended | false |
@@ -115,6 +117,10 @@ Investigates directly via `read`, `glob`, `grep`. Reports findings back to calle
 
 `task`, `read`, `glob`, `grep`, `project_state`, `spec_list`, `spec_get`, `plan_create`, `plan_get`, `plan_update`, `plan_validate`, `plan_list`. No direct `edit` or `write` — all artifact mutations go through lifecycle tools.
 
+### architect
+
+Direct-only architecture advisor. `read`, `list`, `glob`, `grep`, and an explicit lifecycle allowlist: `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. `edit`, `bash`, `task`, `external_directory`, `project_state`, artifact deletion, `plan_block_done`, and all brief tools are explicitly denied. It can create or update a plan only after explicit user acceptance of the architecture decision being formalized.
+
 ### gardener
 
 `task` (`explore` + `spec-writer` only), `bash` (`git log`, `git diff`, `git status`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`
@@ -144,6 +150,7 @@ agents/
 ├── bug-finder.md
 ├── harness.md
 ├── planning.md
+├── architect.md
 ├── plan-reviewer.md
 ├── plan-functional-reviewer.md
 ├── plan-technical-reviewer.md

@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SUBAGENT_DEFS, loadAgentPrompt } from "../config/agents.js";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 
@@ -38,5 +39,72 @@ describe("agent permissions — write/edit target directories", () => {
         `declared write/edit target directory does not exist: ${dir}`
       );
     }
+  });
+});
+
+describe("architect agent contract", () => {
+  const architect = SUBAGENT_DEFS.find((agent) => agent.id === "architect");
+  const allowedLifecycleTools = new Set([
+    "spec_list",
+    "spec_get",
+    "spec_format",
+    "spec_create",
+    "spec_update",
+    "spec_validate",
+    "plan_list",
+    "plan_get",
+    "plan_format",
+    "plan_create",
+    "plan_update",
+    "plan_validate",
+  ]);
+  const deniedLifecycleTools = [
+    "project_state",
+    "spec_delete",
+    "plan_delete",
+    "plan_block_done",
+    "brief_get",
+    "brief_create",
+    "brief_update",
+    "brief_delete",
+    "brief_list",
+  ];
+
+  test("is visible, directly selectable, and not a subagent", () => {
+    assert.ok(architect, "architect must be registered");
+    assert.equal(architect.mode, "primary");
+    assert.equal(architect.hidden, undefined);
+  });
+
+  test("allows only repository exploration and its lifecycle allowlist", () => {
+    assert.deepEqual(
+      [architect.permission.read, architect.permission.list, architect.permission.glob, architect.permission.grep],
+      ["allow", "allow", "allow", "allow"]
+    );
+    assert.equal(architect.permission["*"], "deny");
+
+    for (const tool of allowedLifecycleTools) {
+      assert.equal(architect.permission[tool], "allow", `expected ${tool} to be allowed`);
+    }
+  });
+
+  test("explicitly denies implementation, delegation, external access, and excluded lifecycle tools", () => {
+    for (const tool of ["edit", "bash", "task", "external_directory", ...deniedLifecycleTools]) {
+      assert.equal(architect.permission[tool], "deny", `expected ${tool} to be denied`);
+    }
+  });
+
+  test("loads a prompt that enforces decision rationale and explicit plan acceptance", async () => {
+    const prompt = await loadAgentPrompt(architect.id, architect.file);
+    assert.match(prompt, /Observed facts/i);
+    assert.match(prompt, /Inferences/i);
+    assert.match(prompt, /Unknowns/i);
+    assert.match(prompt, /ASCII/i);
+    assert.match(prompt, /Markdown fenced code blocks tagged `text`/i);
+    assert.match(prompt, /Never use Mermaid/i);
+    assert.match(prompt, /`mermaid` code block/i);
+    assert.match(prompt, /explicitly accepts/i);
+    assert.match(prompt, /plan_create/i);
+    assert.match(prompt, /plan_update/i);
   });
 });

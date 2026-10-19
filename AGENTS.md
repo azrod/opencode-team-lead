@@ -32,8 +32,8 @@ This is a tiny project — one runtime dependency (`@opencode-ai/plugin`), pure 
 | File | Role |
 |------|------|
 | `index.js` | Plugin entry point. Exports `TeamLeadPlugin`. Two hooks: `config` (registers agents and lifecycle tools) and `tool.execute.before` (blocks direct access to protected artifact directories). |
-| `config/agents.js` | Agent registration module. Defines `SUBAGENT_DEFS` (all 17 agent definitions) and exports `registerSubagent()`, which writes each agent into the OpenCode config object. Also loads all agent prompt files from `agents/*.md`. |
-| `tools/artifact-guard.js` | Guard module called by the `tool.execute.before` hook — intercepts `read`, `edit`, `write`, `bash`, `glob`, and `grep` calls that target `docs/specs/`, `docs/exec-plans/`, or `docs/briefs/`, and blocks them unless the caller is a lifecycle tool. |
+| `config/agents.js` | Agent registration module. Defines `SUBAGENT_DEFS` (all 18 agent definitions) and exports `registerSubagent()`, which writes each agent into the OpenCode config object. Also loads all agent prompt files from `agents/*.md`. |
+| `tools/artifact-guard.js` | Guard module called by the `tool.execute.before` hook — intercepts `read`, `edit`, `write`, `list`, `bash`, `glob`, and `grep` calls that target configured artifact paths, resolves symlink aliases, and blocks them unless the caller is a lifecycle tool. |
 | `tools/registry.js` | Registers all 21 lifecycle tools into the OpenCode config. Imports tool handler functions from `tools/lifecycle.js` and wires them to their tool definitions. |
 | `agents/prompt.md` | **The core product.** 400+ line system prompt that defines the agent's identity, workflow, delegation rules, review protocol, error handling, and memory protocol. Most changes to this project will be here. |
 | `agents/review-manager.md` | System prompt for the review-manager agent — a review orchestrator that spawns specialized reviewers in parallel and arbitrates their verdicts. |
@@ -49,6 +49,7 @@ This is a tiny project — one runtime dependency (`@opencode-ai/plugin`), pure 
 | `agents/bug-finder.md` | System prompt for the bug-finder agent — structured bug investigation orchestrator that forces root-cause analysis before any fix. |
 | `agents/harness.md` | System prompt for the harness agent — pattern enforcement agent that encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries, guiding principles). |
 | `agents/planning.md` | System prompt for the planning agent — transforms complex or ambiguous requests into structured exec-plans on disk. |
+| `agents/architect.md` | System prompt for the architect agent — direct-only system architecture advisor. Explains boundaries, trade-offs, and incremental migration; never implements or delegates. |
 | `agents/spec-writer.md` | System prompt for the spec-writer agent — specialized in writing high-quality specs conforming to the canonical format. Delegates from team-lead or gardener (Bootstrap mode). Calls `spec_format()` before `spec_create()`. Temperature 0.3. |
 | `agents/gardener.md` | System prompt for the gardener agent — periodic maintenance agent with two modes: Bootstrap (< 3 active specs — discovers functional domains and delegates to spec-writer) and Maintenance (≥ 3 specs — spawns explore agents, compiles a structured Gardener Report, returns findings to the team-lead. Never modifies files directly). |
 | `agents/brainstorm.md` | System prompt for the brainstorm agent — helps users discover and articulate what they want to build. Produces a product brief at docs/briefs/{project-name}.md. |
@@ -64,13 +65,13 @@ Full technical details: [`docs/architecture.md`](docs/architecture.md)
 ### How the plugin works
 
 1. **`config` hook** — Injects all agent definitions into OpenCode's config, merging user overrides from `opencode.json` on top of plugin defaults. The `prompt` is always provided by the plugin and cannot be overridden.
-2. **`tool.execute.before` hook** — Intercepts any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting `docs/specs/`, `docs/exec-plans/`, or `docs/briefs/`. Blocks the call unless the caller is one of the 21 lifecycle tools. The guard logic lives in `tools/artifact-guard.js`.
+2. **`tool.execute.before` hook** — Intercepts any `read`, `edit`, `write`, `list`, `bash`, `glob`, or `grep` call targeting configured artifact paths. The shared mutable `paths` object keeps this guard aligned with lifecycle tool destinations. It resolves symlink aliases and blocks unsafe glob parent traversal. Calls are blocked unless the caller is one of the 21 lifecycle tools. The guard logic lives in `tools/artifact-guard.js`.
 3. The `write` tool creates parent directories automatically — no separate setup step needed for artifact directories.
 
 ### Key design decisions
 
 - Permissions are deny-all by default — the team-lead can delegate (`task`), track progress (`todowrite`), load skills (`skill`), ask questions (`question`), manage context (`compress`), read files directly (`read`), and run basic git commands (`git status`, `git log`, `git add`, `git commit`, `git tag`, `git push`) plus `ls`, `ls *`, `head *`, and `echo *`. Edit/write access is scoped to `docs/**` only (exec-plans, specs, briefs); analysis and exploration are always delegated to `explore`.
-- Access to `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` is exclusively via the 21 lifecycle tools — direct `read`/`edit`/`write`/`bash`/`glob`/`grep` calls targeting these directories are blocked by the `tool.execute.before` hook.
+- Access to configured artifact directories is exclusively via the 21 lifecycle tools — direct `read`/`edit`/`write`/`bash`/`glob`/`grep` calls targeting those directories or their symlink aliases are blocked by the `tool.execute.before` hook.
 - Agent prompts are loaded from `agents/*.md` at init time via `readFile`, not inlined — keeps them editable and diffable independently of the code.
 - The plugin merges user config without overwriting it — users can override `temperature`, `color`, `variant`, `mode`, and add permissions.
 - The review-manager uses nested delegation (team-lead → review-manager → reviewers) and runs as `mode: "subagent"` — invisible to the user, only reachable via `task`.

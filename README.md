@@ -33,6 +33,7 @@ Two hooks power the plugin:
 | `brainstorm` | Phase 0 thinking partner — helps articulate what you want to build before planning starts |
 | `harness` | Encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries) |
 | `planning` | Transforms complex or ambiguous requests into structured exec-plans written to disk |
+| `architect` | Direct-only architecture advisor — maps boundaries and trade-offs, then formalizes accepted decisions without changing code |
 | `gardener` | Periodic audit agent — Bootstrap: discovers functional domains, delegates to spec-writer. Maintenance: pure audit orchestrator, compiles Gardener Report, returns findings to team-lead. |
 | `spec-writer` | Writes high-quality specs conforming to the canonical format — delegated by team-lead or gardener (Bootstrap mode). |
 | `researcher` | External knowledge research — fetches and synthesizes information from the web, official docs, and APIs |
@@ -65,6 +66,10 @@ When a pattern recurs (a mistake that keeps happening, a convention that keeps b
 
 Takes a complex or ambiguous request and writes a structured exec-plan to `docs/exec-plans/`. Useful before handing a large task to the team-lead, or when you want a reviewable plan before any work starts.
 
+### architect
+
+Use directly when you need a whole-system assessment before choosing a structural direction. Architect reads and explores ordinary repository files, separates evidence from inferences and unknowns, and explains current state, target state, trade-offs, and incremental migration with readable ASCII diagrams in `text` code blocks for non-trivial work. It cannot edit code, run commands, access briefs, or delegate. It can create or update a spec after a justified recommendation; it can create or update an exec-plan only after you explicitly accept the architecture decision being formalized.
+
 ### gardener
 
 Periodic audit agent. In Bootstrap mode, discovers undocumented functional domains and delegates spec writing to `spec-writer`. In Maintenance mode, operates as a pure audit orchestrator — spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead. Never edits files or opens PRs directly; all corrections are delegated by the team-lead after receiving the report.
@@ -95,7 +100,7 @@ The following directories are protected for all agents except via lifecycle tool
 - `docs/exec-plans/` — exec-plan files
 - `docs/briefs/` — product briefs
 
-Any `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is intercepted and blocked. The lifecycle tools bypass this guard transparently.
+Any `read`, `edit`, `write`, `list`, `bash`, `glob`, or `grep` call targeting these paths is intercepted and blocked. The lifecycle tools bypass this guard transparently.
 
 ### Spec tools
 
@@ -157,6 +162,7 @@ These tools are not visible in the OpenCode UI. They run automatically as part o
 | `brainstorm` | `task`, `question`, `webfetch`, `read` (all), lifecycle tools (`brief_create`, `brief_update`) |
 | `harness` | `task` (ask), `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all) |
 | `planning` | `task` (ask), `question`, `read` (all), `glob`, `grep`, lifecycle tools (`plan_create`, `plan_update`) |
+| `architect` | `read`, `list`, `glob`, `grep`, lifecycle tools (`spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`); no code edits, shell, delegation, external directories, briefs, deletion, `plan_block_done`, or `project_state` |
 | `spec-writer` | `task`, `read` (all), `glob`, `grep`, lifecycle tools (`spec_create`, `spec_update`, `spec_format`, `spec_validate`) |
 | `gardener` | `task` (explore + spec-writer only), `bash` (git log/diff/status), `read` (all), `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
 | `researcher` | `read`, `webfetch`, `websearch`, `grep` |

@@ -14,7 +14,7 @@ updated: 2026-04-07
 
 ## Résumé
 
-Cinq custom tools injectés dans OpenCode par le plugin, accessibles directement par le team-lead, pour les opérations de bookkeeping sur les artefacts de gestion de projet (exec-plans, specs, briefs). Mécaniques, déterministes, zéro LLM en dessous.
+Vingt-et-un lifecycle tools injectés dans OpenCode par le plugin, accessibles directement par le team-lead, pour les opérations de bookkeeping sur les artefacts de gestion de projet (exec-plans, specs, briefs). Ils comprennent 19 opérations et 2 tools de format canonique. Mécaniques, déterministes, zéro LLM en dessous.
 
 ---
 
@@ -44,7 +44,7 @@ Les custom tools OpenCode sont l'abstraction correcte : exécutés dans le proce
 
 ## 2. Les tools
 
-L'implémentation comprend **20 lifecycle tools** organisés en quatre familles. Tous sont implémentés dans `tools/lifecycle.js` comme fonctions ESM nommées (`export async function specGet(...)`, etc.) — pas d'objet groupé. Chaque tool reçoit `projectRoot` et `paths` via la closure de `TeamLeadPlugin` dans `index.js`.
+L'implémentation comprend **21 lifecycle tools** organisés en quatre familles : 1 global, 7 `spec_*`, 8 `plan_*` et 5 `brief_*`. Les 19 tools opérationnels sont implémentés dans `tools/lifecycle.js` comme fonctions ESM nommées (`export async function specGet(...)`, etc.), tandis que `spec_format` et `plan_format` retournent les formats canoniques — pas d'objet groupé. Chaque tool reçoit `projectRoot` et le même objet mutable `paths` via la closure de `TeamLeadPlugin` dans `index.js`; le hook de guard utilise ce même objet.
 
 ### Famille `global` (1 tool)
 
@@ -87,7 +87,7 @@ L'implémentation comprend **20 lifecycle tools** organisés en quatre familles.
 | `brief_delete` | `briefDelete` | Supprime un brief par id |
 | `brief_list` | `briefList` | Liste tous les briefs avec métadonnées |
 
-> **Note :** `brief_list` est le 20ème tool — portant le total à 20, pas 19.
+> **Note :** les 19 tools opérationnels, plus `spec_format` et `plan_format`, portent le total à 21.
 
 ### `project_state`
 
@@ -195,13 +195,13 @@ La relation brief ↔ exec-plan est **bidirectionnelle et optionnelle** : chaque
 opencode-team-lead/
 ├── index.js              # Point d'entrée — importe et expose les tools
 ├── tools/
-│   ├── lifecycle.js      # Implémentation des 20 lifecycle tools (fonctions nommées)
+│   ├── lifecycle.js      # Implémentation des 19 tools opérationnels (fonctions nommées)
 │   └── artifact-guard.js # Guard — LIFECYCLE_TOOLS Set + checkArtifactAccess()
 └── agents/
     └── prompt.md
 ```
 
-`tools/artifact-guard.js` exporte le `Set` `LIFECYCLE_TOOLS` (les 20 noms de tools) et la fonction `checkArtifactAccess` utilisée dans le hook `tool.execute.before`. Tout appel direct `read`/`edit`/`write`/`bash`/`glob`/`grep` ciblant `docs/specs/`, `docs/exec-plans/`, ou `docs/briefs/` est bloqué sauf si le caller est un des 20 lifecycle tools.
+`tools/artifact-guard.js` exporte le `Set` `LIFECYCLE_TOOLS` (les 21 noms de tools) et la fonction `checkArtifactAccess` utilisée dans le hook `tool.execute.before`. Tout appel direct `read`/`edit`/`write`/`list`/`bash`/`glob`/`grep` ciblant les chemins d'artefacts configurés est bloqué sauf si le caller est un des 21 lifecycle tools. Le guard résout les aliases par symlink, compare sans tenir compte de la casse pour les systèmes insensibles à la casse, et refuse les patterns glob contenant `..`.
 
 ### Pattern d'export réel dans `tools/lifecycle.js`
 
@@ -227,7 +227,7 @@ import {
 import { checkArtifactAccess } from "./tools/artifact-guard.js";
 ```
 
-`paths` est capturé dans la closure de `TeamLeadPlugin` et passé directement à chaque `execute`. Pas de `context` — `projectRoot` est résolu une fois au démarrage via `worktree` ou `directory`.
+Le même objet mutable `paths` est capturé dans la closure de `TeamLeadPlugin`, passé directement à chaque `execute` et consulté par le guard. Le hook `config` le met à jour avec `Object.assign`, afin que les lifecycle tools et la protection directe visent toujours les mêmes chemins configurés. Pas de `context` — `projectRoot` est résolu une fois au démarrage via `worktree` ou `directory`.
 
 ### Chemins configurables
 
@@ -252,14 +252,14 @@ Dans `index.js`, les chemins sont résolus lors du hook `config` :
 
 ```js
 const userPaths = input.agent?.["team-lead"]?.paths ?? {}
-const paths = {
-  specs:    userPaths.specs    ?? "docs/specs",
+Object.assign(paths, {
+  specs: userPaths.specs ?? "docs/specs",
   execPlans: userPaths.execPlans ?? "docs/exec-plans",
-  briefs:   userPaths.briefs   ?? "docs/briefs",
-}
+  briefs: userPaths.briefs ?? "docs/briefs",
+})
 ```
 
-`paths` est ensuite transmis à chaque tool via sa closure ou via `context` (à trancher à l'implémentation).
+Le même objet `paths` est ensuite transmis à chaque tool via sa closure et lu par le guard.
 
 ### Dépendance sur `@opencode-ai/plugin`
 
@@ -273,7 +273,7 @@ const paths = {
 
 ### Permissions team-lead
 
-Les 20 lifecycle tools sont listés dans `defaultPermission` du team-lead dans `index.js` :
+Les 21 lifecycle tools sont listés dans `defaultPermission` du team-lead dans `index.js` :
 
 ```js
 const defaultPermission = {
@@ -307,7 +307,13 @@ Les utilisateurs peuvent les surcharger via leur `opencode.json` (même mécaniq
 
 ---
 
-## 5. Impact sur le workflow du team-lead
+## 5. Accès restreint d'Architect
+
+L'agent `architect` dispose d'une allowlist distincte et non destructive. Il peut appeler `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update` et `plan_validate`. Les autres lifecycle tools lui sont refusés, notamment `project_state`, `spec_delete`, `plan_delete`, `plan_block_done` et toute la famille `brief_*`. `plan_block_done` est refusé car marquer la progression de livraison est une mutation de plan hors de son rôle de conseil.
+
+Avant `spec_create` ou `spec_update`, Architect explique le problème, les alternatives réalistes, l'option retenue et ses compromis. Il peut appeler `plan_create` ou `plan_update` seulement après acceptation explicite par l'utilisateur de la décision architecturale que l'exec-plan formalise. Cette règle ne fait pas d'Architect un producteur de plans généraliste : ce rôle reste à `planning`. Architect ne délègue pas et n'implémente pas.
+
+## 6. Impact sur le workflow du team-lead
 
 ### Quand appeler chaque tool
 
@@ -332,9 +338,9 @@ Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title,
 
 ---
 
-## 6. Hors scope
+## 7. Hors scope
 
-- **Création d'exec-plans** — c'est le rôle de l'agent `planning`. Les tools lifecycle ne créent pas d'exec-plans.
+- **Création d'exec-plans** — c'est le rôle général de l'agent `planning`. `architect` constitue l'exception restreinte documentée ci-dessus, uniquement après acceptation explicite de la décision architecturale. Les tools lifecycle ne prennent pas eux-mêmes de décision de création.
 - **Création de briefs** — c'est le rôle de l'agent `brainstorm`.
 - **Mise à jour du decision log** — Le team-lead le fait directement dans le fichier exec-plan (via sous-agent si besoin) ; le decision log reste dans l'exec-plan.
 - **Suppression d'artefacts** — `spec_delete`, `plan_delete`, `brief_delete` suppriment des artefacts mais ne touchent pas au contenu des autres artefacts ni au code.
@@ -344,7 +350,7 @@ Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title,
 
 ---
 
-## 7. Décisions ouvertes
+## 8. Décisions ouvertes
 
 ### D1 — Format du frontmatter `brief:` dans les exec-plans (acté — dépendance sur spec planning)
 
@@ -367,7 +373,7 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 
 ### D2 — Transmission de `paths` aux tool handlers (acté — closure)
 
-`paths` est capturé dans la closure de `TeamLeadPlugin` et passé directement à chaque fonction `execute`. Les fonctions de `lifecycle.js` sont des fonctions pures qui reçoivent `projectRoot` et `paths` en arguments.
+Le même objet mutable `paths` est capturé dans la closure de `TeamLeadPlugin`, passé directement à chaque fonction `execute` et lu par le guard. Les fonctions de `lifecycle.js` reçoivent `projectRoot` et `paths` en arguments.
 
 ---
 

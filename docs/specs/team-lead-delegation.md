@@ -14,7 +14,7 @@ Décrit le comportement du team-lead une fois les agents `harness` et `planning`
 
 ## Agents disponibles
 
-17 agents enregistrés dans `SUBAGENT_DEFS` dans `config/agents.js` :
+18 agents enregistrés dans `SUBAGENT_DEFS` dans `config/agents.js` :
 
 | Agent | Rôle | Mode | Spec |
 |-------|------|------|------|
@@ -25,6 +25,7 @@ Décrit le comportement du team-lead une fois les agents `harness` et `planning`
 | `bug-finder` | Orchestre l'investigation de bugs, force root-cause avant fix | all | — |
 | `harness` | Produit les artefacts d'enforcement (lint, CI, hooks, AGENTS.md) | all | [harness-agent.md](harness-agent.md) |
 | `planning` | Transforme les requêtes complexes ou ambiguës en exec-plans structurés sur disque | all | [planning-agent.md](planning-agent.md) |
+| `architect` | Conseiller d'architecture sélectionnable directement : analyse responsabilités, limites, couplage, risques et migration; ne délègue ni n'implémente. Peut formaliser une décision acceptée en spec ou, après acceptation explicite de l'utilisateur, en exec-plan. | primary, non hidden, non-délégable | [architect-agent.md](architect-agent.md) |
 | `gardener` | Maintenance périodique — Bootstrap : découvre les domaines, délègue à spec-writer. Maintenance : détecte la dérive et escalade. | all | [gardener-agent.md](gardener-agent.md) |
 | `brainstorm` | Phase 0 discovery — aide l'utilisateur à formuler ce qu'il veut construire. Produit un brief dans `docs/briefs/`. | all | — |
 | `researcher` | Cherche et synthétise des informations externes (web, docs officiels, APIs). Read-only, nœud feuille. | all | [researcher-agent.md](researcher-agent.md) |
@@ -101,6 +102,8 @@ User request
 
 ## Invocation de `planning`
 
+`planning` reste le producteur généraliste des exec-plans. `architect` est une exception étroite : directement sélectionnable par l'utilisateur, jamais déléguable via `task`, il peut créer ou mettre à jour un exec-plan uniquement après acceptation explicite par l'utilisateur de la décision architecturale que le plan formalise. Il ne remplace ni le cadrage généraliste de `planning`, ni l'implémentation, ni la délégation.
+
 The team-lead invoque `planning` seulement si **les trois conditions** sont réunies — voir [`planning-agent.md`](planning-agent.md#critères-dactivation) pour les critères complets.
 
 Résumé :
@@ -120,7 +123,7 @@ AGENTS.md
      ├── → docs/architecture.md
      ├── → docs/decisions.md
      ├── → docs/specs/<agent>.md
-     └── → docs/exec-plans/<feature>.md   ← produit par `planning`
+     └── → docs/exec-plans/<feature>.md   ← produit en règle générale par `planning`; `architect` uniquement après acceptation explicite de la décision architecturale
 ```
 
 ---

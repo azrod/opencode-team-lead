@@ -6,7 +6,7 @@
 
 Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec deux hooks : `config` et `tool.execute.before`.
 
-L'enregistrement des agents est délégué à `config/agents.js`, qui contient `SUBAGENT_DEFS` (17 définitions d'agents) et exporte `registerSubagent()`. L'enregistrement des lifecycle tools est géré par `tools/registry.js` (21 outils).
+L'enregistrement des agents est délégué à `config/agents.js`, qui contient `SUBAGENT_DEFS` (18 définitions d'agents) et exporte `registerSubagent()`. L'enregistrement des lifecycle tools est géré par `tools/registry.js` (21 outils).
 
 ## Le hook `config`
 
@@ -36,6 +36,9 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 │  ┌──────────────┐                                              │
 │  │  brainstorm  │ (mode: all — phase 0, avant le team-lead)    │
 │  └──────────────┘                                              │
+│  ┌──────────────┐                                              │
+│  │  architect   │ (mode: primary — direct-only, hors task)     │
+│  └──────────────┘                                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -49,8 +52,17 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 | `bug-finder` | `all` | 0.2 | max | Investigation structurée de bugs. Force l'analyse root-cause avant toute correction. |
 | `harness` | `all` | 0.2 | max | Encode les patterns récurrents en artifacts d'enforcement mécaniques (lint rules, CI checks, AGENTS.md entries). |
 | `planning` | `all` | 0.3 | max | Transforme les requêtes complexes ou ambiguës en work contracts structurés sur disque (exec-plans). |
+| `architect` | `primary` | 0.2 | max | Conseiller d'architecture direct-only. Analyse les responsabilités, limites, couplage, risques et migrations; n'implémente ni ne délègue. |
 | `gardener` | `all` | 0.2 | max | Maintenance périodique — mode Bootstrap : découvre les domaines fonctionnels et délègue à `spec-writer`. Mode Maintenance : audite docs et specs, compile un Gardener Report structuré, retourne les findings au team-lead. Ne modifie aucun fichier directement. |
 | `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
+| `researcher` | `all` | 0.3 | extended | Recherche externe en lecture seule. Consulte documentation, RFCs et APIs sans déléguer. |
+| `spec-validator` | `subagent` | 0.1 | max | Vérifie la cohérence et la complétude d'une spec après création ou mise à jour. |
+| `plan-reviewer` | `subagent` | 0.2 | max | Orchestre la review d'exec-plan et arbitre les retours des reviewers de plan. |
+| `plan-functional-reviewer` | `subagent` | 0.1 | max | Vérifie l'alignement fonctionnel d'un exec-plan avec les specs actives. |
+| `plan-technical-reviewer` | `subagent` | 0.1 | max | Vérifie l'alignement technique et architectural d'un exec-plan. |
+| `plan-code-reviewer` | `subagent` | 0.2 | max | Vérifie la faisabilité d'un exec-plan dans le codebase en review deep. |
+| `spec-reviewer` | `subagent` | 0.2 | max | Détermine après livraison si une spec doit être créée ou mise à jour. |
+| `spec-writer` | `subagent` | 0.3 | max | Rédige des specs conformes au format canonique. |
 
 Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`hidden: true`) — un fichier manquant ne fait pas planter le plugin.
 
@@ -77,6 +89,8 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 
 **brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), lifecycle tools (`brief_create`, `brief_update`). Pas d'accès `edit` direct — les briefs sont créés et mis à jour exclusivement via les lifecycle tools. Pas de bash.
 
+**architect** : `read`, `list`, `glob`, `grep`, et uniquement `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. `edit`, `bash`, `task`, `external_directory`, `project_state`, `plan_block_done`, les suppressions et tous les tools `brief_*` sont refusés. Il peut formaliser un exec-plan seulement après acceptation explicite par l'utilisateur de la décision architecturale concernée.
+
 **gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
 
 La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
@@ -93,6 +107,7 @@ Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`,
 - `agents/bug-finder.md` → bug-finder
 - `agents/harness.md` → harness
 - `agents/planning.md` → planning
+- `agents/architect.md` → architect
 - `agents/gardener.md` → gardener
 - `agents/brainstorm.md` → brainstorm
 - `agents/researcher.md` → researcher

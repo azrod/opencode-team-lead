@@ -4,7 +4,7 @@
 
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, symlink } from "node:fs/promises";
 import { readFile as fsReadFile, writeFile as fsWriteFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -38,6 +38,7 @@ import {
   isProtectedPath,
 } from "../tools/artifact-guard.js";
 import { buildToolRegistry } from "../tools/registry.js";
+import { TeamLeadPlugin } from "../index.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1278,6 +1279,7 @@ describe("path traversal protection", () => {
 // ── artifact-guard (tool.execute.before hook logic) ───────────────────────────
 
 const PROTECTED_DIRS = ["docs/specs", "docs/exec-plans", "docs/briefs"];
+const PROJECT_ROOT = "/workspace/project";
 
 describe("isProtectedPath", () => {
   test("exact dir match → protected", () => {
@@ -1292,8 +1294,24 @@ describe("isProtectedPath", () => {
     assert.equal(isProtectedPath("docs/briefs/brief.md", PROTECTED_DIRS), true);
   });
 
-  test("path with leading slash → normalised and still protected", () => {
-    assert.equal(isProtectedPath("/docs/specs/my-spec.md", PROTECTED_DIRS), true);
+  test("absolute path inside protected dir → protected", () => {
+    assert.equal(
+      isProtectedPath("/workspace/project/docs/specs/my-spec.md", PROTECTED_DIRS, PROJECT_ROOT),
+      true
+    );
+  });
+
+  test("normalised path variants inside protected dirs → protected", () => {
+    assert.equal(isProtectedPath("docs/./briefs/brief.md", PROTECTED_DIRS, PROJECT_ROOT), true);
+    assert.equal(isProtectedPath("docs/background/../briefs/brief.md", PROTECTED_DIRS, PROJECT_ROOT), true);
+    assert.equal(
+      isProtectedPath("/workspace/project/docs/./briefs/brief.md", PROTECTED_DIRS, PROJECT_ROOT),
+      true
+    );
+    assert.equal(
+      isProtectedPath("/workspace/project/docs/background/../briefs/brief.md", PROTECTED_DIRS, PROJECT_ROOT),
+      true
+    );
   });
 
   test("sibling dir that starts with same prefix → not protected", () => {
@@ -1336,6 +1354,16 @@ describe("checkArtifactAccess", () => {
     assert.match(err.message, /spec_get/);
   });
 
+  test("read on absolute protected specs path → blocked", () => {
+    const err = checkArtifactAccess(
+      { tool: "read", args: { filePath: "/workspace/project/docs/specs/my-spec.md" } },
+      PROTECTED_DIRS,
+      PROJECT_ROOT
+    );
+    assert.ok(err instanceof Error);
+    assert.match(err.message, /blocked/i);
+  });
+
   test("read on protected exec-plans path → blocked with Error mentioning plan_get", () => {
     const err = checkArtifactAccess(
       { tool: "read", args: { filePath: "docs/exec-plans/plan.md" } },
@@ -1354,6 +1382,42 @@ describe("checkArtifactAccess", () => {
     assert.ok(err instanceof Error);
     assert.match(err.message, /blocked/i);
     assert.match(err.message, /brief_get/);
+  });
+
+  test("read path-normalised protected briefs paths → blocked", () => {
+    for (const filePath of [
+      "docs/./briefs/brief.md",
+      "docs/background/../briefs/brief.md",
+      "/workspace/project/docs/./briefs/brief.md",
+      "/workspace/project/docs/background/../briefs/brief.md",
+    ]) {
+      const err = checkArtifactAccess(
+        { tool: "read", args: { filePath } },
+        PROTECTED_DIRS,
+        PROJECT_ROOT
+      );
+      assert.ok(err instanceof Error, `expected ${filePath} to be blocked`);
+    }
+  });
+
+  test("absolute configured protected directory → blocked", () => {
+    const configuredDirs = ["/workspace/project/private/specifications"];
+    const err = checkArtifactAccess(
+      { tool: "read", args: { filePath: "/workspace/project/private/specifications/architecture.md" } },
+      configuredDirs,
+      PROJECT_ROOT
+    );
+    assert.ok(err instanceof Error);
+  });
+
+  test("list on protected briefs path → blocked with Error mentioning brief_list", () => {
+    const err = checkArtifactAccess(
+      { tool: "list", args: { path: "docs/briefs" } },
+      PROTECTED_DIRS
+    );
+    assert.ok(err instanceof Error);
+    assert.match(err.message, /blocked/i);
+    assert.match(err.message, /brief_list/);
   });
 
   test("edit on protected specs path → blocked with Error mentioning spec_update", () => {
@@ -1445,12 +1509,90 @@ describe("checkArtifactAccess", () => {
     assert.match(result.message, /spec_list/);
   });
 
+  test("glob from project root → blocked because it can traverse protected dirs", () => {
+    const result = checkArtifactAccess(
+      { tool: "glob", args: { pattern: "**/*.md", path: "." } },
+      PROTECTED_DIRS,
+      PROJECT_ROOT
+    );
+    assert.ok(result instanceof Error);
+    assert.match(result.message, /traverse protected artifacts/);
+  });
+
+  test("glob from an absolute configured protected directory → blocked", () => {
+    const configuredDirs = ["/workspace/project/private/specifications"];
+    const result = checkArtifactAccess(
+      { tool: "glob", args: { pattern: "**/*.md", path: "/workspace/project/private/specifications" } },
+      configuredDirs,
+      PROJECT_ROOT
+    );
+    assert.ok(result instanceof Error);
+  });
+
   test("glob with pattern not targeting protected dir → allowed", () => {
     const result = checkArtifactAccess(
       { tool: "glob", args: { pattern: "src/**/*.js" } },
       PROTECTED_DIRS
     );
     assert.equal(result, null);
+  });
+
+  test("glob parent traversal is blocked, including brace alternatives", () => {
+    for (const pattern of [
+      "src/*/../../docs/specs/**",
+      "src/{feature,../..}/docs/specs/**",
+      "src/{feature,../../docs/specs}/**",
+    ]) {
+      const result = checkArtifactAccess(
+        { tool: "glob", args: { pattern } },
+        PROTECTED_DIRS,
+        PROJECT_ROOT
+      );
+      assert.ok(result instanceof Error, `expected ${pattern} to be blocked`);
+      assert.match(result.message, /parent-directory traversal/i);
+    }
+  });
+
+  test("case variants of protected paths are blocked", async () => {
+    const root = await mkdtemp(join(tmpdir(), "artifact-guard-case-"));
+    try {
+      await mkdir(join(root, "docs", "specs"), { recursive: true });
+      const err = checkArtifactAccess(
+        { tool: "read", args: { filePath: "DOCS/SPECS/architecture.md" } },
+        PROTECTED_DIRS,
+        root
+      );
+      assert.ok(err instanceof Error);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("symlink aliases of protected paths are blocked", async (t) => {
+    const root = await mkdtemp(join(tmpdir(), "artifact-guard-symlink-"));
+    try {
+      const specs = join(root, "docs", "specs");
+      await mkdir(specs, { recursive: true });
+      try {
+        await symlink(specs, join(root, "spec-alias"), "dir");
+      } catch (err) {
+        t.skip(`symlinks are unavailable: ${err.message}`);
+        return;
+      }
+
+      for (const [tool, args] of [
+        ["read", { filePath: "spec-alias/existing.md" }],
+        ["write", { filePath: "spec-alias/new.md" }],
+        ["list", { path: "spec-alias" }],
+        ["glob", { pattern: "**/*.md", path: "spec-alias" }],
+        ["grep", { pattern: "TODO", path: "spec-alias" }],
+      ]) {
+        const err = checkArtifactAccess({ tool, args }, PROTECTED_DIRS, root);
+        assert.ok(err instanceof Error, `expected ${tool} through symlink to be blocked`);
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   test("grep with path targeting protected exec-plans dir → blocked", () => {
@@ -1460,6 +1602,26 @@ describe("checkArtifactAccess", () => {
     );
     assert.ok(result instanceof Error);
     assert.match(result.message, /plan_list/);
+  });
+
+  test("grep from project root → blocked because it can traverse protected dirs", () => {
+    const result = checkArtifactAccess(
+      { tool: "grep", args: { pattern: "TODO", path: "." } },
+      PROTECTED_DIRS,
+      PROJECT_ROOT
+    );
+    assert.ok(result instanceof Error);
+    assert.match(result.message, /traverse protected artifacts/);
+  });
+
+  test("grep from an absolute configured protected directory → blocked", () => {
+    const configuredDirs = ["/workspace/project/private/specifications"];
+    const result = checkArtifactAccess(
+      { tool: "grep", args: { pattern: "TODO", path: "/workspace/project/private/specifications" } },
+      configuredDirs,
+      PROJECT_ROOT
+    );
+    assert.ok(result instanceof Error);
   });
 
   test("grep with path not targeting protected dir → allowed", () => {
@@ -1654,6 +1816,43 @@ Test.
       const invalidResult = JSON.parse(rawInvalid);
       assert.ok(invalidResult.valid === false, "should be invalid");
       assert.ok(!invalidResult.hint, "invalid plan should NOT have a hint");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("TeamLeadPlugin configured artifact paths", () => {
+  test("lifecycle tools and the guard share custom paths", async () => {
+    const root = await mkdtemp(join(tmpdir(), "tl-custom-paths-"));
+    try {
+      const plugin = await TeamLeadPlugin({ directory: root, worktree: root });
+      const config = {
+        agent: {
+          "team-lead": {
+            paths: {
+              specs: "private/specifications",
+              execPlans: "private/plans",
+              briefs: "private/briefs",
+            },
+          },
+        },
+      };
+      await plugin.config(config);
+
+      const raw = await plugin.tool.spec_create.execute({ title: "Custom Path Spec" });
+      const result = JSON.parse(raw);
+      const artifactPath = join(root, "private", "specifications", "custom-path-spec.md");
+      assert.equal(result.file, "private/specifications/custom-path-spec.md");
+      await assert.doesNotReject(() => fsReadFile(artifactPath, "utf-8"));
+
+      await assert.rejects(
+        () => plugin["tool.execute.before"]({
+          tool: "read",
+          args: { filePath: "private/specifications/custom-path-spec.md" },
+        }),
+        /blocked/i
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }

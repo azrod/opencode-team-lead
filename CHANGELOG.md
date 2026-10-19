@@ -8,13 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `architect` — a directly selectable, read-only architecture advisor that explains whole-system boundaries, trade-offs, and incremental migrations. It can formalize accepted decisions as specs and, after explicit user acceptance, exec-plans without gaining code, shell, brief, or delegation access.
 - `plan-reviewer` cluster — orchestrator + three specialized sub-reviewers (`plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer`). Supports two review depths: `light` (spec coherence only) and `deep` (spec coherence + codebase feasibility). Returns APPROVED / CHANGES_REQUESTED / BLOCKED.
 - `spec_format()` and `plan_format()` lifecycle tools — return the canonical format for specs and exec-plans inline, so agents always know the expected structure before calling `spec_create` or `plan_create`
 - `spec-writer` agent — specialized in writing high-quality specs conforming to the canonical format; delegates from team-lead or gardener
-- 20 lifecycle tools replace the previous 5, organized by domain: 6 spec tools (`spec_list`, `spec_get`, `spec_create`, `spec_update`, `spec_validate`, `spec_delete`), 7 plan tools (`plan_list`, `plan_get`, `plan_create`, `plan_update`, `plan_validate`, `plan_block_done`, `plan_delete`), 5 brief tools (`brief_list`, `brief_get`, `brief_create`, `brief_update`, `brief_delete`), `project_state` (now returns specs + plans with unchecked blocks only, no briefs), and `plan_format` / `spec_format` (return the canonical format for agents before creating artifacts)
+- 21 lifecycle tools replace the previous 5, organized by domain: 7 spec tools (including `spec_format`), 8 plan tools (including `plan_format`), 5 brief tools, and `project_state` (returns specs + plans with unchecked blocks only, no briefs).
 - Two new agents: `spec-validator` (checks spec completeness and consistency after `spec_create`/`spec_update`) and `spec-reviewer` (integrated into the review-manager pool — decides whether specs need creation or update after each delivery)
-- Artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`) are now protected at runtime — any direct `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is blocked by the plugin. All access goes through the 20 lifecycle tools.
+- Artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`) are now protected at runtime — any direct `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is blocked by the plugin. All access goes through the 21 lifecycle tools.
 - The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
+
+### Fixed
+- Configured artifact paths now stay synchronized between lifecycle tools and direct-access protection, including through symlink aliases and case variants. Unsafe glob patterns that traverse parent directories are blocked.
+- Architect can no longer mark exec-plan delivery blocks complete; it retains only the narrowly accepted plan creation and update exception.
 
 ### Changed
 - The team-lead now proactively proposes creating an exec-plan when a request involves 3+ distinct non-trivial steps, multiple agents, or work likely to span several sessions — even when the intent is perfectly clear. Previously, exec-plans were only suggested for ambiguous requests.
