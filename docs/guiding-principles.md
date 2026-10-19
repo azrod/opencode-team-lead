@@ -49,7 +49,9 @@ import axios from "axios";                 // external dep — BLOCKED
 import _ from "lodash";                    // external dep — BLOCKED
 ```
 
-**Threshold blocker:** Any PR that adds a `dependencies` or `devDependencies` key to `package.json` with non-empty entries. Blocker regardless of justification — find a Node.js built-in alternative.
+**Exception:** `@opencode-ai/plugin` is declared as a runtime `dependency` — it is the plugin host SDK provided by OpenCode. The CI `zero-deps` check explicitly carves out this package.
+
+**Threshold blocker:** Any PR that adds a `dependencies` or `devDependencies` key to `package.json` with non-empty entries (other than `@opencode-ai/plugin`). Blocker regardless of justification — find a Node.js built-in alternative.
 
 **Threshold warning:** A built-in import missing the `node:` prefix (e.g. `from "fs"` instead of `from "node:fs"`) is a style warning. The CI lint check catches this automatically.
 

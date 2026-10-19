@@ -5,7 +5,7 @@ created: 2026-04-03
 
 # Spec : Agent `harness`
 
-**Statut :** draft  
+**Statut :** implemented  
 **Mis à jour :** 2026-04-03
 
 ## Résumé

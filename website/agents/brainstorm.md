@@ -44,7 +44,7 @@ updated: YYYY-MM-DD
 
 ## Session Start
 
-Before responding to the user, Brainstorm always calls `project_state()` to check for existing briefs. This check happens unconditionally — even if the user's opening message contains a complete description.
+Before responding to the user, Brainstorm always calls `brief_list()` to check for existing briefs. This check happens unconditionally — even if the user's opening message contains a complete description.
 
 - **None found** → proceed to Phase 1.
 - **One found, `status: draft`** → ask: continue editing it or start fresh?

@@ -1,11 +1,14 @@
 ---
+title: "Planning Agent"
+id: planning-agent
+type: technical
 status: implemented
 created: 2026-04-01
 ---
 
 # Spec : Agent `planning`
 
-**Statut :** draft  
+**Statut :** implemented  
 **Mis à jour :** 2026-04-01
 
 ## Résumé
@@ -41,7 +44,7 @@ Pour les tâches petites et claires. Le team-lead peut le produire lui-même san
 
 ### Exec-plan
 
-Pour les tâches complexes ou multi-sessions. Produit par l'agent `planning`.
+Pour les tâches complexes ou multi-sessions. Produit en règle générale par l'agent `planning`. L'agent `architect` peut exceptionnellement créer ou mettre à jour un exec-plan pour formaliser une décision architecturale, seulement après acceptation explicite de cette décision par l'utilisateur. Cette exception ne fait pas d'Architect un agent de planification généraliste.
 
 ```markdown
 ---
@@ -105,6 +108,10 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 
 ---
 
+## Exception Architect
+
+`planning` conserve la responsabilité générale de transformer les demandes complexes ou ambiguës en exec-plans. `architect` n'intervient sur un exec-plan que pour convertir une décision architecturale déjà expliquée et explicitement acceptée par l'utilisateur en trajectoire de livraison. Il ne délègue pas, n'implémente pas, et ne peut pas utiliser cette exception pour produire des plans généralistes.
+
 ## Artefacts produits
 
 | Type | Chemin | Usage |
@@ -128,13 +135,25 @@ Le team-lead est responsable de la mise à jour du decision log et du status pen
 
 ## Permissions
 
+L'agent `planning` accède aux exec-plans et specs exclusivement via les lifecycle tools — aucun accès direct `edit`/`write` sur `docs/exec-plans/*`.
+
 | Ressource | Accès |
 |-----------|-------|
-| `task` | allow |
+| `project_state` | allow — état global des artefacts en début de mission |
+| `plan_create` | allow — créer un exec-plan |
+| `plan_get` | allow — lire un exec-plan existant |
+| `plan_update` | allow — mettre à jour un exec-plan |
+| `architect` (exception) | peut appeler `plan_create` ou `plan_update` seulement après acceptation explicite par l'utilisateur de la décision architecturale formalisée; aucune délégation ni implémentation |
+| `plan_validate` | allow — valider la structure d'un exec-plan |
+| `plan_list` | allow — lister les exec-plans existants |
+| `spec_list` | allow — consulter les specs existantes |
+| `spec_get` | allow — lire une spec |
+| `task` | ask — délégation avec confirmation |
 | `question` | allow — pour lever les open questions bloquantes |
 | `read` | allow — AGENTS.md, README, docs/ du repo utilisateur |
-| `docs/exec-plans/*` | Écriture uniquement |
-| Reste du projet | Lecture seule, pas d'écriture |
+| `glob` | allow — exploration du repo |
+| `grep` | allow — recherche dans le repo |
+| `edit` / `write` sur `docs/exec-plans/*` | **Non** — accès bloqué par l'artifact guard |
 | `bash` | Non |
 | Web search | Non |
 

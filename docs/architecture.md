@@ -2,9 +2,11 @@
 
 ## Ce qu'est le plugin
 
-`opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il n'a aucune dépendance npm — uniquement des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
+`opencode-team-lead` est un plugin OpenCode (v0.8.0) qui injecte des agents dans la configuration de l'IDE au démarrage. Il a une dépendance runtime — `@opencode-ai/plugin` (le SDK hôte du plugin OpenCode) — plus des builtins Node.js (`fs/promises`, `path`, `url`). Pure ESM, aucune étape de build.
 
-Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec trois hooks : `config`, `event`, et `tool`.
+Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec deux hooks : `config` et `tool.execute.before`.
+
+L'enregistrement des agents est délégué à `config/agents.js`, qui contient `SUBAGENT_DEFS` (18 définitions d'agents) et exporte `registerSubagent()`. L'enregistrement des lifecycle tools est géré par `tools/registry.js` (21 outils).
 
 ## Le hook `config`
 
@@ -34,6 +36,9 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 │  ┌──────────────┐                                              │
 │  │  brainstorm  │ (mode: all — phase 0, avant le team-lead)    │
 │  └──────────────┘                                              │
+│  ┌──────────────┐                                              │
+│  │  architect   │ (mode: primary — direct-only, hors task)     │
+│  └──────────────┘                                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -47,10 +52,19 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 | `bug-finder` | `all` | 0.2 | max | Investigation structurée de bugs. Force l'analyse root-cause avant toute correction. |
 | `harness` | `all` | 0.2 | max | Encode les patterns récurrents en artifacts d'enforcement mécaniques (lint rules, CI checks, AGENTS.md entries). |
 | `planning` | `all` | 0.3 | max | Transforme les requêtes complexes ou ambiguës en work contracts structurés sur disque (exec-plans). |
-| `gardener` | `all` | 0.2 | max | Maintenance périodique — corrige les docs stales, détecte la dérive de code, ouvre des PRs ciblées. |
+| `architect` | `primary` | 0.2 | max | Conseiller d'architecture direct-only. Analyse les responsabilités, limites, couplage, risques et migrations; n'implémente ni ne délègue. |
+| `gardener` | `all` | 0.2 | max | Maintenance périodique — mode Bootstrap : découvre les domaines fonctionnels et délègue à `spec-writer`. Mode Maintenance : audite docs et specs, compile un Gardener Report structuré, retourne les findings au team-lead. Ne modifie aucun fichier directement. |
 | `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
+| `researcher` | `all` | 0.3 | extended | Recherche externe en lecture seule. Consulte documentation, RFCs et APIs sans déléguer. |
+| `spec-validator` | `subagent` | 0.1 | max | Vérifie la cohérence et la complétude d'une spec après création ou mise à jour. |
+| `plan-reviewer` | `subagent` | 0.2 | max | Orchestre la review d'exec-plan et arbitre les retours des reviewers de plan. |
+| `plan-functional-reviewer` | `subagent` | 0.1 | max | Vérifie l'alignement fonctionnel d'un exec-plan avec les specs actives. |
+| `plan-technical-reviewer` | `subagent` | 0.1 | max | Vérifie l'alignement technique et architectural d'un exec-plan. |
+| `plan-code-reviewer` | `subagent` | 0.2 | max | Vérifie la faisabilité d'un exec-plan dans le codebase en review deep. |
+| `spec-reviewer` | `subagent` | 0.2 | max | Détermine après livraison si une spec doit être créée ou mise à jour. |
+| `spec-writer` | `subagent` | 0.3 | max | Rédige des specs conformes au format canonique. |
 
-Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`silent: true`) — un fichier manquant ne fait pas planter le plugin.
+Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` sont enregistrés silencieusement (`hidden: true`) — un fichier manquant ne fait pas planter le plugin.
 
 ## Le modèle de permissions
 
@@ -61,19 +75,23 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 | Outil | Accès |
 |---|---|
 | `task`, `todowrite`, `todoread`, `skill`, `question` | allow |
-| `distill`, `prune`, `compress` | allow (gestion contexte via DCP) |
+| `compress` | allow (gestion contexte) |
 | `read` | allow sur tous les fichiers |
 | `edit` / `write` | allow uniquement sur `docs/**` |
-| `bash` | allow uniquement pour les commandes git (`git status*`, `git diff*`, `git log*`, `git add*`, `git commit*`, `git push*`, `git tag*`) |
+| `bash` | allow uniquement pour les commandes git (`git status*`, `git diff*`, `git log*`, `git add*`, `git commit*`, `git push*`, `git tag*`) et commandes de lecture (`ls`, `ls *`, `head *`, `echo *`) |
 | Tout le reste | deny |
 
-**review-manager** : `task` + `question` uniquement.
+**review-manager** : `task` (filtré sur `*-reviewer` uniquement), `question`, `read`, `glob`, `grep`.
 
 **Reviewers spécialisés** (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) : `read`, `glob`, `grep` uniquement — lecture directe, pas de délégation.
 
 **bug-finder** : `read`, `glob`, `grep`, `question` — lecture directe, pas de délégation.
 
-**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), `edit` (`docs/briefs/**` uniquement). Pas de bash.
+**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), lifecycle tools (`brief_create`, `brief_update`). Pas d'accès `edit` direct — les briefs sont créés et mis à jour exclusivement via les lifecycle tools. Pas de bash.
+
+**architect** : `read`, `list`, `glob`, `grep`, et uniquement `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. `edit`, `bash`, `task`, `external_directory`, `project_state`, `plan_block_done`, les suppressions et tous les tools `brief_*` sont refusés. Il peut formaliser un exec-plan seulement après acceptation explicite par l'utilisateur de la décision architecturale concernée.
+
+**gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
 
 La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
 
@@ -83,11 +101,23 @@ Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`,
 
 - `agents/prompt.md` → team-lead
 - `agents/review-manager.md` → review-manager
-- `agents/requirements-reviewer.md`, `agents/code-reviewer.md`, `agents/security-reviewer.md`, `agents/bug-finder.md` → reviewers + bug-finder
+- `agents/requirements-reviewer.md` → requirements-reviewer
+- `agents/code-reviewer.md` → code-reviewer
+- `agents/security-reviewer.md` → security-reviewer
+- `agents/bug-finder.md` → bug-finder
 - `agents/harness.md` → harness
 - `agents/planning.md` → planning
+- `agents/architect.md` → architect
 - `agents/gardener.md` → gardener
 - `agents/brainstorm.md` → brainstorm
+- `agents/researcher.md` → researcher
+- `agents/spec-validator.md` → spec-validator
+- `agents/plan-reviewer.md` → plan-reviewer
+- `agents/plan-functional-reviewer.md` → plan-functional-reviewer
+- `agents/plan-technical-reviewer.md` → plan-technical-reviewer
+- `agents/plan-code-reviewer.md` → plan-code-reviewer
+- `agents/spec-reviewer.md` → spec-reviewer
+- `agents/spec-writer.md` → spec-writer
 
 Avantage : les prompts sont modifiables et diffables indépendamment du code.
 
@@ -115,7 +145,7 @@ Le `prompt` est toujours fourni par le plugin et ne peut pas être overridé par
 
 ## Dépendances
 
-Aucune dépendance npm. Uniquement :
+Une dépendance runtime : `@opencode-ai/plugin` — le SDK hôte du plugin OpenCode. Uniquement des builtins Node.js au-delà :
 
 - `node:fs/promises` — lecture des fichiers de prompts
 - `node:path` — résolution de chemins

@@ -69,6 +69,7 @@ export default defineConfig({
           { text: "Bug-Finder", link: "/agents/bug-finder" },
           { text: "Harness", link: "/agents/harness" },
           { text: "Planning", link: "/agents/planning" },
+          { text: "Architect", link: "/agents/architect" },
           { text: "Gardener", link: "/agents/gardener" },
           { text: "Researcher", link: "/agents/researcher" },
         ],
