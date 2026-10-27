@@ -9,10 +9,11 @@ An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestr
 
 ## What it does
 
-Two hooks power the plugin:
+The plugin uses OpenCode V2's native Promise API:
 
-- **`config`** — registers all agents into OpenCode's config, merging your overrides from `opencode.json` on top of plugin defaults
-- **`tool.execute.before`** — guards `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/` against direct access; these directories are only reachable through the 21 lifecycle tools
+- **Domain transforms** — register 19 agents, 21 lifecycle tools, and the bundled spec-writer skill, preserving configured agent overrides
+- **`ctx.tool.hook("execute.before", ...)`** — protects artifact directories against direct access, including `shell` and multi-file `patch`
+- **`ctx.session.hook("context", ...)`** — applies per-agent temperatures while V2 does not dispatch agent request overlays
 
 ## Agents
 
@@ -48,7 +49,7 @@ Two hooks power the plugin:
 
 ### Review cluster
 
-`review-manager`, `requirements-reviewer`, `code-reviewer`, `security-reviewer`, and `spec-reviewer` work together. The team-lead delegates to `review-manager`, which selects the relevant reviewers based on what changed, runs them in parallel, and returns a single verdict. None of these agents are visible in the main agent list — they're only reachable via `task`.
+The team-lead delegates to `review-manager`, which runs specialized reviewers in parallel and returns a single verdict. Reviewers are hidden from discovery but remain callable by their registered IDs through `subagent`.
 
 ### bug-finder
 
@@ -76,21 +77,32 @@ Periodic audit agent. In Bootstrap mode, discovers undocumented functional domai
 
 ## Installation
 
-```bash
-opencode plugin opencode-team-lead --global
+Requires OpenCode V2 with the `@opencode/plugin` 2.1 API. Node-based development and tests require Node.js 22 or later. V1 users should keep the previous plugin version.
+
+Add this to your project or global `opencode.jsonc`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["opencode-team-lead"],
+  "experimental": {
+    "subagent_depth": 2,
+    "todo": true
+  }
+}
 ```
+
+`subagent_depth: 2` is required for `team-lead → review-manager → reviewers`. `todo: true` enables optional progress tracking; without it the team-lead uses the conversation and lifecycle artifacts. Both settings are experimental and may change in OpenCode.
 
 To track the beta channel:
 
-```bash
-opencode plugin opencode-team-lead@beta --global
-```
+Use `"opencode-team-lead@beta"` in `plugins` to load a published beta. For local testing, replace the package name with the absolute repository path.
 
 Restart OpenCode — the plugin loads and registers all agents automatically.
 
 ## Lifecycle Tools
 
-The team-lead has direct access to 21 lifecycle tools — the only way to read or write artifacts in `docs/specs/`, `docs/exec-plans/`, and `docs/briefs/`. Direct tool access to these directories is blocked at runtime by the plugin's `tool.execute.before` hook.
+The team-lead has direct access to 21 lifecycle tools. Each checks its named permission before running and returns V2 structured content. Artifact formats and tool parameters are unchanged.
 
 ### Protected zones
 
@@ -100,7 +112,7 @@ The following directories are protected for all agents except via lifecycle tool
 - `docs/exec-plans/` — exec-plan files
 - `docs/briefs/` — product briefs
 
-Any `read`, `edit`, `write`, `list`, `bash`, `glob`, or `grep` call targeting these paths is intercepted and blocked. The lifecycle tools bypass this guard transparently.
+Direct `read`, `edit`, `write`, `patch`, `shell`, `glob`, and `grep` access is guarded. Shell inspection is best effort, not a security sandbox. Paths resolve from the plugin's active location, not another worktree's canonical checkout.
 
 ### Spec tools
 
@@ -155,36 +167,46 @@ These tools are not visible in the OpenCode UI. They run automatically as part o
 
 | Agent | Permissions |
 |-------|-------------|
-| `team-lead` | `task`, `todowrite`, `todoread`, `skill`, `question`, `compress`, `bash` (git + ls + head + echo), `read` (all), `edit`/`write` (`docs/**` only) |
-| `review-manager` | `task` (`*-reviewer` only), `question`, `read`, `glob`, `grep` |
+| `team-lead` | `subagent`, optional `todowrite`, `skill`, `question`, `shell` (git + ls + head + echo; pushes ask), `read`, lifecycle tools, `edit` (`docs/*` only) |
+| `review-manager` | `subagent` (`*-reviewer` only), `question`, `read`, `glob`, `grep` |
 | `requirements-reviewer` / `code-reviewer` / `security-reviewer` | `read`, `glob`, `grep` |
 | `bug-finder` | `read`, `glob`, `grep`, `question` |
-| `brainstorm` | `task`, `question`, `webfetch`, `read` (all), lifecycle tools (`brief_create`, `brief_update`) |
-| `harness` | `task` (ask), `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all) |
-| `planning` | `task` (ask), `question`, `read` (all), `glob`, `grep`, lifecycle tools (`plan_create`, `plan_update`) |
+| `brainstorm` | `subagent`, `question`, `webfetch`, `read`, brief lifecycle tools |
+| `harness` | `subagent` (ask), `question`, optional `todowrite`, `glob`, `grep`, `shell`, `read`, `edit` |
+| `planning` | `subagent` (ask), `question`, `read`, `glob`, `grep`, plan lifecycle tools |
 | `architect` | `read`, `list`, `glob`, `grep`, lifecycle tools (`spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`); no code edits, shell, delegation, external directories, briefs, deletion, `plan_block_done`, or `project_state` |
-| `spec-writer` | `task`, `read` (all), `glob`, `grep`, lifecycle tools (`spec_create`, `spec_update`, `spec_format`, `spec_validate`) |
-| `gardener` | `task` (explore + spec-writer only), `bash` (git log/diff/status), `read` (all), `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
+| `spec-writer` | `read`, `glob`, `grep`, spec lifecycle tools; no delegation |
+| `gardener` | `subagent` (explore + spec-writer only), `shell` (git log/diff/status), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
 | `researcher` | `read`, `webfetch`, `websearch`, `grep` |
 
 Everything not listed is denied.
 
 ## Customization
 
-You can override `temperature`, `color`, `variant`, `mode`, and add permissions for any agent. The system prompt is always provided by the plugin and cannot be overridden.
+Configure models, hex colors, modes, `request.body.temperature`, and ordered permissions under `agents`. The plugin owns `system` prompts. No model-specific `max` or `extended` variant is forced; choose a compatible `provider/model#variant` yourself.
 
 ```json
 {
-  "plugin": ["opencode-team-lead"],
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [{
+    "package": "opencode-team-lead",
+    "options": {
+      "soul": false,
+      "paths": { "specs": "docs/specs", "execPlans": "docs/exec-plans", "briefs": "docs/briefs" }
+    }
+  }],
   "agents": {
     "team-lead": {
-      "temperature": 0.2
+      "request": { "body": { "temperature": 0.2 } },
+      "permissions": [{ "action": "webfetch", "resource": "*", "effect": "allow" }]
     }
   }
 }
 ```
 
 Your overrides are merged on top of plugin defaults — anything you don't specify keeps its default value.
+
+Plugin-specific `soul` and `paths` have moved out of agent configuration into plugin `options`. Use `options.agents.<id>.soul` for a per-agent soul override. Permission overrides append after defaults: the last matching rule wins, including explicit denials. Lifecycle tools are listed directly, so they do not require Code Mode or an `execute` permission. The plugin does not enable MCP tools or other integrations implicitly.
 
 To start sessions in the team-lead agent by default:
 

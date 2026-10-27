@@ -853,7 +853,7 @@ export function specFormat() {
     "",
     "## Behavior",
     "",
-    "The guard intercepts read, edit, write, bash, glob, and grep calls at the",
+    "The guard intercepts read, edit, write, patch, shell, glob, and grep calls at the",
     "tool.execute.before hook. If the target path falls inside a protected directory",
     "and the caller is not a lifecycle tool, the call is rejected with a descriptive error.",
     "",

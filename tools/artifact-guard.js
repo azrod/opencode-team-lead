@@ -152,8 +152,31 @@ export function checkArtifactAccess({ tool: toolName, args }, protectedDirs, pro
     return null;
   }
 
-  if (toolName === "bash") {
+  if (toolName === "patch") {
+    const patch = args?.patchText;
+    if (typeof patch !== "string") return new Error("Invalid patch input: missing patchText");
+    for (const match of patch.matchAll(/^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+)\r?$/gm)) {
+      if (isProtectedPath(match[1].trim(), protectedDirs, projectRoot)) {
+        return new Error("Direct 'patch' access to protected artifacts is blocked. Use lifecycle tools instead.");
+      }
+    }
+    return null;
+  }
+
+  if (toolName === "bash" || toolName === "shell") {
     const command = args?.command ?? "";
+    const workdir = resolve(projectRoot, args?.workdir ?? ".");
+    if (isProtectedPath(workdir, protectedDirs, projectRoot)) {
+      return new Error("Shell working directory is protected; use lifecycle tools instead.");
+    }
+    // Best-effort path checks, not a shell parser or security sandbox.
+    const tokens = command.match(/"[^"]*"|'[^']*'|[^\s;&|<>]+/g) ?? [];
+    for (const token of tokens) {
+      const target = token.replace(/^["']|["']$/g, "");
+      if (isProtectedPath(target, protectedDirs, workdir)) {
+        return new Error(`Shell command targets protected artifact '${target}'; use lifecycle tools instead.`);
+      }
+    }
     const hitDir = protectedDirs.find((dir) => command.toLowerCase().includes(dir.toLowerCase()));
     if (hitDir) {
       return new Error(

@@ -15,24 +15,24 @@ jobs:
   zero-deps:
     name: Zero dependencies check
     runs-on: ubuntu-latest
-    # Pattern enforced: the only allowed runtime dependency is @opencode-ai/plugin.
+    # Pattern enforced: the only allowed runtime dependency is @opencode/plugin.
     # Any other entry in dependencies is a violation. devDependencies must remain empty.
     steps:
       - uses: actions/checkout@v4
 
-      - name: Assert dependencies contains only @opencode-ai/plugin and devDependencies is empty
+      - name: Assert dependencies contains only @opencode/plugin and devDependencies is empty
         run: |
           node -e "
           const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
           const deps = pkg.dependencies ?? {};
           const devDeps = pkg.devDependencies ?? {};
-          if (!deps['@opencode-ai/plugin']) {
-            console.error('Error: @opencode-ai/plugin must be present in dependencies.');
+          if (!deps['@opencode/plugin']) {
+            console.error('Error: @opencode/plugin must be present in dependencies.');
             process.exit(1);
           }
-          const extraDeps = Object.keys(deps).filter(k => k !== '@opencode-ai/plugin');
+          const extraDeps = Object.keys(deps).filter(k => k !== '@opencode/plugin');
           if (extraDeps.length > 0) {
-            console.error('Error: dependencies may only contain @opencode-ai/plugin. Found unexpected: ' + extraDeps.join(', '));
+            console.error('Error: dependencies may only contain @opencode/plugin. Found unexpected: ' + extraDeps.join(', '));
             process.exit(1);
           }
           if (Object.keys(devDeps).length > 0) {
@@ -151,4 +151,3 @@ jobs:
             echo "Error: one or more brief files failed the schema check (see above)."
             exit 1
           fi
-

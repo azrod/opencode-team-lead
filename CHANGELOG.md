@@ -18,10 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
 
 ### Fixed
+- Review-manager launches specialists directly instead of routing through plan-reviewer and exceeding the nested-agent depth limit. Review orchestrators stop immediately on infrastructure restrictions rather than retrying blocked spawns.
+- Installed packages now include the agent registration module. Artifact protection also covers V2 shell commands and multi-file patches.
 - Configured artifact paths now stay synchronized between lifecycle tools and direct-access protection, including through symlink aliases and case variants. Unsafe glob patterns that traverse parent directories are blocked.
 - Architect can no longer mark exec-plan delivery blocks complete; it retains only the narrowly accepted plan creation and update exception.
 
 ### Changed
+- Migrated to OpenCode V2. V1 plugin loading is no longer supported; configure the plugin under `plugins`, agent overrides under native `agents`, and plugin-specific `soul`/artifact paths under plugin `options`. Nested reviews require `experimental.subagent_depth: 2`; todos are optional.
+- Agents inherit model variants instead of forcing provider-specific `max`/`extended` defaults, and lifecycle tools explicitly enforce their named permissions before execution.
 - The team-lead now proactively proposes creating an exec-plan when a request involves 3+ distinct non-trivial steps, multiple agents, or work likely to span several sessions — even when the intent is perfectly clear. Previously, exec-plans were only suggested for ambiguous requests.
 - `plan_create`, `plan_update`, `spec_create`, and `spec_update` now return a suggestion to run a validation review once the artifact is complete — rather than falsely claiming to auto-trigger a validator.
 - Gardener agent is now a dual-mode maintenance agent: Bootstrap mode (< 3 active specs) discovers functional domains and delegates spec drafting to `spec-writer`; Maintenance mode (≥ 3 specs) is a pure audit orchestrator — it spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead without editing files or opening PRs.

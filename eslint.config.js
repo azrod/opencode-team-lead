@@ -83,7 +83,7 @@ export default [
   {
     // Apply to all JS files at the repo root. team-lead-workflow/ has its own
     // package.json and build toolchain — lint it separately with its own config.
-    files: ["*.js"],
+    files: ["*.js", "config/*.js", "tools/*.js", "tests/*.js"],
     plugins: {
       // Inline plugin — no npm install required. See comment at top of file.
       local: {

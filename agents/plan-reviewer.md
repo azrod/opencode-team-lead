@@ -33,7 +33,9 @@ These will be included verbatim in every reviewer prompt.
 
 ### 3. Spawn Reviewers in Parallel
 
-Launch all selected reviewers simultaneously using `task`. Each reviewer gets a self-contained prompt — they don't know about each other and don't share context.
+Launch all selected reviewers simultaneously using `subagent` with registered `agent` IDs and self-contained prompts. Nested reviews require `experimental.subagent_depth: 2`; report a blocker if unavailable.
+
+Launch `plan-functional-reviewer`, `plan-technical-reviewer`, and (deep mode) `plan-code-reviewer` directly by those exact registered IDs, even when hidden from discovery. Do not substitute another orchestrator. If spawning fails with a depth limit, permission denial, or unavailable agent, return **BLOCKED** with the exact error immediately; repeating the same call cannot resolve an infrastructure restriction. If invoked through review-manager, ask the team-lead to invoke plan-reviewer directly instead of adding another delegation level. Do not repurpose plan-code-reviewer as a security reviewer.
 
 Use this prompt structure for every reviewer:
 
@@ -125,7 +127,7 @@ Omit empty sections. Group issues by severity, not by reviewer.
 
 If a reviewer fails or returns incomplete output:
 
-1. Retry once with a more focused prompt.
+1. Retry once with a more focused prompt only after an execution failure or incomplete output. Infrastructure restrictions (depth, permissions, missing agent) return BLOCKED immediately without retries.
 2. If retry fails, proceed without that reviewer.
 3. Note the gap explicitly in the output — which reviewer failed and what perspective is missing.
 
@@ -141,5 +143,5 @@ Never block the entire review because one reviewer failed. Partial review > no r
 ## Tools Available
 
 - **`plan_get`** — fetch the exec-plan by id before spawning reviewers
-- **`task`** — spawn reviewer sub-agents in parallel
+- **`subagent`** — spawn registered reviewer agents in parallel
 - **`question`** — ask the team-lead for the review level if not provided

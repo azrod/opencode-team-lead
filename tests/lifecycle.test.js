@@ -38,7 +38,8 @@ import {
   isProtectedPath,
 } from "../tools/artifact-guard.js";
 import { buildToolRegistry } from "../tools/registry.js";
-import { TeamLeadPlugin } from "../index.js";
+import TeamLeadPlugin from "../index.js";
+import { mockContext, permission, toolContext } from "./v2-helper.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1734,9 +1735,9 @@ describe("buildToolRegistry — plan hint injection", () => {
     try {
       await mkdir(join(root, "docs", "exec-plans"), { recursive: true });
       const paths = { specs: "docs/specs", execPlans: "docs/exec-plans", briefs: "docs/briefs" };
-      const registry = buildToolRegistry(root, paths);
-      const raw = await registry.plan_create.execute({ title: "Test Plan", functional_objective: "Test objective for registry smoke test." });
-      const result = JSON.parse(raw);
+       const registry = buildToolRegistry(root, paths, permission);
+       const raw = await registry.plan_create.execute({ title: "Test Plan", functional_objective: "Test objective for registry smoke test." }, toolContext);
+       const result = JSON.parse(raw.content);
       assert.ok(typeof result.hint === "string", "hint should be a string");
       assert.ok(result.hint.includes("plan-reviewer"), "hint should mention plan-reviewer");
     } finally {
@@ -1764,9 +1765,9 @@ Test.
 - [ ] Block one
 `;
       await fsWriteFile(join(dir, "test-plan.md"), planContent, "utf-8");
-      const registry = buildToolRegistry(root, paths);
-      const raw = await registry.plan_update.execute({ id: "test-plan", old_string: "Block one", new_string: "Block one updated" });
-      const result = JSON.parse(raw);
+      const registry = buildToolRegistry(root, paths, permission);
+      const raw = await registry.plan_update.execute({ id: "test-plan", old_string: "Block one", new_string: "Block one updated" }, toolContext);
+      const result = JSON.parse(raw.content);
       assert.ok(typeof result.hint === "string", "hint should be a string");
       assert.ok(result.hint.includes("plan-reviewer"), "hint should mention plan-reviewer");
     } finally {
@@ -1804,16 +1805,16 @@ created: 2026-01-01
 Test.
 `;
       await fsWriteFile(join(dir, "invalid-plan.md"), invalidPlan, "utf-8");
-      const registry = buildToolRegistry(root, paths);
+      const registry = buildToolRegistry(root, paths, permission);
 
-      const rawValid = await registry.plan_validate.execute({ id: "valid-plan" });
-      const validResult = JSON.parse(rawValid);
+      const rawValid = await registry.plan_validate.execute({ id: "valid-plan" }, toolContext);
+      const validResult = JSON.parse(rawValid.content);
       assert.ok(validResult.valid === true, "should be valid");
       assert.ok(typeof validResult.hint === "string", "valid plan should have a hint");
       assert.ok(validResult.hint.includes("plan-reviewer"), "hint should mention plan-reviewer");
 
-      const rawInvalid = await registry.plan_validate.execute({ id: "invalid-plan" });
-      const invalidResult = JSON.parse(rawInvalid);
+      const rawInvalid = await registry.plan_validate.execute({ id: "invalid-plan" }, toolContext);
+      const invalidResult = JSON.parse(rawInvalid.content);
       assert.ok(invalidResult.valid === false, "should be invalid");
       assert.ok(!invalidResult.hint, "invalid plan should NOT have a hint");
     } finally {
@@ -1826,30 +1827,22 @@ describe("TeamLeadPlugin configured artifact paths", () => {
   test("lifecycle tools and the guard share custom paths", async () => {
     const root = await mkdtemp(join(tmpdir(), "tl-custom-paths-"));
     try {
-      const plugin = await TeamLeadPlugin({ directory: root, worktree: root });
-      const config = {
-        agent: {
-          "team-lead": {
-            paths: {
-              specs: "private/specifications",
-              execPlans: "private/plans",
-              briefs: "private/briefs",
-            },
-          },
-        },
-      };
-      await plugin.config(config);
+      const ctx = mockContext(root, { paths: {
+        specs: "private/specifications", execPlans: "private/plans", briefs: "private/briefs",
+      } });
+      await TeamLeadPlugin.setup(ctx);
 
-      const raw = await plugin.tool.spec_create.execute({ title: "Custom Path Spec" });
-      const result = JSON.parse(raw);
+      const raw = await ctx.tools.get("spec_create").execute({ title: "Custom Path Spec" }, toolContext);
+      const result = JSON.parse(raw.content);
       const artifactPath = join(root, "private", "specifications", "custom-path-spec.md");
       assert.equal(result.file, "private/specifications/custom-path-spec.md");
       await assert.doesNotReject(() => fsReadFile(artifactPath, "utf-8"));
 
       await assert.rejects(
-        () => plugin["tool.execute.before"]({
+        () => ctx.hooks["execute.before"]({
           tool: "read",
-          args: { filePath: "private/specifications/custom-path-spec.md" },
+          sessionID: "ses_test",
+          input: { path: "private/specifications/custom-path-spec.md" },
         }),
         /blocked/i
       );

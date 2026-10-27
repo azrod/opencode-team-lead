@@ -4,6 +4,7 @@
 import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Agent } from "@opencode/plugin";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -130,7 +131,8 @@ These pairs show the target voice. The left column is the AI reflex. The right c
 
 Be the brilliant friend someone would want to call at 2 a.m. Not an office robot. Not a yes-man. Competent, curious, and honest — diplomatically honest, never dishonestly diplomatic.`;
 
-export const SUBAGENT_DEFS = [
+// Compact policy declarations are expanded below into native V2 rules.
+const AGENT_POLICIES = [
   {
     id: "review-manager",
     file: "review-manager.md",
@@ -143,8 +145,14 @@ export const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "warning",
     permission: {
-      "*": "deny",
-      task: { "*": "deny", "*-reviewer": "allow" },
+      write: "deny",
+      task: {
+        "*": "deny",
+        "requirements-reviewer": "allow",
+        "code-reviewer": "allow",
+        "security-reviewer": "allow",
+        "spec-reviewer": "allow",
+      },
       question: "allow",
       read: "allow",
       glob: "allow",
@@ -172,7 +180,7 @@ export const SUBAGENT_DEFS = [
     color: "info",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       read: "allow",
       glob: "allow",
       grep: "allow",
@@ -199,7 +207,7 @@ export const SUBAGENT_DEFS = [
     color: "info",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       read: "allow",
       glob: "allow",
       grep: "allow",
@@ -226,7 +234,7 @@ export const SUBAGENT_DEFS = [
     color: "error",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       read: "allow",
       glob: "allow",
       grep: "allow",
@@ -252,7 +260,7 @@ export const SUBAGENT_DEFS = [
     mode: "all",
     color: "warning",
     permission: {
-      "*": "deny",
+      write: "deny",
       read: "allow",
       glob: "allow",
       grep: "allow",
@@ -278,7 +286,7 @@ export const SUBAGENT_DEFS = [
     mode: "all",
     color: "success",
     permission: {
-      "*": "deny",
+      write: "deny",
       task: "ask",
       question: "allow",
       todowrite: "allow",
@@ -302,7 +310,7 @@ export const SUBAGENT_DEFS = [
     mode: "all",
     color: "info",
     permission: {
-      "*": "deny",
+      write: "deny",
       project_state: "allow",
       plan_create: "allow",
       plan_get: "allow",
@@ -329,7 +337,7 @@ export const SUBAGENT_DEFS = [
     mode: "primary",
     color: "info",
     permission: {
-      "*": "deny",
+      write: "deny",
       read: "allow",
       list: "allow",
       glob: "allow",
@@ -346,7 +354,9 @@ export const SUBAGENT_DEFS = [
       plan_create: "allow",
       plan_update: "allow",
       plan_validate: "allow",
-      webfetch: "allow"
+      webfetch: "allow",
+      "deepwiki*": "allow",
+      "code-index*": "allow"
     },
   },
   {
@@ -361,7 +371,6 @@ export const SUBAGENT_DEFS = [
     mode: "all",
     color: "success",
     permission: {
-      "*": "deny",
       task: {
         "*": "deny",
         explore: "allow",
@@ -373,6 +382,7 @@ export const SUBAGENT_DEFS = [
       read: "allow",
       grep: "allow",
       glob: "allow",
+      write: "deny",
       bash: {
         "*": "deny",
         "git log*": "allow",
@@ -392,7 +402,7 @@ export const SUBAGENT_DEFS = [
     mode: "all",
     color: "info",
     permission: {
-      "*": "deny",
+      write: "deny",
       project_state: "allow",
       brief_create: "allow",
       brief_get: "allow",
@@ -417,7 +427,7 @@ export const SUBAGENT_DEFS = [
     mode: "all",
     color: "info",
     permission: {
-      "*": "deny",
+      write: "deny",
       read: "allow",
       webfetch: "allow",
       websearch: "allow",
@@ -437,7 +447,7 @@ export const SUBAGENT_DEFS = [
     color: "info",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       spec_list: "allow",
       spec_get: "allow",
       read: "allow",
@@ -454,7 +464,7 @@ export const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "warning",
     permission: {
-      "*": "deny",
+      write: "deny",
       task: { "*": "deny", "plan-*-reviewer": "allow" },
       question: "allow",
       plan_get: "allow",
@@ -470,7 +480,7 @@ export const SUBAGENT_DEFS = [
     color: "info",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       plan_get: "allow",
       spec_list: "allow",
       spec_get: "allow",
@@ -486,7 +496,7 @@ export const SUBAGENT_DEFS = [
     color: "info",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       plan_get: "allow",
       spec_list: "allow",
       spec_get: "allow",
@@ -502,7 +512,7 @@ export const SUBAGENT_DEFS = [
     color: "info",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       plan_get: "allow",
       read: "allow",
       glob: "allow",
@@ -522,7 +532,7 @@ export const SUBAGENT_DEFS = [
     color: "info",
     hidden: true,
     permission: {
-      "*": "deny",
+      write: "deny",
       spec_list: "allow",
       spec_get: "allow",
       read: "allow",
@@ -542,7 +552,7 @@ export const SUBAGENT_DEFS = [
     mode: "subagent",
     color: "info",
     permission: {
-      "*": "deny",
+      write: "deny",
       spec_list: "allow",
       spec_get: "allow",
       spec_create: "allow",
@@ -556,46 +566,23 @@ export const SUBAGENT_DEFS = [
   },
 ];
 
-/**
- * One-level-deep permission merge.
- * For each key in `overrides`, if both sides are plain objects, shallow-merge
- * them so nested tool maps (bash, read, edit, write, …) are combined rather
- * than replaced. For any other value type the override wins outright.
- *
- * @param {Record<string, unknown>} defaults
- * @param {Record<string, unknown> | null | undefined} overrides
- * @returns {Record<string, unknown>}
- */
-export function mergePermissions(defaults, overrides) {
-  if (!overrides || typeof overrides !== "object") return { ...defaults };
-  const result = { ...defaults };
-  for (const [key, override] of Object.entries(overrides)) {
-    const base = result[key];
-    if (
-      base !== null &&
-      typeof base === "object" &&
-      !Array.isArray(base) &&
-      override !== null &&
-      typeof override === "object" &&
-      !Array.isArray(override)
-    ) {
-      result[key] = { ...base, ...override };
-    } else {
-      if (
-        Array.isArray(override) &&
-        base !== null &&
-        typeof base === "object" &&
-        !Array.isArray(base)
-      ) {
-        console.warn(
-          `[opencode-team-lead] permission key "${key}" received an array override — expected an object. Plugin defaults for this key have been dropped.`
-        );
-      }
-      result[key] = override;
-    }
-  }
-  return result;
+// Ordered V2 rules: user rules follow plugin defaults; last match wins.
+export function mergePermissions(defaults, overrides = []) {
+  return [...defaults, ...overrides].map((rule) => ({ ...rule }));
 }
+
+const ACTIONS = { bash: "shell", task: "subagent", write: "edit" };
+const COLORS = { info: "#3b82f6", warning: "#f59e0b", error: "#ef4444", success: "#22c55e" };
+
+export const SUBAGENT_DEFS = AGENT_POLICIES.map(({ permission, temperature, variant: _variant, color, ...def }) => ({
+  ...def,
+  color: COLORS[color],
+  request: { body: { temperature } },
+  permissions: Object.entries(permission).flatMap(([action, value]) =>
+    Object.entries(typeof value === "string" ? { "*": value } : value)
+      .filter(() => action !== "todoread")
+      .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect }))),
+}));
 
 /**
  * Load an agent prompt from the agents/ directory.
@@ -620,29 +607,32 @@ export async function loadAgentPrompt(agentId, fileName, silent = false) {
   }
 }
 
-/**
- * Register a subagent into the OpenCode config input.
- *
- * @param {object} input
- * @param {object} def
- * @param {string} prompt
- * @param {object|null|undefined} userConfig
- */
-export function registerSubagent(input, def, prompt, userConfig) {
-  const { id, description, temperature, variant, mode, color, hidden, permission: defaultPermission } = def;
-  const { soul, ...agentUserConfig } = userConfig ?? {}; // soul is stripped here — not forwarded to OpenCode which doesn't know it
+// AgentEditor.update creates missing agents; preserve configured overlays.
+export function registerSubagent(editor, def, prompt, options = {}) {
+  const { id, description, request, mode, color, hidden, permissions } = def;
+  const existing = editor.get(id);
+  const base = Agent.Info.default(Agent.ID.make(id));
+  const configuredPermissions = existing?.permissions ?? [];
+  const hasBase = base.permissions.every((rule, index) =>
+    JSON.stringify(rule) === JSON.stringify(configuredPermissions[index]));
+  const soul = options.agents?.[id]?.soul ?? options.soul;
   const agentPrompt = (mode === "all" && soul !== false)
     ? `${prompt}\n\nInstructions from: ~/.config/opencode/AGENTS.md\n${GLOBAL_AGENTS_CONTENT}`
     : prompt;
-  input.agent[id] = {
-    description,
-    temperature,
-    variant,
-    mode,
-    color,
-    ...(hidden !== undefined && { hidden }),
-    ...agentUserConfig,
-    prompt: agentPrompt,
-    permission: mergePermissions(defaultPermission, agentUserConfig.permission),
-  };
+  // update is an upsert in V2. Registry defaults for a newly created agent are
+  // not user overrides; only entries present before this transform are merged.
+  editor.update(id, (agent) => {
+    agent.description = existing?.description ?? description;
+    agent.mode = existing?.mode ?? mode;
+    agent.color = existing?.color ?? color;
+    agent.hidden = existing?.hidden ?? hidden ?? false;
+    agent.request = {
+      settings: { ...existing?.request.settings },
+      headers: { ...existing?.request.headers },
+      body: { ...request.body, ...existing?.request.body },
+    };
+    agent.permissions = mergePermissions(permissions,
+      hasBase ? configuredPermissions.slice(base.permissions.length) : configuredPermissions);
+    agent.system = agentPrompt;
+  });
 }

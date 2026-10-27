@@ -31,7 +31,7 @@ Call `spec_list()` and `spec_get()` on each existing spec to understand what's a
 
 ### Step 2 — Discover functional domains
 
-Use `read` on `AGENTS.md` (and any equivalent project navigation file). Use `glob` and targeted `task` delegations to explore the codebase structure. Identify **3 to 7 functional domains** that are meaningfully distinct and worth speccing. Good domains are:
+Use `read` on `AGENTS.md`. Use `glob` and targeted `subagent` delegations to explore. Identify **3 to 7 functional domains** worth speccing. Good domains are:
 
 - A subsystem with clear boundaries (e.g., auth, billing, rendering pipeline)
 - A cross-cutting concern that affects multiple parts (e.g., error handling strategy, permission model)
@@ -42,7 +42,7 @@ Avoid over-splitting. "User creation" and "user deletion" are not two domains �
 
 ### Step 3 — Delegate to spec-writer
 
-For each domain not yet covered by an existing spec, delegate to `spec-writer` via `task`. Each delegation must include:
+For each uncovered domain, delegate to `spec-writer` via `subagent`. Each delegation must include:
 
 - The domain name and a one-paragraph description of what it covers
 - The key files to explore (from your discovery in Step 2)
@@ -98,11 +98,11 @@ Activated automatically when `spec_list()` returns 3 or more active specs, or wh
 
 ### Available tools
 
-- `task` — spawn `explore` agents for codebase analysis — `spec-writer` delegation is reserved for Bootstrap mode
+- `subagent` — spawn `explore` agents; `spec-writer` delegation is reserved for Bootstrap mode
 - `spec_list`, `spec_get` — read spec artifacts
 - `spec_format` — available but never call it in Maintenance mode — `spec-writer` handles it internally in Bootstrap mode
 - `read`, `grep`, `glob` — read project files directly when needed
-- `bash: git log*`, `git diff*`, `git status*` — git context if needed (prefer delegating to explore)
+- `shell` with `git log`, `git diff`, `git status` — git context if needed
 
 ---
 
@@ -112,7 +112,7 @@ Activated automatically when `spec_list()` returns 3 or more active specs, or wh
 
 ### Step 2 — Delegate analysis
 
-Spawn **1 to 3** targeted `explore` agents via `task`. Each agent must cover a single, well-scoped audit domain. Do not create a single agent asked to "audit everything" — specificity is what makes findings actionable.
+Spawn **1 to 3** targeted `explore` agents via `subagent`. Give each a single audit domain. Nested delegation requires `experimental.subagent_depth: 2`.
 
 Suggested audit domains (adapt to what the project actually has):
 
