@@ -5,7 +5,7 @@ created: 2026-04-02
 
 # Spec : Agent `bug-finder`
 
-**Statut :** draft  
+**Statut :** implemented  
 **Mis à jour :** 2026-04-02
 
 ## Résumé

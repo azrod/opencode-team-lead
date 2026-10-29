@@ -1,42 +1,89 @@
-// tests/permissions.test.js
-// Verifies that all write/edit target directories declared in index.js exist on disk.
-// Uses only Node.js built-ins: node:test, node:assert, node:fs/promises, node:path, node:url
-
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { readFile, access } from "node:fs/promises";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { SUBAGENT_DEFS, loadAgentPrompt } from "../config/agents.js";
+import Plugin from "../index.js";
+import { mockContext } from "./v2-helper.js";
 
-const projectRoot = fileURLToPath(new URL("../", import.meta.url));
+function effect(rules, action, resource = "*") {
+  return rules.filter((rule) => (rule.action === "*" || rule.action === action) &&
+    (rule.resource === "*" || rule.resource === resource)).at(-1)?.effect;
+}
 
-// ── agent permissions — write/edit target directories ────────────────────────
-
-describe("agent permissions — write/edit target directories", () => {
-  test("all declared write/edit target dirs exist in the repo", async () => {
-    const indexPath = join(projectRoot, "index.js");
-    const content = await readFile(indexPath, "utf-8");
-
-    // Match paths that appear as "allow" values and end with /**
-    // Accepts both "some/path/**" and "**/some/path/**" forms.
-    // Excludes bare "*" wildcards — we only want specific directory glob targets.
-    // Pattern: "some/path/**": "allow"  or  "**/some/path/**": "allow"
-    const matches = content.matchAll(/"(\*\*\/[^"]+\/\*\*|[^*"][^"]*\/\*\*)":\s*"allow"/g);
-
-    const dirs = new Set();
-    for (const [, path] of matches) {
-      // Strip leading **/ prefix and trailing /** suffix to get the base directory
-      dirs.add(path.replace(/^\*\*\//, "").replace(/\/\*\*$/, ""));
+describe("native V2 agent policies", () => {
+  test("all specialized agents are deny-by-default with native action names", () => {
+    assert.equal(SUBAGENT_DEFS.length, 18);
+    for (const agent of SUBAGENT_DEFS) {
+      assert.deepEqual(agent.permissions[0], { action: "*", resource: "*", effect: "deny" });
+      assert.match(agent.color, /^#[\da-f]{6}$/i);
+      assert.ok(agent.permissions.every((rule) => !["bash", "task", "write", "todoread"].includes(rule.action)));
     }
+  });
 
-    assert.ok(dirs.size > 0, "expected at least one write/edit target directory in index.js");
-
-    for (const dir of dirs) {
-      const absPath = join(projectRoot, dir);
-      await assert.doesNotReject(
-        () => access(absPath),
-        `declared write/edit target directory does not exist: ${dir}`
-      );
+  test("architect remains directly selectable and cannot implement or delegate", () => {
+    const architect = SUBAGENT_DEFS.find((agent) => agent.id === "architect");
+    assert.equal(architect.mode, "primary");
+    for (const action of ["edit", "shell", "subagent", "external_directory", "plan_block_done", "brief_get"]) {
+      assert.equal(effect(architect.permissions, action), "deny", action);
     }
+    for (const action of ["read", "glob", "grep", "spec_get", "spec_create", "plan_update"]) {
+      assert.equal(effect(architect.permissions, action), "allow", action);
+    }
+  });
+
+  test("registers all agents and preserves hidden reviewers", async () => {
+    const ctx = mockContext(process.cwd());
+    await Plugin.setup(ctx);
+    assert.equal(ctx.agents.size, 19);
+    assert.equal(ctx.agents.get("code-reviewer").hidden, true);
+    assert.equal(ctx.agents.get("architect").hidden, false);
+    assert.equal(effect(ctx.agents.get("team-lead").permissions, "subagent"), "allow");
+    assert.equal(effect(ctx.agents.get("review-manager").permissions, "subagent", "explore"), "deny");
+    const reviewRules = ctx.agents.get("review-manager").permissions;
+    for (const id of ["plan-reviewer", "plan-functional-reviewer", "plan-technical-reviewer", "plan-code-reviewer"]) {
+      assert.equal(effect(reviewRules, "subagent", id), "deny", id);
+    }
+    for (const id of ["requirements-reviewer", "code-reviewer", "security-reviewer", "spec-reviewer"]) {
+      assert.equal(effect(reviewRules, "subagent", id), "allow", id);
+    }
+  });
+
+  test("architect prompt keeps decision rationale and explicit plan acceptance", async () => {
+    const prompt = await loadAgentPrompt("architect", "architect.md");
+    for (const pattern of [/Observed facts/i, /Inferences/i, /Unknowns/i, /ASCII/i, /Never use Mermaid/i, /explicitly accepts/i]) {
+      assert.match(prompt, pattern);
+    }
+  });
+
+  test("architect presents open decisions after plan creation or updates without replaying the plan", async () => {
+    const prompt = await loadAgentPrompt("architect", "architect.md");
+    const checkpoint = prompt.split("## Presenting Open Decisions After a Plan Change\n")[1];
+    assert.ok(checkpoint, "missing post-plan decision checkpoint");
+    for (const pattern of [
+      /After creating or updating an exec-plan and running `plan_validate`/,
+      /in the conversation/,
+      /do not repeat the four-part assessment format, summarize the plan/,
+      /or restate previously accepted decisions unless new evidence requires reconsidering them/,
+      /The question the user needs to decide/,
+      /The realistic options and their main consequences/,
+      /Your recommendation and its trade-offs/,
+      /Explicitly ask the user to choose/,
+      /If no decisions remain open, say so briefly/,
+      /instead of inventing questions or asking for approval again/,
+      /keep it explicitly open rather than recording your preferred option as an accepted decision/,
+      /creating or validating a plan does not imply user acceptance/,
+    ]) {
+      assert.match(checkpoint, pattern);
+    }
+  });
+
+  test("review orchestrators name hidden specialists and stop infrastructure retries", async () => {
+    const review = await loadAgentPrompt("review-manager", "review-manager.md");
+    assert.match(review, /Never launch `plan-reviewer`/);
+    assert.match(review, /do not retry the identical blocked operation/);
+    for (const id of ["requirements-reviewer", "code-reviewer", "security-reviewer", "spec-reviewer"]) {
+      assert.ok(review.includes(`\`${id}\``));
+    }
+    const plan = await loadAgentPrompt("plan-reviewer", "plan-reviewer.md");
+    assert.match(plan, /return \*\*BLOCKED\*\* with the exact error immediately/);
   });
 });
