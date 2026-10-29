@@ -24,3 +24,5 @@ It can read, list, glob, and grep ordinary repository files. Specs and exec-plan
 - Exec-plans: `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`
 
 Architect may create or update a spec after explaining the problem, alternatives, recommendation, and trade-offs. It may create or update an exec-plan only after the user explicitly accepts the architecture decision the plan records. It cannot use `plan_block_done`: marking delivery work complete is outside its decision-advisory role. That does not replace Planning as the general-purpose exec-plan author.
+
+After creating or updating and validating an exec-plan, Architect presents only the remaining points that need your decision: the question, realistic options and their main consequences, and its recommendation with trade-offs. It explicitly asks you to choose, without replaying the plan or reopening accepted decisions unless new evidence warrants it. If no decisions remain open, it says so briefly. Unresolved architectural choices stay open; a recommendation or validated plan never counts as your acceptance.

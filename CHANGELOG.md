@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
 
 ### Fixed
+- Architect now presents remaining decisions after creating or updating an exec-plan, with options, consequences, and a recommendation, instead of leaving them in the plan. It does not repeat the plan or ask you to reconfirm accepted decisions without new evidence.
 - Review-manager launches specialists directly instead of routing through plan-reviewer and exceeding the nested-agent depth limit. Review orchestrators stop immediately on infrastructure restrictions rather than retrying blocked spawns.
 - Installed packages now include the agent registration module. Artifact protection also covers V2 shell commands and multi-file patches.
 - Configured artifact paths now stay synchronized between lifecycle tools and direct-access protection, including through symlink aliases and case variants. Unsafe glob patterns that traverse parent directories are blocked.

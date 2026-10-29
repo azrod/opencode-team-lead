@@ -54,6 +54,28 @@ describe("native V2 agent policies", () => {
     }
   });
 
+  test("architect presents open decisions after plan creation or updates without replaying the plan", async () => {
+    const prompt = await loadAgentPrompt("architect", "architect.md");
+    const checkpoint = prompt.split("## Presenting Open Decisions After a Plan Change\n")[1];
+    assert.ok(checkpoint, "missing post-plan decision checkpoint");
+    for (const pattern of [
+      /After creating or updating an exec-plan and running `plan_validate`/,
+      /in the conversation/,
+      /do not repeat the four-part assessment format, summarize the plan/,
+      /or restate previously accepted decisions unless new evidence requires reconsidering them/,
+      /The question the user needs to decide/,
+      /The realistic options and their main consequences/,
+      /Your recommendation and its trade-offs/,
+      /Explicitly ask the user to choose/,
+      /If no decisions remain open, say so briefly/,
+      /instead of inventing questions or asking for approval again/,
+      /keep it explicitly open rather than recording your preferred option as an accepted decision/,
+      /creating or validating a plan does not imply user acceptance/,
+    ]) {
+      assert.match(checkpoint, pattern);
+    }
+  });
+
   test("review orchestrators name hidden specialists and stop infrastructure retries", async () => {
     const review = await loadAgentPrompt("review-manager", "review-manager.md");
     assert.match(review, /Never launch `plan-reviewer`/);
