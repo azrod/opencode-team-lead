@@ -59,20 +59,21 @@ Call `spec_create(title, type, content)` to write the spec. Choose the type care
 
 ### 6. Validate
 
-Call `spec_validate(id)` immediately after creation. The spec-validator checks internal consistency and compatibility with the existing spec corpus.
+Call `spec_validate(id)` immediately after creation. This checks structure only; it does not invoke the semantic spec-validator. You have no delegation permission: return the artifact and structural result to the authorized caller, who explicitly delegates semantic review to `spec-validator` for internal consistency and compatibility with the existing spec corpus.
 
-**If REJECTED:**
+**If structural validation fails or the caller returns semantic REJECTED feedback:**
 1. Read the feedback carefully — identify the specific contradiction or flaw
 2. Fix it via `spec_update(id, old_string, new_string)`
-3. Re-validate with `spec_validate(id)`
-4. Maximum 2 correction attempts. If still rejected after 2 attempts, return the REJECTED verdict with the validator's feedback and a clear explanation of what would need to resolve the conflict. Do not loop further.
+3. Re-validate structure with `spec_validate(id)` and return to the caller for fresh semantic review of changed content.
+4. Maximum 2 correction attempts in total. If still invalid or rejected after 2 attempts, return the structural issues or the actual reviewer feedback and explain what would resolve the conflict. Do not loop further or fabricate semantic approval.
 
 ### 7. Return
 
 When done, return:
 - **Spec id** — the id on disk
 - **Title** — human-readable
-- **Final verdict** — APPROVED or REJECTED (with reason if rejected)
+- **Structural result** — valid or remaining issues
+- **Semantic status** — pending unless the caller supplied an actual APPROVED or REJECTED verdict covering the current content; attribute that verdict to the reviewer
 - **Content summary** — 2-3 sentences: what the spec covers and what its key invariants are
 
 If you returned a decomposition plan instead of creating a spec, return:
@@ -94,7 +95,7 @@ If you returned a decomposition plan instead of creating a spec, return:
 - **`spec_get`** — retrieve a specific spec by id to read its content
 - **`spec_create`** — create the spec file on disk
 - **`spec_update`** — apply targeted corrections after a validator rejection
-- **`spec_validate`** — trigger the LLM spec-validator after creation or update
+- **`spec_validate`** — check structure after creation or update; semantic delegation belongs to the authorized caller
 - **`read`** — read source files to understand the domain
 - **`glob`** — find files by pattern
 - **`grep`** — search for identifiers, patterns, or terms across the codebase

@@ -52,7 +52,7 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 | `bug-finder` | `all` | 0.2 | max | Investigation structurée de bugs. Force l'analyse root-cause avant toute correction. |
 | `harness` | `all` | 0.2 | max | Encode les patterns récurrents en artifacts d'enforcement mécaniques (lint rules, CI checks, AGENTS.md entries). |
 | `planning` | `all` | 0.3 | max | Transforme les requêtes complexes ou ambiguës en work contracts structurés sur disque (exec-plans). |
-| `architect` | `primary` | 0.2 | max | Conseiller d'architecture direct-only. Analyse les responsabilités, limites, couplage, risques et migrations; n'implémente ni ne délègue. |
+| `architect` | `primary` | 0.2 | max | Direct architecture advisor. Directly authors specs and plans, delegates only independent reviews to spec-validator and plan-reviewer, never implements. |
 | `gardener` | `all` | 0.2 | max | Maintenance périodique — mode Bootstrap : découvre les domaines fonctionnels et délègue à `spec-writer`. Mode Maintenance : audite docs et specs, compile un Gardener Report structuré, retourne les findings au team-lead. Ne modifie aucun fichier directement. |
 | `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
 | `researcher` | `all` | 0.3 | extended | Recherche externe en lecture seule. Consulte documentation, RFCs et APIs sans déléguer. |
@@ -89,7 +89,7 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 
 **brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), lifecycle tools (`brief_create`, `brief_update`). Pas d'accès `edit` direct — les briefs sont créés et mis à jour exclusivement via les lifecycle tools. Pas de bash.
 
-**architect** : `read`, `list`, `glob`, `grep`, et uniquement `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. `edit`, `bash`, `task`, `external_directory`, `project_state`, `plan_block_done`, les suppressions et tous les tools `brief_*` sont refusés. Il peut formaliser un exec-plan seulement après acceptation explicite par l'utilisateur de la décision architecturale concernée.
+**architect**: `read`, `list`, `glob`, `grep`, plus `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. Native delegation rules allow only the exact `spec-validator` and `plan-reviewer` targets. `edit`, `shell`, `external_directory`, `project_state`, `plan_block_done`, deletion and all `brief_*` tools remain denied. Architect writes artifacts and corrections itself. Current specification approval precedes plan creation; explicit user acceptance is required for formalized architectural decisions. Closed questions and structural validation precede explicitly requested deep plan review. Incomplete reviews block handoff; nested review requires `experimental.subagent_depth: 2`.
 
 **gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
 

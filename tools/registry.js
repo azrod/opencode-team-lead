@@ -56,7 +56,7 @@ export function buildToolRegistry(projectRoot, paths, permission) {
       },
     },
     spec_create: {
-      description: "Create a new spec file. Refuses to overwrite an existing one. After creation, call spec_validate to trigger the LLM spec-validator agent. Call spec_format() first if unsure of the expected structure.",
+      description: "Create a new spec file. Refuses to overwrite an existing one. After creation, call spec_validate for structural validation. An authorized caller must explicitly delegate semantic review to spec-validator; nondelegating authors return the artifact and structural result to that caller. Call spec_format() first if unsure of the expected structure.",
       args: {
         title: stringArg("Human-readable title of the spec"),
         type: stringArg("Spec type: technical, functional, or architectural. Defaults to technical", true),
@@ -68,7 +68,7 @@ export function buildToolRegistry(projectRoot, paths, permission) {
       },
     },
     spec_update: {
-      description: "Update a spec by replacing oldString with newString. Fails if oldString not found or found multiple times. After updating, call spec_validate to trigger the LLM spec-validator agent. Call spec_format() first if unsure of the expected structure.",
+      description: "Update a spec by replacing oldString with newString. Fails if oldString not found or found multiple times. After updating, call spec_validate for structural validation. An authorized caller must explicitly delegate semantic review to spec-validator; nondelegating authors return the artifact and structural result to that caller. Call spec_format() first if unsure of the expected structure.",
       args: {
         id: stringArg("Spec id"),
         old_string: stringArg("Exact string to replace"),
@@ -80,7 +80,7 @@ export function buildToolRegistry(projectRoot, paths, permission) {
       },
     },
     spec_validate: {
-      description: "Validate a spec's structure: frontmatter present, required fields, non-empty body.",
+      description: "Validate a spec's structure only: frontmatter present, required fields, non-empty body. Does not launch semantic review. An authorized caller must explicitly delegate semantic review to spec-validator; nondelegating authors return the artifact and structural result to that caller.",
       args: {
         id: stringArg("Spec id"),
       },

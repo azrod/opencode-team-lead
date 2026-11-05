@@ -22,9 +22,9 @@ The spec-writer follows a strict sequential workflow on every invocation.
 
 **Step 4 — Write and create the spec.** The agent applies the canonical format: Purpose, Behavior, Constraints, Examples (in that order). It calls `spec_create(title, type, content)` to write the spec to disk. The type is chosen based on what the spec describes: `technical` for implementation contracts and API behavior, `functional` for user-visible behavior and workflow invariants, `architectural` for structural decisions and patterns.
 
-**Step 5 — Validate.** The agent calls `spec_validate(id)` immediately after creation. If the validator returns `REJECTED`, the agent reads the feedback, applies a targeted fix via `spec_update`, and re-validates. The agent attempts at most 2 corrections. If the spec is still rejected after 2 attempts, the agent returns the `REJECTED` verdict with the validator's feedback and a clear explanation of what would need to resolve the conflict — it does not loop further.
+**Step 5 — Validate.** The agent calls `spec_validate(id)` immediately after creation. This intentionally corrects the historical automatic-semantic-verdict assumption: lifecycle validation checks structure only. The agent applies targeted structural corrections via `spec_update` and re-validates, at most 2 corrections. It has no delegation permission: it returns the artifact and structural result to its authorized caller, who explicitly delegates semantic review to `spec-validator`. If the caller returns `REJECTED` feedback, the writer applies targeted corrections and structural validation within the same 2-correction limit, then returns for fresh semantic review; it never fabricates semantic approval.
 
-**Step 6 — Return.** On completion the agent reports: the spec id on disk, the human-readable title, the final verdict (`APPROVED` or `REJECTED` with reason), and a 2–3 sentence summary of what the spec covers and its key invariants.
+**Step 6 — Return.** On completion the agent reports the spec id on disk, title, structural result (`valid` or issues), semantic review status (pending unless the caller supplied a verdict covering current content), and a 2–3 sentence summary of scope and invariants. `APPROVED` or `REJECTED` is attributed only to an actual semantic reviewer verdict.
 
 When the domain is too large for a single spec, the agent returns a decomposition plan instead of creating a catch-all. The decomposition lists proposed spec titles, types, and a one-line description of what each would cover, along with the rationale for splitting.
 
@@ -49,8 +49,8 @@ The team-lead delegates "document the artifact-guard module" to the spec-writer.
 2. Calls `spec_list()` — finds no existing spec for artifact-guard.
 3. Reads `tools/artifact-guard.js` and relevant sections of `index.js`.
 4. Creates the spec with `spec_create("Artifact Guard", "technical", content)`.
-5. Calls `spec_validate("artifact-guard")` — receives `APPROVED`.
-6. Returns: id `artifact-guard`, verdict `APPROVED`, summary: "Documents the guard module that intercepts direct filesystem access to protected artifact directories. Key invariant: all 21 lifecycle tools bypass the guard unconditionally."
+5. Calls `spec_validate("artifact-guard")` — receives `{ valid: true, issues: [] }` (structure only).
+6. Returns id `artifact-guard`, structural result valid, semantic review pending; the authorized caller explicitly requests `spec-validator` review. Summary: "Documents the guard module that intercepts direct filesystem access to protected artifact directories. Key invariant: all 21 lifecycle tools bypass the guard unconditionally."
 
 **Scenario: domain already covered**
 
@@ -58,7 +58,7 @@ The gardener delegates "document spec creation." The agent calls `spec_list()` a
 
 **Scenario: validator rejects, one fix sufficient**
 
-The spec-writer creates a spec that the validator rejects for an internal contradiction. The agent reads the feedback, identifies the conflicting clauses, calls `spec_update` to fix the contradiction, and re-validates. The validator returns `APPROVED`. The agent reports the final `APPROVED` verdict.
+After structural validation and return to its caller, the caller explicitly delegates semantic review and returns an actual `REJECTED` verdict for an internal contradiction. The writer fixes the conflicting clauses via `spec_update`, rechecks structure via `spec_validate`, and returns the changed artifact with semantic review pending. The caller requests fresh semantic review; only a supplied `APPROVED` verdict covering the current content may be reported as semantic approval.
 
 **Scenario: domain too large**
 

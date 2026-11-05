@@ -2,3 +2,4 @@ node_modules/
 .opencode/
 !.opencode/agents/
 !.opencode/tools/
+.DS_Store

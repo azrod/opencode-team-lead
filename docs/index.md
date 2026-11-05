@@ -18,9 +18,9 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 | `researcher` | all | External knowledge agent. Fetches and synthesizes information from the web, official docs, APIs, and public sources. Used BEFORE planning to answer technical questions requiring external research. Read-only, leaf node. |
 | `harness` | all | Encode les patterns récurrents en règles mécaniques (lint, CI, AGENTS.md) |
 | `planning` | all | Transforme les requêtes complexes en contrats de travail sur disque |
-| `architect` | primary | Conseiller d'architecture direct-only : analyse le système, les compromis et la migration sans implémenter ni déléguer |
+| `architect` | primary | Direct architecture advisor: directly authors specs and plans, delegates only spec-validator and plan-reviewer reviews, never implements |
 | `gardener` | all | Maintenance périodique — docs stales et drift de code |
-| `spec-validator` | subagent | Validateur LLM invoqué après `spec_create` / `spec_update` — vérifie complétude, clarté et cohérence interne |
+| `spec-validator` | subagent | Explicit semantic review after structural validation: internal consistency and compatibility with related specs, not completeness or architecture quality |
 | `plan-reviewer` | subagent | Orchestrateur de review de plan — demande la profondeur (light/deep), spawne `plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer` en parallèle, retourne APPROVED / CHANGES_REQUESTED / BLOCKED |
 | `plan-functional-reviewer` | subagent | Vérifie l'alignement du plan avec les specs fonctionnelles. Silencieux, invoqué par `plan-reviewer` uniquement |
 | `plan-technical-reviewer` | subagent | Vérifie l'alignement du plan avec les specs techniques et architecturales. Silencieux, invoqué par `plan-reviewer` uniquement |

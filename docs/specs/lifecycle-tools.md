@@ -99,49 +99,16 @@ L'implémentation comprend **21 lifecycle tools** organisés en quatre familles 
 
 **Comportement :**
 
-Résout les chemins depuis la config du plugin (clé `team-lead.paths` dans `opencode.json`) — si absente, utilise les defaults. Ne consulte pas `AGENTS.md`. Glob les trois dossiers dans `context.worktree`, lit le frontmatter YAML de chaque fichier. Retourne un objet JSON avec trois sections :
+Uses configured artifact paths relative to the project root, defaulting to the conventional directories; does not consult `AGENTS.md`. Reads specs and plans only. This corrects the historical three-family draft to match the implemented, tested two-key output:
 
 ```json
 {
-  "specs": [
-    {
-      "file": "docs/specs/auth.md",
-      "title": "Spec : Système d'auth",
-      "id": "P1",
-      "criticality": "CRITICAL",
-      "status": "draft",
-      "created": "2026-04-06"
-    }
-  ],
-  "exec_plans": [
-    {
-      "file": "docs/exec-plans/auth-system.md",
-      "status": "active",
-      "brief": "docs/briefs/auth.md",
-      "brief_exists": true,
-      "blocks": { "total": 4, "checked": 4 },
-      "warning": "tous les blocs sont cochés mais status != completed"
-    }
-  ],
-  "briefs": [
-    {
-      "file": "docs/briefs/auth.md",
-      "project": "auth",
-      "type": "feature",
-      "status": "active",
-      "exec_plan": "docs/exec-plans/auth-system.md",
-      "exec_plan_exists": true
-    }
-  ]
+  "specs": [{ "file": "docs/specs/auth.md", "title": "Auth", "id": "auth", "type": "technical", "status": "draft", "created": "2026-04-06" }],
+  "active_plans": [{ "file": "docs/exec-plans/auth-system.md", "blocks": { "total": 4, "checked": 1 } }]
 }
 ```
 
-**Sources de données :**
-- Specs : glob `{paths.specs}/*.md`, frontmatter YAML parsé (`title`, `id`, `criticality`, `status`, `created`)
-- Exec-plans : glob `{paths.execPlans}/*.md`, frontmatter YAML parsé, blocs `- [x]` et `- [ ]` comptés, champ `brief` vérifié sur disque si présent
-- Briefs : glob `{paths.briefs}/*.md`, frontmatter YAML parsé (`project`, `type`, `status`, `exec_plan`), champ `exec_plan` vérifié sur disque si présent
-
-**Warnings inline :** Si un exec-plan a tous les blocs cochés mais `status: active`, le champ `warning` est peuplé pour signaler la situation au team-lead.
+**Data sources:** specs use frontmatter metadata (`title`, `id`, `type`, `status`, `created`; missing fields are null); plan progress is counted from checkbox blocks. Completed plans are excluded; plans with zero blocks are retained. Unreadable files return an inline `error`; unreadable plans have zero block counts. No brief data, reference-existence checks or status warnings are produced. Call `brief_list()` separately for briefs.
 
 ---
 
@@ -311,7 +278,7 @@ Les utilisateurs peuvent les surcharger via leur `opencode.json` (même mécaniq
 
 L'agent `architect` dispose d'une allowlist distincte et non destructive. Il peut appeler `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update` et `plan_validate`. Les autres lifecycle tools lui sont refusés, notamment `project_state`, `spec_delete`, `plan_delete`, `plan_block_done` et toute la famille `brief_*`. `plan_block_done` est refusé car marquer la progression de livraison est une mutation de plan hors de son rôle de conseil.
 
-Avant `spec_create` ou `spec_update`, Architect explique le problème, les alternatives réalistes, l'option retenue et ses compromis. Il peut appeler `plan_create` ou `plan_update` seulement après acceptation explicite par l'utilisateur de la décision architecturale que l'exec-plan formalise. Cette règle ne fait pas d'Architect un producteur de plans généraliste : ce rôle reste à `planning`. Architect ne délègue pas et n'implémente pas.
+Avant `spec_create` ou `spec_update`, Architect explique le problème, les alternatives réalistes, l'option retenue et ses compromis. Il peut appeler `plan_create` ou `plan_update` seulement après acceptation explicite par l'utilisateur de la décision architecturale que l'exec-plan formalise. Cette règle ne fait pas d'Architect un producteur de plans généraliste : ce rôle reste à `planning`. Intentional evolution: Architect directly authors specs, exec-plans and corrections, and delegates only independent semantic reviews to the exact targets `spec-validator` and `plan-reviewer`; it never implements or coordinates delivery. Current structural validation and semantic spec approval precede plan creation; explicit user acceptance remains required. All questions are closed before explicitly requested deep plan review by default. Failed, blocked or incomplete reviews never imply readiness; substantive artifact changes require fresh review.
 
 ## 6. Impact sur le workflow du team-lead
 
@@ -334,7 +301,7 @@ plan_block_done("auth-feature", "Tests unitaires")
 
 Pour toute modification chirurgicale d'un exec-plan (mise à jour du decision log, correction de contenu), le team-lead utilise `plan_update(id, old_string, new_string)`.
 
-Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title, type, content)` ou `spec_update(id, old_string, new_string)`. Ces tools déclenchent automatiquement le `spec-validator` — le résultat (APPROVED ou REJECTED) est retourné inline.
+Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title, type, content)` ou `spec_update(id, old_string, new_string)`. Intentional correction of historical automatic-review wording: these tools write artifacts only. `spec_validate` checks structure and does not launch an agent. An authorized caller explicitly delegates semantic review to `spec-validator`; a nondelegating author returns the artifact and structural result to that caller. Semantic verdicts (`APPROVED` or `REJECTED`) come from the reviewer, never from structural lifecycle validation.
 
 ---
 
@@ -354,7 +321,7 @@ Pour créer ou mettre à jour une spec, le team-lead appelle `spec_create(title,
 
 ### D1 — Format du frontmatter `brief:` dans les exec-plans (acté — dépendance sur spec planning)
 
-`project_state` et `check_artifacts` s'appuient sur un champ `brief:` optionnel dans le frontmatter YAML des exec-plans pour tracer la relation exec-plan → brief. Ce champ n'existe pas dans le format actuel défini par `planning-agent.md`.
+Historical proposal: trace exec-plan → brief using optional `brief:` frontmatter. Current behavior: `project_state` does not expose or check this reference; use explicit artifact inspection. The optional association is supported by plan creation and is not a new runtime change in this delivery.
 
 **Décision :** Le champ `brief:` est ajouté au format standard des exec-plans. Il est optionnel — un exec-plan sans brief associé est valide. La relation est bidirectionnelle : le brief a un champ `exec_plan:`, l'exec-plan a un champ `brief:`. Les deux sont facultatifs mais recommandés pour la traçabilité.
 

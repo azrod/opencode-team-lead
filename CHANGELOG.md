@@ -8,16 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `architect` — a directly selectable, read-only architecture advisor that explains whole-system boundaries, trade-offs, and incremental migrations. It can formalize accepted decisions as specs and, after explicit user acceptance, exec-plans without gaining code, shell, brief, or delegation access.
+- `architect` — a directly selectable architecture advisor that explains whole-system boundaries, trade-offs, and incremental migrations. It directly authors accepted specs and exec-plans without gaining code, shell, brief, or implementation access.
 - `plan-reviewer` cluster — orchestrator + three specialized sub-reviewers (`plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer`). Supports two review depths: `light` (spec coherence only) and `deep` (spec coherence + codebase feasibility). Returns APPROVED / CHANGES_REQUESTED / BLOCKED.
 - `spec_format()` and `plan_format()` lifecycle tools — return the canonical format for specs and exec-plans inline, so agents always know the expected structure before calling `spec_create` or `plan_create`
 - `spec-writer` agent — specialized in writing high-quality specs conforming to the canonical format; delegates from team-lead or gardener
 - 21 lifecycle tools replace the previous 5, organized by domain: 7 spec tools (including `spec_format`), 8 plan tools (including `plan_format`), 5 brief tools, and `project_state` (returns specs + plans with unchecked blocks only, no briefs).
-- Two new agents: `spec-validator` (checks spec completeness and consistency after `spec_create`/`spec_update`) and `spec-reviewer` (integrated into the review-manager pool — decides whether specs need creation or update after each delivery)
+- Two new agents: `spec-validator` (explicitly checks spec consistency after structural validation) and `spec-reviewer` (integrated into the review-manager pool — decides whether specs need creation or update after each delivery)
 - Artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`) are now protected at runtime — any direct `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is blocked by the plugin. All access goes through the 21 lifecycle tools.
 - The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
 
 ### Fixed
+- SOUL now applies to all agents, including architect and subagents, regardless of their mode. Global and per-agent `soul: false` overrides remain supported.
 - Architect now presents remaining decisions after creating or updating an exec-plan, with options, consequences, and a recommendation, instead of leaving them in the plan. It does not repeat the plan or ask you to reconfirm accepted decisions without new evidence.
 - Review-manager launches specialists directly instead of routing through plan-reviewer and exceeding the nested-agent depth limit. Review orchestrators stop immediately on infrastructure restrictions rather than retrying blocked spawns.
 - Installed packages now include the agent registration module. Artifact protection also covers V2 shell commands and multi-file patches.
@@ -25,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Architect can no longer mark exec-plan delivery blocks complete; it retains only the narrowly accepted plan creation and update exception.
 
 ### Changed
+- Architect now obtains independent spec approval before creating a plan, closes open questions before deep plan review, and applies review corrections itself. Only current, fully approved artifacts are ready for handoff; your acceptance of architecture decisions remains required.
+- Architect now evaluates your proposals independently, challenges unsupported or disproportionate choices with concrete reasons, and supports sound ideas without inventing objections. It distinguishes your final decision from its own recommendation.
 - Migrated to OpenCode V2. V1 plugin loading is no longer supported; configure the plugin under `plugins`, agent overrides under native `agents`, and plugin-specific `soul`/artifact paths under plugin `options`. Nested reviews require `experimental.subagent_depth: 2`; todos are optional.
 - Agents inherit model variants instead of forcing provider-specific `max`/`extended` defaults, and lifecycle tools explicitly enforce their named permissions before execution.
 - The team-lead now proactively proposes creating an exec-plan when a request involves 3+ distinct non-trivial steps, multiple agents, or work likely to span several sessions — even when the intent is perfectly clear. Previously, exec-plans were only suggested for ambiguous requests.

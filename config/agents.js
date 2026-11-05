@@ -331,12 +331,13 @@ const AGENT_POLICIES = [
     file: "architect.md",
     description:
       "Direct architecture advisor — examines system boundaries, coupling, risks, and migration paths. " +
-      "Can formalize accepted architecture decisions as specs or exec-plans, but never implements or delegates work.",
+      "Directly authors specs and exec-plans for accepted decisions, delegates only to spec-validator and plan-reviewer, and never implements.",
     temperature: 0.2,
     variant: "max",
     mode: "primary",
     color: "info",
     permission: {
+      task: { "*": "deny", "spec-validator": "allow", "plan-reviewer": "allow" },
       write: "deny",
       read: "allow",
       list: "allow",
@@ -440,7 +441,7 @@ const AGENT_POLICIES = [
     description:
       "Semantic consistency checker for specs — verifies internal coherence and " +
       "compatibility with the existing spec corpus. Returns APPROVED or REJECTED. " +
-      "Invoked automatically on spec creation and update, or explicitly via spec_validate.",
+      "Explicitly delegated by authorized callers, including architect, after structural validation; lifecycle tools do not launch semantic review.",
     temperature: 0.1,
     variant: "max",
     mode: "subagent",
@@ -578,10 +579,10 @@ export const SUBAGENT_DEFS = AGENT_POLICIES.map(({ permission, temperature, vari
   ...def,
   color: COLORS[color],
   request: { body: { temperature } },
-  permissions: Object.entries(permission).flatMap(([action, value]) =>
+  permissions: [{ action: "*", resource: "*", effect: "deny" }, ...Object.entries(permission).flatMap(([action, value]) =>
     Object.entries(typeof value === "string" ? { "*": value } : value)
       .filter(() => action !== "todoread")
-      .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect }))),
+      .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect })))],
 }));
 
 /**
@@ -616,7 +617,7 @@ export function registerSubagent(editor, def, prompt, options = {}) {
   const hasBase = base.permissions.every((rule, index) =>
     JSON.stringify(rule) === JSON.stringify(configuredPermissions[index]));
   const soul = options.agents?.[id]?.soul ?? options.soul;
-  const agentPrompt = (mode === "all" && soul !== false)
+  const agentPrompt = soul !== false
     ? `${prompt}\n\nInstructions from: ~/.config/opencode/AGENTS.md\n${GLOBAL_AGENTS_CONTENT}`
     : prompt;
   // update is an upsert in V2. Registry defaults for a newly created agent are

@@ -8,7 +8,7 @@ created: 2026-09-22
 
 ## Purpose
 
-Define the contract of the `spec-validator` agent — a semantic consistency checker invoked automatically after every `spec_create` and `spec_update` call. Its sole job is to verify that a spec is internally self-consistent and compatible with the existing spec corpus. It is not a style checker, completeness enforcer, or implementation reviewer.
+Define the contract of the `spec-validator` agent — a semantic consistency checker explicitly invoked by an authorized caller, including architect, after structural validation of a created or updated specification. This intentionally replaces historical automatic-invocation wording; lifecycle tools perform structural checks only and do not launch a reviewer. Its sole job is to verify that a spec is internally self-consistent and compatible with the existing spec corpus. It is not a style checker, completeness enforcer, or implementation reviewer.
 
 ## Behavior
 
@@ -33,7 +33,7 @@ The agent's default is charitable: missing detail, sparse content, or unusual st
 - The agent must not reject a spec for incomplete coverage, style issues, word choice, or missing sections.
 - The agent must not reject speculatively — if it cannot point to a specific contradiction, it must approve.
 - The agent operates as `mode: subagent`, `silent: true`, `temperature: 0.1` — it is invisible to the user and produces deterministic, low-variance output.
-- The agent is triggered when `spec_validate` is called — which happens automatically after `spec_create`/`spec_update`, or explicitly. Never called as a conversational agent.
+- The agent is explicitly delegated a specification id by an authorized caller, including architect. `spec_validate` checks structure only; neither it nor `spec_create`/`spec_update` automatically invokes semantic review. The caller requests review again after substantive corrections. Never called as a conversational agent.
 - Permitted tools: `spec_list`, `spec_get`, `read`, `glob`, `grep`. No write access.
 - The agent never creates, updates, or deletes specs. It reads and judges.
 

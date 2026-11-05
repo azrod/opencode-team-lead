@@ -69,7 +69,7 @@ Takes a complex or ambiguous request and writes a structured exec-plan to `docs/
 
 ### architect
 
-Use directly when you need a whole-system assessment before choosing a structural direction. Architect reads and explores ordinary repository files, separates evidence from inferences and unknowns, and explains current state, target state, trade-offs, and incremental migration with readable ASCII diagrams in `text` code blocks for non-trivial work. It cannot edit code, run commands, access briefs, or delegate. It can create or update a spec after a justified recommendation; it can create or update an exec-plan only after you explicitly accept the architecture decision being formalized.
+Use directly when you need a whole-system assessment before choosing a structural direction. Architect reads and explores ordinary repository files, separates evidence from inferences and unknowns, and explains current state, target state, trade-offs, and incremental migration with readable ASCII diagrams in `text` code blocks for non-trivial work. It cannot edit code, run commands, or access briefs. It directly authors specs and exec-plans and delegates only independent reviews to `spec-validator` and `plan-reviewer`. A current spec must pass structural validation and semantic approval before plan creation. You must explicitly accept the architecture decision being formalized, and all questions must be closed before the default deep plan review. Corrections require fresh review; incomplete reviews never make a plan ready. Nested plan reviews require `experimental.subagent_depth: 2`.
 
 ### gardener
 
@@ -174,7 +174,7 @@ These tools are not visible in the OpenCode UI. They run automatically as part o
 | `brainstorm` | `subagent`, `question`, `webfetch`, `read`, brief lifecycle tools |
 | `harness` | `subagent` (ask), `question`, optional `todowrite`, `glob`, `grep`, `shell`, `read`, `edit` |
 | `planning` | `subagent` (ask), `question`, `read`, `glob`, `grep`, plan lifecycle tools |
-| `architect` | `read`, `list`, `glob`, `grep`, lifecycle tools (`spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`); no code edits, shell, delegation, external directories, briefs, deletion, `plan_block_done`, or `project_state` |
+| `architect` | `read`, `list`, `glob`, `grep`, lifecycle tools (`spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`); delegation only to exact `spec-validator` and `plan-reviewer` targets; no code edits, shell, external directories, briefs, deletion, `plan_block_done`, or `project_state` |
 | `spec-writer` | `read`, `glob`, `grep`, spec lifecycle tools; no delegation |
 | `gardener` | `subagent` (explore + spec-writer only), `shell` (git log/diff/status), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
 | `researcher` | `read`, `webfetch`, `websearch`, `grep` |

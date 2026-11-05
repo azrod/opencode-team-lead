@@ -110,7 +110,7 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 
 ## Exception Architect
 
-`planning` conserve la responsabilité générale de transformer les demandes complexes ou ambiguës en exec-plans. `architect` n'intervient sur un exec-plan que pour convertir une décision architecturale déjà expliquée et explicitement acceptée par l'utilisateur en trajectoire de livraison. Il ne délègue pas, n'implémente pas, et ne peut pas utiliser cette exception pour produire des plans généralistes.
+`planning` conserve la responsabilité générale de transformer les demandes complexes ou ambiguës en exec-plans. `architect` n'intervient sur un exec-plan que pour convertir une décision architecturale déjà expliquée et explicitement acceptée par l'utilisateur en trajectoire de livraison. Intentional evolution: it directly authors artifacts and corrections, delegates only independent reviews to the exact `spec-validator` and `plan-reviewer` targets, never implements, and cannot use this exception to produce general-purpose plans. Current structural and semantic specification approval precedes plan creation; closed questions precede explicit deep plan review by default. User acceptance remains distinct from reviewer approval.
 
 ## Artefacts produits
 
@@ -143,7 +143,7 @@ L'agent `planning` accède aux exec-plans et specs exclusivement via les lifecyc
 | `plan_create` | allow — créer un exec-plan |
 | `plan_get` | allow — lire un exec-plan existant |
 | `plan_update` | allow — mettre à jour un exec-plan |
-| `architect` (exception) | peut appeler `plan_create` ou `plan_update` seulement après acceptation explicite par l'utilisateur de la décision architecturale formalisée; aucune délégation ni implémentation |
+| `architect` (exception) | peut appeler `plan_create` ou `plan_update` seulement après acceptation explicite par l'utilisateur de la décision architecturale formalisée; delegation only to exact `spec-validator` and `plan-reviewer` review targets; no implementation |
 | `plan_validate` | allow — valider la structure d'un exec-plan |
 | `plan_list` | allow — lister les exec-plans existants |
 | `spec_list` | allow — consulter les specs existantes |

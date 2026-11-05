@@ -119,7 +119,7 @@ Investigates directly via `read`, `glob`, `grep`. Reports findings back to calle
 
 ### architect
 
-Direct-only architecture advisor. `read`, `list`, `glob`, `grep`, and an explicit lifecycle allowlist: `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. `edit`, `bash`, `task`, `external_directory`, `project_state`, artifact deletion, `plan_block_done`, and all brief tools are explicitly denied. It can create or update a plan only after explicit user acceptance of the architecture decision being formalized.
+Direct-only architecture advisor. `read`, `list`, `glob`, `grep`, and an explicit lifecycle allowlist: `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. Delegation is limited to the exact `spec-validator` and `plan-reviewer` targets. `edit`, `shell`, `external_directory`, `project_state`, artifact deletion, `plan_block_done`, and all brief tools remain denied. Architect directly authors artifacts and corrections: current spec approval precedes plan creation, user acceptance precedes formalizing decisions, and closed questions precede explicitly requested deep plan review. Incomplete reviews block handoff; nested review requires `experimental.subagent_depth: 2`.
 
 ### gardener
 
