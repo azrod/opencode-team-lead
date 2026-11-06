@@ -1,15 +1,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { cp, mkdtemp, mkdir, readFile, rm, symlink } from "node:fs/promises";
+import { access, cp, mkdtemp, mkdir, readFile, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Agent } from "@opencode/plugin";
 import Plugin from "../index.js";
-import { SUBAGENT_DEFS, GLOBAL_AGENTS_CONTENT } from "../config/agents.js";
+import { AGENT_DEFS, GLOBAL_AGENTS_CONTENT } from "../config/agents.js";
 import { mockContext } from "./v2-helper.js";
-import { baseline, teamLeadPromptSha256 } from "./agent-baseline.js";
+import { baseline } from "./agent-baseline.js";
+
+// Keep the original refactor oracle intact; bug-finder was subsequently removed.
+const retainedBaseline = baseline.filter(([id]) => id !== "bug-finder");
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -22,21 +25,22 @@ function digest(value) {
   return createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(canonical(value))).digest("hex");
 }
 
-test("frozen pre-refactor defaults, registration order, and prompt bytes", async () => {
+test("retained agents preserve frozen defaults and registration order", async () => {
   const ctx = mockContext(process.cwd(), { soul: false });
   await Plugin.setup(ctx);
-  const lead = ctx.agents.get("team-lead");
-  const definitions = [{ id: lead.id, file: "prompt.md", mode: lead.mode, color: lead.color,
-    description: lead.description, request: { body: lead.request.body }, permissions: lead.permissions }, ...SUBAGENT_DEFS];
-  assert.deepEqual([...ctx.agents.keys()], baseline.map(([id]) => id));
-  assert.deepEqual(definitions.map(({ id }) => id), baseline.map(([id]) => id));
-  for (const [id, definitionHash, registeredHash] of baseline) {
-    const def = definitions.find((def) => def.id === id);
-    assert.equal(digest(def), definitionHash, `${id} defaults`);
+  assert.deepEqual([...ctx.agents.keys()], retainedBaseline.map(([id]) => id));
+  assert.deepEqual(AGENT_DEFS.map(({ id }) => id), retainedBaseline.map(([id]) => id));
+  assert.equal(new Set(AGENT_DEFS.map(({ id }) => id)).size, 13);
+  for (const [id, definitionHash, registeredHash] of retainedBaseline) {
+    const def = AGENT_DEFS.find((def) => def.id === id);
+    // The filename is the only intentional definition change.
+    assert.equal(digest(id === "team-lead" ? { ...def, file: "prompt.md" } : def), definitionHash, `${id} defaults`);
     const { system: _system, ...registered } = ctx.agents.get(id);
     assert.equal(digest(registered), registeredHash, `${id} registration`);
   }
-  assert.equal(digest(await readFile(new URL("../agents/prompt.md", import.meta.url), "utf8")), teamLeadPromptSha256);
+  assert.equal(AGENT_DEFS[0].file, "team-lead.md");
+  assert.doesNotMatch(await readFile(new URL("../agents/team-lead.md", import.meta.url), "utf8"), /bug[- ]finder/i);
+  await assert.rejects(access(new URL("../agents/prompt.md", import.meta.url)), { code: "ENOENT" });
 });
 
 test("team-lead overlays preserve ordered rules and plugin prompt ownership", async () => {
@@ -78,7 +82,7 @@ test("team-lead SOUL overrides work in both directions", async () => {
 test("temperature hook is scoped to plugin IDs and preserves event precedence", async () => {
   const ctx = mockContext(process.cwd());
   await Plugin.setup(ctx);
-  for (const [id] of baseline) {
+  for (const [id] of retainedBaseline) {
     const event = { agent: id, options: {} };
     await ctx.hooks.context(event);
     assert.equal(event.options.temperature, id === "team-lead" || id === "spec-writer" ? 0.3 : ["requirements-reviewer", "security-reviewer", "spec-validator", "plan-functional-reviewer", "plan-technical-reviewer"].includes(id) ? 0.1 : 0.2);
@@ -87,9 +91,22 @@ test("temperature hook is scoped to plugin IDs and preserves event precedence", 
     assert.equal(event.options.temperature, 0.9);
   }
   ctx.agent.get = () => { throw new Error("must not look up independent agents"); };
-  const unrelated = { agent: "independent", options: {} };
-  await ctx.hooks.context(unrelated);
-  assert.deepEqual(unrelated.options, {});
+  for (const agent of ["independent", "bug-finder"]) {
+    const unrelated = { agent, options: {} };
+    await ctx.hooks.context(unrelated);
+    assert.deepEqual(unrelated.options, {});
+  }
+});
+
+test("removal leaves an independently configured bug-finder untouched", async () => {
+  const independent = Agent.Info.default(Agent.ID.make("bug-finder"));
+  independent.system = "User-owned investigation agent";
+  const ctx = mockContext(process.cwd(), {}, [independent]);
+  await Plugin.setup(ctx);
+  assert.deepEqual(ctx.agents.get("bug-finder"), independent);
+  const event = { agent: "bug-finder", options: {} };
+  await ctx.hooks.context(event);
+  assert.deepEqual(event.options, {});
 });
 
 test("missing required prompt fails setup in an isolated package fixture", async () => {

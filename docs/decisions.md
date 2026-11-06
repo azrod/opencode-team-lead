@@ -1,5 +1,9 @@
 # Décisions stratégiques — 2026-03-31
 
+> **Subsequent removal — 2026-11-06.** Bug-finder has also been removed. The current roster is 12 specialists plus team-lead; the 13-specialist count in the retirement-time record below is historical. Its team-lead caller instructions are removed without assigning a replacement role.
+
+> **Historical decision record — retirement update, 2026-11-06.** [Retire Five Auxiliary Agents](specs/retire-five-auxiliary-agents.md) supersedes the availability and invocation claims below for `planning`, `brainstorm`, `harness`, `researcher`, and `gardener`. Their former roles are preserved as history, not current routing guidance. The plugin now provides 13 specialized agents plus `team-lead`; existing artifacts and all 21 lifecycle tools remain intact. Team-lead routing awaits its separate redesign, with no replacement ownership assigned. The mechanical-enforcement and repository-navigation principles remain applicable independently of the retired personas.
+
 ## Résumé exécutif
 
 Session d'exploration autour de BMAD-METHOD et du modèle harness engineering (article OpenAI sur les applications longue durée). Conclusion : la direction précédente (construire de meilleurs documents pour que les agents lisent) était la mauvaise abstraction. L'objectif est de construire de meilleurs environnements dans lesquels les agents opèrent.

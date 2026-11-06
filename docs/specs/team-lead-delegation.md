@@ -8,36 +8,33 @@ created: 2025-01-01
 
 # The team-lead — Workflow de délégation
 
-Décrit le comportement du team-lead une fois les agents `harness` et `planning` implémentés.
+The current inventory below reflects [Retire Five Auxiliary Agents](retire-five-auxiliary-agents.md) and the subsequent removal of `bug-finder`: 12 specialized plugin agents plus `team-lead` remain available. Bug-finder's team-lead caller instructions are removed without assigning a replacement role; its [specification](bug-finder-agent.md) is historical.
+
+> **Deferred routing — 2026-11-06.** The Workflow section and all subsequent routing sections are preserved historical descriptions pending the separate team-lead redesign. Their planning/harness invocation rules and other retired-agent references are not supported post-retirement routing instructions. The prompt was relocated byte-for-byte to `agents/team-lead.md` under [Unified Agent Registry](unified-agent-registry.md). The subsequent bug-finder removal deletes only its caller guidance; the prompt may still route to the other retired agents, including Brainstorm, Planning, Harness and Gardener protocols and researcher selection. This is a known transitional mismatch, not a fully repaired end-to-end workflow. No responsibilities are transferred to team-lead, architect, or another replacement by this retirement.
 
 ---
 
 ## Agents disponibles
 
-18 agents enregistrés dans `SUBAGENT_DEFS` dans `config/agents.js` :
+`AGENT_DEFS` in `config/agents.js` contains all 13 plugin definitions in registration order: `team-lead` first, followed by the 12 specialized agents below. The entrypoint consumes this complete list through `registerAgent`; native host agents are not included in this count. This structural unification changes no agent behavior or permissions.
 
-| Agent | Rôle | Mode | Spec |
+| Agent | Role | Mode | Spec |
 |-------|------|------|------|
-| `review-manager` | Orchestre les reviewers spécialisés en parallèle, arbitre les verdicts | subagent | [review-cluster.md](review-cluster.md) |
-| `requirements-reviewer` | Vérifie que l'implémentation couvre les requirements originaux | subagent | [review-cluster.md](review-cluster.md) |
-| `code-reviewer` | Évalue correctness, logique, gestion d'erreurs, maintenabilité | subagent | [review-cluster.md](review-cluster.md) |
-| `security-reviewer` | Identifie les vulnérabilités, mauvaises configurations, risques d'exposition | subagent | [review-cluster.md](review-cluster.md) |
-| `bug-finder` | Orchestre l'investigation de bugs, force root-cause avant fix | all | — |
-| `harness` | Produit les artefacts d'enforcement (lint, CI, hooks, AGENTS.md) | all | [harness-agent.md](harness-agent.md) |
-| `planning` | Transforme les requêtes complexes ou ambiguës en exec-plans structurés sur disque | all | [planning-agent.md](planning-agent.md) |
-| `architect` | Conseiller d'architecture sélectionnable directement : analyse responsabilités, limites, couplage, risques et migration; never implements; directly authors artifacts and delegates only independent reviews to the exact targets `spec-validator` and `plan-reviewer` (intentional evolution of the previous no-delegation boundary). Peut formaliser une décision acceptée en spec ou, après acceptation explicite de l'utilisateur, en exec-plan. | primary, non hidden, non-délégable | [architect-agent.md](architect-agent.md) |
-| `gardener` | Maintenance périodique — Bootstrap : découvre les domaines, délègue à spec-writer. Maintenance : détecte la dérive et escalade. | all | [gardener-agent.md](gardener-agent.md) |
-| `brainstorm` | Phase 0 discovery — aide l'utilisateur à formuler ce qu'il veut construire. Produit un brief dans `docs/briefs/`. | all | — |
-| `researcher` | Cherche et synthétise des informations externes (web, docs officiels, APIs). Read-only, nœud feuille. | all | [researcher-agent.md](researcher-agent.md) |
-| `spec-validator` | Vérificateur sémantique — cohérence interne et compatibilité avec le corpus de specs existant. Retourne APPROVED ou REJECTED. | subagent | [spec-validator-agent](spec-validator-agent.md) |
-| `plan-reviewer` | Orchestrateur de review de plan — demande la profondeur de review (light/deep), spawne les sub-reviewers, retourne APPROVED / CHANGES_REQUESTED / BLOCKED. | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
-| `plan-functional-reviewer` | Vérifie l'alignement du plan avec les specs fonctionnelles actives. Invisible à l'utilisateur (hidden: true), invoqué par plan-reviewer uniquement. | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
-| `plan-technical-reviewer` | Vérifie l'alignement du plan avec les specs techniques et architecturales. Invisible à l'utilisateur (hidden: true), invoqué par plan-reviewer uniquement. | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
-| `plan-code-reviewer` | Vérifie la faisabilité des blocs du plan contre le codebase existant (mode deep uniquement). Invisible à l'utilisateur (hidden: true), invoqué par plan-reviewer uniquement. | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
-| `spec-reviewer` | Revieweur post-livraison de couverture spec — retourne NO_ACTION_NEEDED, SPEC_CREATE_NEEDED, ou SPEC_UPDATE_NEEDED. | subagent | [spec-reviewer-agent](spec-reviewer-agent.md) |
-| `spec-writer` | Rédige des specs conformes au format canonique. Délégué par le team-lead ou le gardener. | subagent | [spec-writer-agent](spec-writer-agent.md) |
+| `review-manager` | Coordinates specialized reviews and arbitrates verdicts | subagent | [review-cluster](review-cluster.md) |
+| `requirements-reviewer` | Checks implementation against requirements | subagent | [review-cluster](review-cluster.md) |
+| `code-reviewer` | Reviews correctness and maintainability | subagent | [review-cluster](review-cluster.md) |
+| `security-reviewer` | Reviews security risks | subagent | [review-cluster](review-cluster.md) |
+| `bug-finder` | Investigates root causes before correction | all | [bug-finder-agent](bug-finder-agent.md) |
+| `architect` | Direct-only architecture advisor; authors specs and accepted-decision plans, delegates only exact `spec-validator` and `plan-reviewer` reviews, never implements or coordinates delivery | primary, non-hidden, not task-delegable | [architect-agent](architect-agent.md) |
+| `spec-validator` | Reviews internal consistency and compatibility with related specs | subagent | [spec-validator-agent](spec-validator-agent.md) |
+| `plan-reviewer` | Coordinates plan review | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
+| `plan-functional-reviewer` | Checks functional alignment; hidden, called only by plan-reviewer | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
+| `plan-technical-reviewer` | Checks technical alignment; hidden, called only by plan-reviewer | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
+| `plan-code-reviewer` | Checks code feasibility in deep review; hidden, called only by plan-reviewer | subagent | [plan-reviewer-agent-cluster](plan-reviewer-agent-cluster.md) |
+| `spec-reviewer` | Reviews specification coverage after delivery | subagent | [spec-reviewer-agent](spec-reviewer-agent.md) |
+| `spec-writer` | Writes canonical specifications when delegated by team-lead | subagent | [spec-writer-agent](spec-writer-agent.md) |
 
-`harness` est un agent de **consolidation**, pas un prérequis de mission. Il n'est jamais dans le chemin critique.
+The retired agents' former routing is preserved below for historical reference only.
 
 ---
 

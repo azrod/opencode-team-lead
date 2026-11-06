@@ -96,7 +96,7 @@ brief: docs/briefs/{nom}.md   # optionnel — brief associé
 | Tâche ambiguë (plusieurs interprétations) | Le team-lead invoque `planning` → exec-plan |
 | Invocation directe par l'utilisateur | Exec-plan |
 | Tâche simple et claire | Le team-lead procède directement (plan simple inline si besoin) |
-| Bug identifié | `bug-finder`, pas `planning` |
+| Bug identifié | Historically `bug-finder`, now retired; no replacement assigned |
 
 ---
 

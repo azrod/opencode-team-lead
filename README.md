@@ -11,7 +11,7 @@ An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestr
 
 The plugin uses OpenCode V2's native Promise API:
 
-- **Domain transforms** — register 19 agents, 21 lifecycle tools, and the bundled spec-writer skill, preserving configured agent overrides
+- **Domain transforms** — register 13 agents (team-lead plus 12 specialists), 21 lifecycle tools, and the bundled spec-writer skill, preserving configured agent overrides
 - **`ctx.tool.hook("execute.before", ...)`** — protects artifact directories against direct access, including `shell` and multi-file `patch`
 - **`ctx.session.hook("context", ...)`** — applies per-agent temperatures while V2 does not dispatch agent request overlays
 
@@ -30,14 +30,10 @@ The plugin uses OpenCode V2's native Promise API:
 | `plan-technical-reviewer` | Checks plan alignment with technical and architectural specs. Silent, invoked by `plan-reviewer` only |
 | `plan-code-reviewer` | Checks plan code feasibility against the codebase (deep mode only). Silent, invoked by `plan-reviewer` only |
 | `spec-reviewer` | Integrated into the review-manager pool — decides whether specs need creation or update after each delivery |
-| `bug-finder` | Structured bug investigation — forces root-cause analysis before any fix |
-| `brainstorm` | Phase 0 thinking partner — helps articulate what you want to build before planning starts |
-| `harness` | Encodes recurring patterns as mechanical artifacts (lint rules, CI checks, AGENTS.md entries) |
-| `planning` | Transforms complex or ambiguous requests into structured exec-plans written to disk |
 | `architect` | Direct-only architecture advisor — maps boundaries and trade-offs, then formalizes accepted decisions without changing code |
-| `gardener` | Periodic audit agent — Bootstrap: discovers functional domains, delegates to spec-writer. Maintenance: pure audit orchestrator, compiles Gardener Report, returns findings to team-lead. |
-| `spec-writer` | Writes high-quality specs conforming to the canonical format — delegated by team-lead or gardener (Bootstrap mode). |
-| `researcher` | External knowledge research — fetches and synthesizes information from the web, official docs, and APIs |
+| `spec-writer` | Writes high-quality specs conforming to the canonical format — delegated by team-lead. |
+
+**Transition limitation:** `planning`, `brainstorm`, `harness`, `researcher`, and `gardener` are retired. The unchanged team-lead prompt still contains their old routing instructions pending a separate redesign; those paths cannot invoke plugin-provided agents. No replacement workflow or responsibility transfer is defined. Lifecycle tools, existing artifacts, and independently configured user agents remain intact.
 
 ### The team-lead's workflow
 
@@ -51,29 +47,9 @@ The plugin uses OpenCode V2's native Promise API:
 
 The team-lead delegates to `review-manager`, which runs specialized reviewers in parallel and returns a single verdict. Reviewers are hidden from discovery but remain callable by their registered IDs through `subagent`.
 
-### bug-finder
-
-Enforces a structured investigation workflow: frames the symptom vs. root cause, investigates via `explore` sub-agents, evaluates fix alternatives, then delegates the actual fix to a `general` sub-agent with full analysis context. Cardinal rule: never apply a workaround that masks the root cause.
-
-### brainstorm
-
-Run before the team-lead when you have a vague idea. Runs a 3-phase conversational flow (discovery → deep dive → draft) and produces a product brief at `docs/briefs/{project-name}.md`. Hand it to `planning` or directly to the team-lead as mission input.
-
-### harness
-
-When a pattern recurs (a mistake that keeps happening, a convention that keeps being missed), harness codifies it as a mechanical check — an ESLint rule, a CI job, an AGENTS.md entry — so humans and agents stop relying on memory to enforce it.
-
-### planning
-
-Takes a complex or ambiguous request and writes a structured exec-plan to `docs/exec-plans/`. Useful before handing a large task to the team-lead, or when you want a reviewable plan before any work starts.
-
 ### architect
 
 Use directly when you need a whole-system assessment before choosing a structural direction. Architect reads and explores ordinary repository files, separates evidence from inferences and unknowns, and explains current state, target state, trade-offs, and incremental migration with readable ASCII diagrams in `text` code blocks for non-trivial work. It cannot edit code, run commands, or access briefs. It directly authors specs and exec-plans and delegates only independent reviews to `spec-validator` and `plan-reviewer`. A current spec must pass structural validation and semantic approval before plan creation. You must explicitly accept the architecture decision being formalized, and all questions must be closed before the default deep plan review. Corrections require fresh review; incomplete reviews never make a plan ready. Nested plan reviews require `experimental.subagent_depth: 2`.
-
-### gardener
-
-Periodic audit agent. In Bootstrap mode, discovers undocumented functional domains and delegates spec writing to `spec-writer`. In Maintenance mode, operates as a pure audit orchestrator — spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead. Never edits files or opens PRs directly; all corrections are delegated by the team-lead after receiving the report.
 
 ## Installation
 
@@ -170,14 +146,8 @@ These tools are not visible in the OpenCode UI. They run automatically as part o
 | `team-lead` | `subagent`, optional `todowrite`, `skill`, `question`, `shell` (git + ls + head + echo; pushes ask), `read`, lifecycle tools, `edit` (`docs/*` only) |
 | `review-manager` | `subagent` (`*-reviewer` only), `question`, `read`, `glob`, `grep` |
 | `requirements-reviewer` / `code-reviewer` / `security-reviewer` | `read`, `glob`, `grep` |
-| `bug-finder` | `read`, `glob`, `grep`, `question` |
-| `brainstorm` | `subagent`, `question`, `webfetch`, `read`, brief lifecycle tools |
-| `harness` | `subagent` (ask), `question`, optional `todowrite`, `glob`, `grep`, `shell`, `read`, `edit` |
-| `planning` | `subagent` (ask), `question`, `read`, `glob`, `grep`, plan lifecycle tools |
 | `architect` | `read`, `list`, `glob`, `grep`, lifecycle tools (`spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`); delegation only to exact `spec-validator` and `plan-reviewer` targets; no code edits, shell, external directories, briefs, deletion, `plan_block_done`, or `project_state` |
 | `spec-writer` | `read`, `glob`, `grep`, spec lifecycle tools; no delegation |
-| `gardener` | `subagent` (explore + spec-writer only), `shell` (git log/diff/status), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format` |
-| `researcher` | `read`, `webfetch`, `websearch`, `grep` |
 
 Everything not listed is denied.
 

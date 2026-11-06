@@ -229,6 +229,8 @@ Unlike `spec_validate` — which must be called after both `spec_create` and `sp
 
 ## Brief Tools
 
+Brief lifecycle APIs and existing artifacts remain available after agent retirement. They do not imply that a dedicated discovery persona is still registered or that a replacement workflow has been assigned.
+
 ### `brief_list()`
 
 **Signature:** `brief_list() → JSON`
@@ -253,7 +255,7 @@ Unlike `spec_validate` — which must be called after both `spec_create` and `sp
 
 **Signature:** `brief_create(title: string, content?: string, exec_plan_id?: string) → JSON`
 
-**When the team-lead calls it:** When a brainstorm session produces a structured product brief to record.
+**When to use it:** To record a structured product brief. The former brainstorm persona is retired; this API remains available without defining a replacement authoring workflow.
 
 **Returns:** Confirmation with the created file path.
 
@@ -338,7 +340,7 @@ Unlike `spec_validate` — which must be called after both `spec_create` and `sp
 
 **What it returns:** The canonical exec-plan template as a markdown string, including required frontmatter fields, goal, scope, building blocks, open questions, and decision log sections.
 
-**Who calls it:** The team-lead (before creating an exec-plan) and the `planning` agent.
+**Who calls it:** The team-lead and `architect` before creating an exec-plan within their existing permissions. The former planning persona is retired; the team-lead's old routing to it remains pending redesign.
 
 ::: tip Format tools are zero-cost
 `spec_format()` and `plan_format()` are pure string returns — no file I/O, no LLM call, no side effects. Call them freely as the first step of any spec or plan creation workflow.

@@ -1,10 +1,27 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
+import { access } from "node:fs/promises";
 import { Agent } from "@opencode/plugin";
-import { SUBAGENT_DEFS, GLOBAL_AGENTS_CONTENT, loadAgentPrompt } from "../config/agents.js";
+import { AGENT_DEFS, GLOBAL_AGENTS_CONTENT, loadAgentPrompt } from "../config/agents.js";
 import Plugin from "../index.js";
 import { mockContext } from "./v2-helper.js";
 import { buildToolRegistry } from "../tools/registry.js";
+
+const RETAINED_AGENT_IDS = [
+  "review-manager",
+  "requirements-reviewer",
+  "code-reviewer",
+  "security-reviewer",
+  "architect",
+  "spec-validator",
+  "plan-reviewer",
+  "plan-functional-reviewer",
+  "plan-technical-reviewer",
+  "plan-code-reviewer",
+  "spec-reviewer",
+  "spec-writer",
+];
+const RETIRED_AGENT_IDS = ["planning", "brainstorm", "harness", "researcher", "gardener", "bug-finder"];
 
 function effect(rules, action, resource = "*") {
   return rules.filter((rule) => (rule.action === "*" || rule.action === action) &&
@@ -18,18 +35,18 @@ describe("native V2 agent policies", () => {
       { options: { soul: true }, enabled: () => true },
       { options: { soul: false }, enabled: () => false },
       {
-        options: { soul: false, agents: { architect: { soul: true }, "code-reviewer": { soul: true } } },
-        enabled: (id) => ["architect", "code-reviewer"].includes(id),
+        options: { soul: false, agents: { architect: { soul: true }, "code-reviewer": { soul: true }, "team-lead": { soul: true } } },
+        enabled: (id) => ["architect", "code-reviewer", "team-lead"].includes(id),
       },
       {
-        options: { soul: true, agents: { architect: { soul: false }, "code-reviewer": { soul: false }, planning: { soul: false } } },
-        enabled: (id) => !["architect", "code-reviewer", "planning"].includes(id),
+        options: { soul: true, agents: { architect: { soul: false }, "code-reviewer": { soul: false }, "team-lead": { soul: false } } },
+        enabled: (id) => !["architect", "code-reviewer", "team-lead"].includes(id),
       },
     ];
     for (const { options, enabled } of cases) {
       const ctx = mockContext(process.cwd(), options);
       await Plugin.setup(ctx);
-      for (const def of [{ id: "team-lead", file: "prompt.md" }, ...SUBAGENT_DEFS]) {
+      for (const def of AGENT_DEFS) {
         const prompt = await loadAgentPrompt(def.id, def.file);
         const expected = enabled(def.id)
           ? `${prompt}\n\nInstructions from: ~/.config/opencode/AGENTS.md\n${GLOBAL_AGENTS_CONTENT}`
@@ -40,8 +57,9 @@ describe("native V2 agent policies", () => {
   });
 
   test("specialized agents use native action names without a blanket deny", () => {
-    assert.equal(SUBAGENT_DEFS.length, 18);
-    for (const agent of SUBAGENT_DEFS) {
+    const specialized = AGENT_DEFS.filter(({ id }) => id !== "team-lead");
+    assert.equal(specialized.length, 12);
+    for (const agent of specialized) {
       assert.ok(!agent.permissions.some((rule) => rule.action === "*" && rule.resource === "*" && rule.effect === "deny"));
       assert.equal(effect(agent.permissions, "external_directory"), undefined);
       assert.match(agent.color, /^#[\da-f]{6}$/i);
@@ -49,10 +67,23 @@ describe("native V2 agent policies", () => {
     }
   });
 
+  test("retains exactly the specialized roster and removes retired prompt files", async () => {
+    assert.deepEqual(AGENT_DEFS.filter(({ id }) => id !== "team-lead").map((agent) => agent.id).sort(), [...RETAINED_AGENT_IDS].sort());
+    for (const id of RETIRED_AGENT_IDS) {
+      assert.ok(!AGENT_DEFS.some((agent) => agent.id === id), id);
+      await assert.rejects(access(new URL(`../agents/${id}.md`, import.meta.url)), { code: "ENOENT" });
+    }
+    for (const def of AGENT_DEFS) {
+      const prompt = await loadAgentPrompt(def.id, def.file);
+      assert.equal(typeof prompt, "string", def.id);
+      assert.ok(prompt.trim().length > 0, def.id);
+    }
+  });
+
   test("architect allows exact review targets only in definitions and registered defaults", async () => {
     const ctx = mockContext(process.cwd());
     await Plugin.setup(ctx);
-    for (const architect of [SUBAGENT_DEFS.find((agent) => agent.id === "architect"), ctx.agents.get("architect")]) {
+    for (const architect of [AGENT_DEFS.find((agent) => agent.id === "architect"), ctx.agents.get("architect")]) {
       assert.equal(architect.mode, "primary");
       assert.notEqual(architect.hidden, true);
       assert.deepEqual(architect.permissions.filter((rule) => rule.action === "subagent"), [
@@ -79,7 +110,9 @@ describe("native V2 agent policies", () => {
   test("registers all agents and preserves hidden reviewers", async () => {
     const ctx = mockContext(process.cwd());
     await Plugin.setup(ctx);
-    assert.equal(ctx.agents.size, 19);
+    assert.equal(ctx.agents.size, 13);
+    assert.deepEqual([...ctx.agents.keys()].sort(), ["team-lead", ...RETAINED_AGENT_IDS].sort());
+    for (const id of RETIRED_AGENT_IDS) assert.equal(ctx.agents.has(id), false, id);
     assert.equal(ctx.agents.get("code-reviewer").hidden, true);
     assert.equal(ctx.agents.get("architect").hidden, false);
     assert.equal(effect(ctx.agents.get("team-lead").permissions, "subagent"), "allow");
@@ -93,6 +126,14 @@ describe("native V2 agent policies", () => {
     }
   });
 
+  test("retained caller guidance does not route to removed agents", async () => {
+    const writer = await loadAgentPrompt("spec-writer", "spec-writer.md");
+    assert.doesNotMatch(writer, /gardener/i);
+    assert.doesNotMatch(AGENT_DEFS.find((agent) => agent.id === "spec-writer").description, /gardener/i);
+    const lead = await loadAgentPrompt("team-lead", "team-lead.md");
+    assert.doesNotMatch(lead, /bug[- ]finder/i);
+  });
+
   test("configured native permissions follow plugin defaults without inheriting host grants", async () => {
     for (const withHostPrefix of [true, false]) {
       const configured = Agent.Info.default(Agent.ID.make("architect"));
@@ -104,7 +145,7 @@ describe("native V2 agent policies", () => {
       configured.permissions = [...(withHostPrefix ? configured.permissions : []), ...overrides];
       const ctx = mockContext(process.cwd(), {}, [configured]);
       await Plugin.setup(ctx);
-      const defaults = SUBAGENT_DEFS.find((agent) => agent.id === "architect").permissions;
+      const defaults = AGENT_DEFS.find((agent) => agent.id === "architect").permissions;
       const registered = ctx.agents.get("architect").permissions;
       assert.deepEqual(registered, [...defaults, ...overrides]);
       assert.equal(effect(registered, "subagent", "spec-validator"), "deny");
@@ -225,7 +266,7 @@ describe("native V2 agent policies", () => {
     }
     assert.match(tools.spec_validate.description, /structure only/);
     assert.match(tools.spec_validate.description, /Does not launch semantic review/);
-    const validator = SUBAGENT_DEFS.find((agent) => agent.id === "spec-validator");
+    const validator = AGENT_DEFS.find((agent) => agent.id === "spec-validator");
     assert.match(validator.description, /Explicitly delegated/);
     assert.doesNotMatch(validator.description, /Invoked automatically/);
   });
@@ -236,6 +277,6 @@ describe("native V2 agent policies", () => {
     assert.match(prompt, /Structural result/);
     assert.match(prompt, /pending unless the caller supplied an actual APPROVED or REJECTED verdict covering the current content/);
     assert.doesNotMatch(prompt, /trigger the LLM spec-validator/);
-    assert.equal(effect(SUBAGENT_DEFS.find((agent) => agent.id === "spec-writer").permissions, "subagent", "spec-validator"), undefined);
+    assert.equal(effect(AGENT_DEFS.find((agent) => agent.id === "spec-writer").permissions, "subagent", "spec-validator"), undefined);
   });
 });

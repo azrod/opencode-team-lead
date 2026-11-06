@@ -2,7 +2,7 @@
 
 Spec-writer is the dedicated spec authoring agent. It produces high-quality specification documents conforming to the canonical format, so the team-lead and other agents can rely on them as stable references across sessions.
 
-**Mode:** `subagent` — delegated by the team-lead or the gardener (Bootstrap mode). Not directly callable by users.
+**Mode:** `subagent` — delegated by the team-lead. Not directly callable by users.
 
 **Temperature:** `0.3` — low temperature for precise, structured output.
 
@@ -14,7 +14,6 @@ Specs written ad-hoc by general agents tend to be inconsistent: missing required
 
 The team-lead delegates to spec-writer when:
 - A scope warrants a new spec and the content is complex enough to benefit from a dedicated agent
-- The gardener (in Bootstrap mode) has identified a functional domain that needs to be documented for the first time
 - An existing spec needs a substantial rewrite (not a targeted patch)
 
 For minor spec updates (a single targeted string replacement), the team-lead calls `spec_update` directly — no delegation needed.
@@ -37,7 +36,7 @@ return                 → report the spec id and a one-line summary to the call
 3. **Explore the codebase** — Use `read`, `glob`, and `grep` to gather facts: current behavior, interfaces, decisions already made in code. The spec must describe reality, not intent.
 4. **`spec_create(title, type, content)`** — Create the spec with fully formed content. Never create a stub and iterate — write it complete on the first call.
 5. **`spec_validate(id)`** — Validate immediately after creation. If the validator returns REJECTED, fix the issues and call `spec_update` + `spec_validate` until APPROVED.
-6. **Return** — Report the spec id and a one-line summary to the caller (team-lead or gardener).
+6. **Return** — Report the spec id and a one-line summary to the caller (team-lead).
 
 ## Spec Types
 
@@ -109,6 +108,6 @@ Expected output: a spec of type "technical" covering the guard behavior, the lis
 ## What Spec-Writer Does NOT Do
 
 - **No implementation** — spec-writer reads code to document it, never to change it
-- **No exec-plans** — planning agent handles those
+- **No exec-plans** — spec-writer authors specifications only
 - **No stub specs** — specs are written complete on the first pass or not at all
 - **No architectural decisions** — if the spec would require making a new decision, spec-writer surfaces it as an open question and returns it to the caller

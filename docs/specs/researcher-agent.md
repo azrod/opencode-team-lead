@@ -1,11 +1,16 @@
 ---
-status: implemented
+title: "Researcher Agent"
+id: researcher-agent
+type: technical
+status: deprecated
 created: 2026-04-20
 ---
 
 # Spec: Agent `researcher`
 
-**Status:** implemented  
+> **Retired — 2026-11-06.** The plugin no longer provides `researcher`; see [Retire Five Auxiliary Agents](retire-five-auxiliary-agents.md). The body below is preserved as historical documentation, not executable routing or current availability guidance. Existing artifacts and lifecycle tools remain intact. No replacement owner is assigned; team-lead routing is deferred to its separate redesign.
+
+**Status:** deprecated
 **Updated:** 2026-04-20
 
 ## Summary

@@ -111,7 +111,7 @@ Agent system prompts must stay in `agents/*.md` files loaded at runtime via `rea
 **Good:**
 ```js
 // In index.js — load from file
-const prompt = await readFile(join(__dirname, "agents", "prompt.md"), "utf-8");
+const prompt = await readFile(join(__dirname, "agents", "team-lead.md"), "utf-8");
 ```
 
 **Bad:**
@@ -129,7 +129,7 @@ const prompt = `You are the team-lead...
 
 ## Principle: Agent prompt files do not declare permissions
 
-Permissions for every agent are declared exclusively in `index.js` via the `SUBAGENT_DEFS` array. An `agents/*.md` file must never contain a `## Permissions` section. Such a section is purely documentary — it has no effect on what the agent can actually do — and it diverges from the real enforcement in `index.js`. Stale or incorrect permission docs are worse than no docs.
+Permissions for every agent are declared exclusively in `config/agents.js` via the complete `AGENT_DEFS` registry. The entrypoint registers that list through `registerAgent()`. An `agents/*.md` file must never contain a `## Permissions` section. Such a section is purely documentary — it has no effect on what the agent can actually do — and it diverges from the real declarations in `config/agents.js`. Stale or incorrect permission docs are worse than no docs.
 
 **Good:**
 ```markdown
@@ -163,7 +163,7 @@ You are a specialist agent that...
 
 ## Principle: Product briefs follow a verifiable schema
 
-Briefs produced by the brainstorm agent are consumed by downstream agents — Planning uses them to generate exec-plans, and the team-lead uses them to scope delegated work. A brief missing required frontmatter fields or section headings is not machine-actionable: a downstream agent cannot reliably extract the project name, scope, or success criteria without a predictable structure. The schema enforces the minimum structural contract. Content quality — whether the Vision is compelling, whether the Use Cases are realistic — remains the brainstorm agent's responsibility and is not checked here.
+Product briefs remain stored artifacts with lifecycle support. Historically, the brainstorm persona produced them and the planning persona consumed them; both agents are now retired, and replacement routing is deferred. The schema principle remains applicable to existing and new briefs: a brief missing required frontmatter fields or section headings is not machine-actionable, because a downstream agent cannot reliably extract the project name, scope, or success criteria without a predictable structure. The schema enforces the minimum structural contract. Content quality — whether the Vision is compelling, whether the Use Cases are realistic — is not checked here; this principle assigns no replacement owner.
 
 **Good:**
 ```markdown
@@ -232,7 +232,7 @@ Every directory that an agent is granted `edit` access to in `index.js` must phy
 
 **Good:**
 ```js
-// In SUBAGENT_DEFS — edit permission declared AND directory exists on disk
+// In AGENT_DEFS — edit permission declared AND directory exists on disk
 edit: {
   "*": "deny",
   "docs/briefs/**": "allow",   // docs/briefs/ exists (has .gitkeep or real files)

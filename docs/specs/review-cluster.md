@@ -214,7 +214,7 @@ Chaque reviewer produit un verdict individuel : `APPROVED`, `CHANGES_REQUESTED`,
 | `code-reviewer` | — | — | allow | allow | allow | deny |
 | `security-reviewer` | — | — | allow | allow | allow | deny |
 
-Le `review-manager` ne peut déléguer via `task` qu'aux agents dont l'id se termine par `-reviewer`. Toute délégation vers un autre agent (y compris le team-lead lui-même) est bloquée. Cette restriction est définie dans `SUBAGENT_DEFS` dans `config/agents.js` : `task: { "*": "deny", "*-reviewer": "allow" }`.
+Le `review-manager` ne peut déléguer via `task` qu'aux agents dont l'id se termine par `-reviewer`. Toute délégation vers un autre agent (y compris le team-lead lui-même) est bloquée. Cette restriction est définie dans `AGENT_DEFS` dans `config/agents.js` : `task: { "*": "deny", "*-reviewer": "allow" }`.
 
 ---
 

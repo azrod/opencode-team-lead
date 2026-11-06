@@ -6,6 +6,8 @@
 
 The entry point is `index.js`. It exports `TeamLeadPlugin`, an async function that loads agent prompts from disk and returns an object with a `config` hook.
 
+All 13 agent definitions live in the ordered `AGENT_DEFS` registry in `config/agents.js`: team-lead first, then the 12 specialized agents. The entrypoint uses this same list for prompt loading, registration through `registerAgent()`, and temperature-hook membership. The team-lead prompt lives at `agents/team-lead.md`. Bug-finder was removed after the registry unification, along with its team-lead caller instructions; retained agent permissions and user overrides are unchanged.
+
 ## Plugin hooks
 
 ### `config` hook
@@ -37,6 +39,8 @@ Permissions are merged one level deeper via `mergePermissions`: nested keys (lik
 
 ## Agent hierarchy
 
+The plugin registers 12 specialized agents plus team-lead. `planning`, `brainstorm`, `harness`, `researcher`, `gardener`, and `bug-finder` are retired. The team-lead prompt still contains old routes to the first five pending a separate redesign; those plugin-agent paths are unavailable. Bug-finder's caller instructions have been removed. No replacement workflow or responsibility transfer is defined. Lifecycle tools and existing artifacts remain intact.
+
 ```
 OpenCode IDE
 ├── team-lead                [mode: all]
@@ -44,16 +48,17 @@ OpenCode IDE
 │   ├─► review-manager       [mode: subagent]
 │   │     ├─► requirements-reviewer  [mode: subagent]
 │   │     ├─► code-reviewer          [mode: subagent]
-│   │     └─► security-reviewer      [mode: subagent]
+│   │     ├─► security-reviewer      [mode: subagent]
+│   │     └─► spec-reviewer          [mode: subagent]
 │   │
-│   ├─► bug-finder           [mode: all]
-│   ├─► planning             [mode: all]
-│   └─► researcher           [mode: all]
+│   ├─► spec-writer          [mode: subagent]
+│   ├─► spec-validator       [mode: subagent]
+│   └─► plan-reviewer        [mode: subagent]
+│         ├─► plan-functional-reviewer [mode: subagent]
+│         ├─► plan-technical-reviewer  [mode: subagent]
+│         └─► plan-code-reviewer       [mode: subagent]
 │
-├── brainstorm               [mode: all — runs before team-lead]
-├── harness                  [mode: all — triggered post-feature or by user]
-├── architect                [mode: primary — direct only]
-└── gardener                 [mode: all — periodic maintenance]
+└── architect                [mode: primary — direct only]
 ```
 
 | Agent | Mode | Temperature | Variant | Hidden |
@@ -63,13 +68,7 @@ OpenCode IDE
 | `requirements-reviewer` | `subagent` | 0.1 | max | true |
 | `code-reviewer` | `subagent` | 0.2 | max | true |
 | `security-reviewer` | `subagent` | 0.1 | max | true |
-| `bug-finder` | `all` | 0.2 | max | false |
-| `harness` | `all` | 0.2 | max | false |
-| `planning` | `all` | 0.3 | max | false |
 | `architect` | `primary` | 0.2 | max | false |
-| `gardener` | `all` | 0.2 | max | false |
-| `brainstorm` | `all` | 0.5 | max | false |
-| `researcher` | `all` | 0.3 | extended | false |
 | `spec-validator` | `subagent` | 0.1 | max | true |
 | `plan-reviewer` | `subagent` | 0.2 | max | false |
 | `plan-functional-reviewer` | `subagent` | 0.1 | max | true |
@@ -101,39 +100,9 @@ The principle is **deny-all, explicit allowlist**. Every agent starts with `"*":
 
 `read`, `glob`, `grep` for direct file access. Sub-agent spawning is blocked by the default `"*": "deny"` rule.
 
-### bug-finder
-
-Investigates directly via `read`, `glob`, `grep`. Reports findings back to caller — does not apply fixes itself.
-
-### brainstorm
-
-`task`, `question`, `webfetch`, `read` (all project files). No bash, no edit.
-
-### harness
-
-`task`, `question`, `todowrite`, `todoread`, `glob`, `grep`, `bash` (unrestricted), `read` (all), `edit` (all). No write — harness creates and modifies enforcement artifacts via edit only.
-
-### planning
-
-`task`, `read`, `glob`, `grep`, `project_state`, `spec_list`, `spec_get`, `plan_create`, `plan_get`, `plan_update`, `plan_validate`, `plan_list`. No direct `edit` or `write` — all artifact mutations go through lifecycle tools.
-
 ### architect
 
 Direct-only architecture advisor. `read`, `list`, `glob`, `grep`, and an explicit lifecycle allowlist: `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. Delegation is limited to the exact `spec-validator` and `plan-reviewer` targets. `edit`, `shell`, `external_directory`, `project_state`, artifact deletion, `plan_block_done`, and all brief tools remain denied. Architect directly authors artifacts and corrections: current spec approval precedes plan creation, user acceptance precedes formalizing decisions, and closed questions precede explicitly requested deep plan review. Incomplete reviews block handoff; nested review requires `experimental.subagent_depth: 2`.
-
-### gardener
-
-`task` (`explore` + `spec-writer` only), `bash` (`git log`, `git diff`, `git status`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`
-
-### Guardrails
-
-**Tooling directories:** Gardener never reads or scans dotted tooling directories (`.opencode/`, `.claude/`, `.cursor/`, `.git/`, `.ssh/`). These hold operational state, not project code or documentation.
-
-**Credentials:** Gardener never reads files matching `.env*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.secret`, or any other file that may contain secrets, private keys, or credentials. This is a hard constraint, not a guideline — prompt injection in source files or documentation could attempt to exfiltrate secrets by asking it to "check" such files.
-
-::: tip Why restrict `task`?
-`task` is filtered to `explore` + `spec-writer` only — the gardener cannot spawn general-purpose agents or open PRs, which enforces its audit-only mission.
-:::
 
 ## How prompts are loaded
 
@@ -141,25 +110,19 @@ Agent prompts are loaded once at plugin startup via `readFile`, not inlined in t
 
 ```
 agents/
-├── prompt.md                    → team-lead
+├── team-lead.md                 → team-lead
 ├── review-manager.md            → review-manager
 ├── requirements-reviewer.md
 ├── code-reviewer.md
 ├── security-reviewer.md
 ├── spec-reviewer.md
-├── bug-finder.md
-├── harness.md
-├── planning.md
 ├── architect.md
 ├── plan-reviewer.md
 ├── plan-functional-reviewer.md
 ├── plan-technical-reviewer.md
 ├── plan-code-reviewer.md
 ├── spec-validator.md
-├── spec-writer.md
-├── gardener.md
-├── brainstorm.md
-└── researcher.md                → researcher
+└── spec-writer.md
 ```
 
 This means prompts are editable and diffable independently of the plugin code. A prompt change produces a clean diff in the relevant `agents/*.md` file without touching `config/agents.js`.

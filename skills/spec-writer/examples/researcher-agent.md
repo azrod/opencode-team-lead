@@ -42,7 +42,7 @@ Researcher operates **before** planning — the team-lead delegates research tas
 
 **Not triggered for:**
 - Internal codebase questions → `explore`
-- Bug investigation → `bug-finder`
+- Bug investigation → historically `bug-finder`, now retired; no replacement assigned
 - Code review → `review-manager`
 
 ---

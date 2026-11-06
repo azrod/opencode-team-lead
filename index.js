@@ -3,7 +3,7 @@ import { Plugin } from "@opencode/plugin";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SUBAGENT_DEFS, loadAgentPrompt, registerSubagent } from "./config/agents.js";
+import { AGENT_DEFS, loadAgentPrompt, registerAgent } from "./config/agents.js";
 import { buildToolRegistry } from "./tools/registry.js";
 import { checkArtifactAccess, LIFECYCLE_TOOLS } from "./tools/artifact-guard.js";
 
@@ -24,22 +24,7 @@ export default Plugin.define({
           return [key, value];
         }),
     ));
-    const definitions = [
-      {
-        id: "team-lead", file: "prompt.md", mode: "all", color: "#ef4444",
-        description: "Delegation-only team lead. Plans work, delegates implementation, and orchestrates reviews.",
-        request: { body: { temperature: 0.3 } },
-        permissions: [
-          ...["todowrite", "skill", "subagent", "question", "read", ...LIFECYCLE_TOOLS]
-            .map((action) => ({ action, resource: "*", effect: "allow" })),
-          { action: "edit", resource: "docs/*", effect: "allow" },
-          ...["git *", "ls *", "head *", "echo *"].map((resource) => ({ action: "shell", resource, effect: "allow" })),
-          { action: "shell", resource: "git push *", effect: "ask" },
-        ],
-      },
-      ...SUBAGENT_DEFS,
-    ];
-    const prompts = await Promise.all(definitions.map((def) => loadAgentPrompt(def.id, def.file)));
+    const prompts = await Promise.all(AGENT_DEFS.map((def) => loadAgentPrompt(def.id, def.file)));
     if (prompts.some((prompt) => prompt === null)) {
       throw new Error("[opencode-team-lead] A required agent prompt could not be loaded");
     }
@@ -48,7 +33,7 @@ export default Plugin.define({
     const skillContent = skillFile.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "").trim();
 
     await ctx.agent.transform((editor) => {
-      definitions.forEach((def, index) => registerSubagent(editor, def, prompts[index], options));
+      AGENT_DEFS.forEach((def, index) => registerAgent(editor, def, prompts[index], options));
     });
     await ctx.skill.transform((editor) => {
       if (editor.get("spec-writer")) return;
@@ -62,7 +47,7 @@ export default Plugin.define({
     // Agent request.body is not dispatched by the V2 runner yet. Apply only the
     // plugin agents' temperature through the supported model-context hook.
     await ctx.session.hook("context", async (event) => {
-      if (!definitions.some((def) => def.id === event.agent)) return;
+      if (!AGENT_DEFS.some((def) => def.id === event.agent)) return;
       const { data: agent } = await ctx.agent.get({ agentID: event.agent });
       const temperature = agent.request?.body?.temperature;
       if (typeof temperature === "number") event.options.temperature ??= temperature;

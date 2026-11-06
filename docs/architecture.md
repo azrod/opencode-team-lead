@@ -6,7 +6,9 @@
 
 Le point d'entrée est `index.js`. Il exporte `TeamLeadPlugin`, une fonction async qui charge les prompts depuis le disque, puis retourne un objet avec deux hooks : `config` et `tool.execute.before`.
 
-L'enregistrement des agents est délégué à `config/agents.js`, qui contient `SUBAGENT_DEFS` (18 définitions d'agents) et exporte `registerSubagent()`. L'enregistrement des lifecycle tools est géré par `tools/registry.js` (21 outils).
+Agent registration is delegated to `config/agents.js`, which exports the complete ordered `AGENT_DEFS` registry and `registerAgent()`. Team-lead is first, followed by the 12 specialized agents. The entrypoint consumes that same 13-agent list for prompt loading, registration, and temperature-hook membership; it has no separate team-lead definition. Lifecycle registration remains in `tools/registry.js` (21 tools). See [Unified Agent Registry](specs/unified-agent-registry.md) for the original relocation contract. Bug-finder was subsequently removed along with its team-lead caller instructions; retained agent permissions and overrides are unchanged.
+
+> **Retirement transition — 2026-11-06.** The plugin no longer supplies `planning`, `brainstorm`, `harness`, `researcher`, or `gardener`; see [Retire Five Auxiliary Agents](specs/retire-five-auxiliary-agents.md). Existing artifacts, lifecycle APIs, paths, formats, guards, and permissions remain unchanged. The team-lead prompt still contains old routing pending its separate redesign. This intermediate state is not a fully repaired end-to-end workflow; no replacement responsibility is assigned, and architect retains its narrow direct-only role.
 
 ## Le hook `config`
 
@@ -27,15 +29,8 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 │  │              │          │                 │                 │
 │  │  mode: all   │          │  task ──► requirements-reviewer   │
 │  └──────────────┘          │  task ──► code-reviewer           │
-│         │                  │  task ──► security-reviewer       │
-│         │ task             └─────────────────┘                 │
-│         ▼                                                       │
-│  ┌──────────────┐                                              │
-│  │  bug-finder  │ (mode: all — visible utilisateur)            │
-│  └──────────────┘                                              │
-│  ┌──────────────┐                                              │
-│  │  brainstorm  │ (mode: all — phase 0, avant le team-lead)    │
-│  └──────────────┘                                              │
+│                            │  task ──► security-reviewer       │
+│                            └─────────────────┘                 │
 │  ┌──────────────┐                                              │
 │  │  architect   │ (mode: primary — direct-only, hors task)     │
 │  └──────────────┘                                              │
@@ -49,13 +44,7 @@ Appelé par OpenCode pour construire la configuration des agents. Le hook :
 | `requirements-reviewer` | `subagent` | 0.1 | max | Vérifie la conformité fonctionnelle (impl. vs requirements). |
 | `code-reviewer` | `subagent` | 0.2 | max | Qualité technique : logique, gestion d'erreurs, API design. |
 | `security-reviewer` | `subagent` | 0.1 | max | Vulnérabilités, mauvaises configs, exposition de données. |
-| `bug-finder` | `all` | 0.2 | max | Investigation structurée de bugs. Force l'analyse root-cause avant toute correction. |
-| `harness` | `all` | 0.2 | max | Encode les patterns récurrents en artifacts d'enforcement mécaniques (lint rules, CI checks, AGENTS.md entries). |
-| `planning` | `all` | 0.3 | max | Transforme les requêtes complexes ou ambiguës en work contracts structurés sur disque (exec-plans). |
 | `architect` | `primary` | 0.2 | max | Direct architecture advisor. Directly authors specs and plans, delegates only independent reviews to spec-validator and plan-reviewer, never implements. |
-| `gardener` | `all` | 0.2 | max | Maintenance périodique — mode Bootstrap : découvre les domaines fonctionnels et délègue à `spec-writer`. Mode Maintenance : audite docs et specs, compile un Gardener Report structuré, retourne les findings au team-lead. Ne modifie aucun fichier directement. |
-| `brainstorm` | `all` | 0.5 | max | Phase 0 discovery. Aide l'utilisateur à articuler ce qu'il veut construire. Produit un product brief dans `docs/briefs/`. |
-| `researcher` | `all` | 0.3 | extended | Recherche externe en lecture seule. Consulte documentation, RFCs et APIs sans déléguer. |
 | `spec-validator` | `subagent` | 0.1 | max | Vérifie la cohérence et la complétude d'une spec après création ou mise à jour. |
 | `plan-reviewer` | `subagent` | 0.2 | max | Orchestre la review d'exec-plan et arbitre les retours des reviewers de plan. |
 | `plan-functional-reviewer` | `subagent` | 0.1 | max | Vérifie l'alignement fonctionnel d'un exec-plan avec les specs actives. |
@@ -85,13 +74,7 @@ Specialized agents declare explicit permission rules without a blanket deny poli
 
 **Reviewers spécialisés** (`requirements-reviewer`, `code-reviewer`, `security-reviewer`) : `read`, `glob`, `grep` uniquement — lecture directe, pas de délégation.
 
-**bug-finder** : `read`, `glob`, `grep`, `question` — lecture directe, pas de délégation.
-
-**brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), lifecycle tools (`brief_create`, `brief_update`). Pas d'accès `edit` direct — les briefs sont créés et mis à jour exclusivement via les lifecycle tools. Pas de bash.
-
 **architect**: `read`, `list`, `glob`, `grep`, plus `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. Native delegation rules allow only the exact `spec-validator` and `plan-reviewer` targets. `edit` is explicitly denied; other undeclared actions, including `external_directory`, are no longer denied by a blanket plugin rule. Prompt-level operating boundaries remain unchanged. Architect writes artifacts and corrections itself. Current specification approval precedes plan creation; explicit user acceptance is required for formalized architectural decisions. Closed questions and structural validation precede explicitly requested deep plan review. Incomplete reviews block handoff; nested review requires `experimental.subagent_depth: 2`.
-
-**gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
 
 Explicit permission restrictions are enforced by OpenCode; prompt-level delegation instructions alone are not a technical access restriction.
 
@@ -99,18 +82,12 @@ Explicit permission restrictions are enforced by OpenCode; prompt-level delegati
 
 Les prompts sont chargés une seule fois au démarrage du plugin via `readFile`, pas inlinés dans `index.js`. Chemins résolus depuis `__dirname` vers `agents/`:
 
-- `agents/prompt.md` → team-lead
+- `agents/team-lead.md` → team-lead
 - `agents/review-manager.md` → review-manager
 - `agents/requirements-reviewer.md` → requirements-reviewer
 - `agents/code-reviewer.md` → code-reviewer
 - `agents/security-reviewer.md` → security-reviewer
-- `agents/bug-finder.md` → bug-finder
-- `agents/harness.md` → harness
-- `agents/planning.md` → planning
 - `agents/architect.md` → architect
-- `agents/gardener.md` → gardener
-- `agents/brainstorm.md` → brainstorm
-- `agents/researcher.md` → researcher
 - `agents/spec-validator.md` → spec-validator
 - `agents/plan-reviewer.md` → plan-reviewer
 - `agents/plan-functional-reviewer.md` → plan-functional-reviewer

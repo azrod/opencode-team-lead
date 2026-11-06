@@ -9,6 +9,8 @@ updated: 2026-04-07
 
 # Spec : Lifecycle Tools
 
+> **Agent availability notice — 2026-11-06.** [Retire Five Auxiliary Agents](retire-five-auxiliary-agents.md) retires `planning`, `brainstorm`, `harness`, `researcher`, and `gardener`, not lifecycle capabilities. All 21 tools, APIs, artifact paths, formats, guards, permissions, and existing artifacts remain unchanged. The general planning ownership, brainstorm brief ownership, retired-agent links, and D1 action to update the planning prompt below are historical and superseded as active routing or action guidance. No replacement owner is assigned; team-lead routing awaits its separate redesign. Architect's narrow accepted-decision planning and exact review delegation boundaries remain unchanged.
+
 **Statut :** active  
 **Mis à jour :** 2026-04-07
 
@@ -114,7 +116,7 @@ Uses configured artifact paths relative to the project root, defaulting to the c
 
 ## 3. Format des frontmatters
 
-Les tools parsent et écrivent exclusivement ces champs. Tout champ additionnel est ignoré silencieusement.
+The examples below preserve historical frontmatter conventions, not an exclusive field allowlist. Getters return parsed frontmatter; each listing or state tool selects its documented metadata fields. In particular, `project_state` includes the spec's `type` as documented in section 2. Use `spec_format` and `plan_format` for the current canonical formats; this clarification changes no parser, artifact format, or runtime behavior.
 
 ### Spec (`paths.specs/*.md`)
 
@@ -165,7 +167,7 @@ opencode-team-lead/
 │   ├── lifecycle.js      # Implémentation des 19 tools opérationnels (fonctions nommées)
 │   └── artifact-guard.js # Guard — LIFECYCLE_TOOLS Set + checkArtifactAccess()
 └── agents/
-    └── prompt.md
+    └── team-lead.md
 ```
 
 `tools/artifact-guard.js` exporte le `Set` `LIFECYCLE_TOOLS` (les 21 noms de tools) et la fonction `checkArtifactAccess` utilisée dans le hook `tool.execute.before`. Tout appel direct `read`/`edit`/`write`/`list`/`bash`/`glob`/`grep` ciblant les chemins d'artefacts configurés est bloqué sauf si le caller est un des 21 lifecycle tools. Le guard résout les aliases par symlink, compare sans tenir compte de la casse pour les systèmes insensibles à la casse, et refuse les patterns glob contenant `..`.
@@ -240,37 +242,15 @@ Le même objet `paths` est ensuite transmis à chaque tool via sa closure et lu 
 
 ### Permissions team-lead
 
-Les 21 lifecycle tools sont listés dans `defaultPermission` du team-lead dans `index.js` :
+The team-lead definition belongs to the complete `AGENT_DEFS` registry in `config/agents.js`, not the entrypoint. Its ordered permission array grants all 21 lifecycle tools by consuming the shared `LIFECYCLE_TOOLS` set exported by `tools/artifact-guard.js`:
 
 ```js
-const defaultPermission = {
-  "*": "deny",
-  // … autres permissions (task, question, read, edit docs/**, …)
-  project_state: "allow",
-  spec_get: "allow",
-  spec_create: "allow",
-  spec_update: "allow",
-  spec_validate: "allow",
-  spec_list: "allow",
-  spec_delete: "allow",
-  spec_format: "allow",
-  plan_get: "allow",
-  plan_create: "allow",
-  plan_update: "allow",
-  plan_validate: "allow",
-  plan_block_done: "allow",
-  plan_list: "allow",
-  plan_delete: "allow",
-  plan_format: "allow",
-  brief_get: "allow",
-  brief_create: "allow",
-  brief_update: "allow",
-  brief_delete: "allow",
-  brief_list: "allow",
-}
+...[...LIFECYCLE_TOOLS].map((action) => ({
+  action, resource: "*", effect: "allow",
+})),
 ```
 
-Les utilisateurs peuvent les surcharger via leur `opencode.json` (même mécanique que les autres permissions — `mergePermissions` existant).
+`index.js` registers this definition through `registerAgent`, like every other plugin agent. User permission overrides remain appended after plugin defaults, preserving last-match precedence. [Unified Agent Registry](unified-agent-registry.md) changes only ownership and naming; lifecycle grants, their order, and the remaining team-lead rules are unchanged.
 
 ---
 

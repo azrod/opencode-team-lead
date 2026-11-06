@@ -1,6 +1,10 @@
 # team-lead — The Orchestrator Agent
 
-`team-lead` is the central orchestrator injected by `opencode-team-lead`. It is the only agent users interact with directly. It understands your request, breaks it into tasks, delegates everything to specialized sub-agents, validates results through the review cluster, and synthesizes a final report — without ever touching code directly.
+`team-lead` is the central orchestrator injected by `opencode-team-lead`. It understands your request, breaks it into tasks, delegates to specialized sub-agents, validates results through the review cluster, and synthesizes a final report — without touching code directly. Other visible agents, including the direct-only `architect`, can also be selected by users.
+
+::: warning Existing routing — pending separate redesign
+`planning`, `brainstorm`, `harness`, `researcher`, and `gardener` have been retired. This page preserves the old workflow and selection guide as a description of the unchanged team-lead prompt, not a working end-to-end contract. Its Brainstorm, Planning, Harness, and Gardener protocols and researcher selection references still await the separate redesign. Any routing below to those five plugin agents is obsolete and unavailable. No replacement workflow or responsibility transfer is defined; lifecycle tools and existing artifacts remain available.
+:::
 
 <ClientOnly><WorkflowDiagram /></ClientOnly>
 
@@ -42,7 +46,7 @@ The team-lead has direct access to 21 lifecycle tools organized by domain. No de
 
 See [Lifecycle Tools](/lifecycle-tools) for the full reference.
 
-## 5-Phase Workflow
+## Existing 5-Phase Workflow (Routing Redesign Deferred)
 
 ### 1. Understand
 
@@ -84,24 +88,6 @@ Every code, architecture, infra, or security change goes through `review-manager
 
 **Skipping review** is allowed only when all three are true: the change is documentation-only, has no security implications, and the user explicitly requested speed over thoroughness. When skipping, note it in the report.
 
-## Bug-Finder Protocol
-
-When the user reports a bug — unexpected behavior, regression, crash, "something stopped working" — the team-lead **always delegates to `bug-finder` first**. Never to a general agent directly.
-
-`bug-finder` forces four fundamental questions before any fix is proposed:
-1. What is the exact problem? (symptom vs. root cause)
-2. Where is the source of truth? (which code owns the broken behavior)
-3. What alternatives were considered?
-4. Why is this specific fix the right one?
-
-**When to skip `bug-finder`:** only when the bug is trivially locatable (user points to the exact broken line with a clear typo) AND the fix is isolated with no risk of divergence.
-
-| `bug-finder` certainty | team-lead's action |
-|------------------------|-------------------|
-| `HIGH` | Proceed to implementation via `general` agent with the analysis |
-| `MEDIUM` | Proceed but flag the uncertainty in the user report |
-| `UNCERTAINTY_EXPOSED` | Surface the open questions to the user before any fix |
-
 ## Context Management
 
 The team-lead's context window is its most valuable resource. After every agent returns a result:
@@ -112,9 +98,9 @@ The team-lead's context window is its most valuable resource. After every agent 
 
 `compress` is what protects against compaction. There is no working-memory file that survives a compaction event — when it happens, the team-lead resumes by re-reading `todowrite` state and calling `project_state()`.
 
-## Agent Selection Guide
+## Existing Agent Selection Guide (Retired Routes Unavailable)
 
-The team-lead selects agents based on the task domain:
+The prompt contains the following task-domain mapping. Rows naming retired agents are historical routing only, not current invocation guidance:
 
 | Task | Agent |
 |------|-------|
@@ -122,7 +108,6 @@ The team-lead selects agents based on the task domain:
 | Implement anything | `general` with a descriptive persona (`"golang-pro"`, `"react-frontend-engineer"`, etc.) |
 | External knowledge, docs, RFCs | `researcher` |
 | All code review | `review-manager` (never spawn reviewers directly) |
-| Bug investigation | `bug-finder` |
 | Intent unclear at vision level | `brainstorm` (produces a brief before planning starts) |
 | Complex / ambiguous planning | `planning` |
 | Recurring pattern enforcement | `harness` |
@@ -140,7 +125,6 @@ The team-lead explicitly avoids these — they are failure modes, not edge cases
 - **"The agent said it's done, ship it"** → always review before reporting success. Trust but verify.
 - **"It's a small change, skip review"** → small changes cause big outages. Review is proportional, not optional.
 - **"I'll spawn a couple of reviewers myself"** → every review goes through `review-manager`. The team-lead picks the wrong reviewers, forgets to arbitrate disagreements, burns its own context on synthesis. The review-manager exists precisely to avoid this.
-- **"There's a bug, let me quickly fix it"** → `bug-finder` first, always. Jumping straight to a fix without investigation is how workarounds and code divergence get created.
 
 ## Permissions Summary
 

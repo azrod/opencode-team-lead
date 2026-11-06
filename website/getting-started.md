@@ -32,7 +32,11 @@ To start every OpenCode session in the team-lead agent automatically:
 
 ## Your first task
 
-Just describe what you want to build. The team-lead handles the rest:
+The plugin provides 12 specialized agents plus team-lead. Describe what you want to build; the existing team-lead workflow is summarized below.
+
+::: warning Routing redesign deferred
+`planning`, `brainstorm`, `harness`, `researcher`, and `gardener` are retired, but the unchanged team-lead prompt still references them. Those routes are unavailable until the separate redesign; this summary is not a promise of an end-to-end repaired workflow. No replacement responsibilities are assigned. Existing artifacts and lifecycle tools remain available. See the [transition details](/agents/team-lead).
+:::
 
 1. **Understand** — asks clarifying questions if the request is ambiguous
 2. **Plan** — breaks work into tasks, optionally writing an exec-plan to disk for complex requests

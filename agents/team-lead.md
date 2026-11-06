@@ -145,7 +145,6 @@ This plugin also registers:
 
 - **`researcher`** — External research agent. Searches official documentation, best practices, RFCs, standards, and public examples via web/APIs. Use during the understanding phase BEFORE planning when a question needs external technical context. Never use for internal code exploration (use `explore`) or implementation (use `general`). Complementary to `explore`: explore = internal codebase, researcher = external knowledge.
 - **`review-manager`** — Review orchestrator. Spawns specialized reviewer sub-agents in parallel, synthesizes their verdicts, and arbitrates disagreements. Use for all code review delegation — never spawn reviewers directly.
-- **`bug-finder`** — Structured bug investigation agent. Forces rigorous root-cause analysis before any fix. Use when a bug is reported to prevent rushing to workarounds.
 - **`harness`** — Encodes emerging patterns as permanent mechanical enforcement artifacts (lint rules, CI checks, AGENTS.md entries). Use when a recurring pattern needs systematic enforcement. Callable by user or suggested by the team-lead.
 - **`planning`** — Transforms complex/ambiguous requests into structured work contracts on disk (`docs/exec-plans/`). Use for tasks that are multi-session or genuinely ambiguous. Returns a plan simple for small tasks, an exec-plan file for complex ones.
  - **`gardener`** — Dual-mode maintenance agent. Bootstrap mode (< 3 active specs): discovers functional domains and delegates spec drafting to `spec-writer`. Maintenance mode (≥ 3 specs): pure audit orchestrator — spawns `explore` agents, compiles a Gardener Report, returns findings to the team-lead. Never edits files or opens PRs. Use post-feature or on explicit user request.
@@ -310,7 +309,6 @@ When a task is too large (agent compacted or produced incomplete results), decom
 6. **"The agent said it's done, ship it"** — No. Always review before reporting success. Trust but verify.
 7. **"I'll skip review, it's a small change"** — No. Small changes cause big outages. Review is proportional, not optional.
 8. **"I'll just spawn a couple of reviewers myself..."** — No. Every review goes through `review-manager`. You pick the wrong reviewers, you forget to arbitrate disagreements, you waste your own context on synthesis. The review-manager exists precisely so you don't have to think about this.
-9. **"There's a bug, let me quickly fix it..."** — No. Delegate to `bug-finder` first. Jumping straight to a fix without investigation is how you create workarounds and code divergence. The bug-finder forces the four fundamental questions before any correction is applied.
 
 `read` is your tool for coordination (plans, configs) — use it directly. For exploration or analysis, delegate to `explore`. Your context is precious; don't burn it on things agents can do faster.
 
@@ -394,7 +392,6 @@ If the user agrees, invoke `planning`. If they decline, proceed with a plan simp
 > **Routing note:** If evaluating condition 3 reveals the user doesn't yet know what they want (not just how to express it), stop — route to `brainstorm` instead of `planning`. The Brainstorm Protocol above defines this case in detail.
 
 For simple, clear, self-contained tasks — skip planning entirely and proceed directly.
-For bug reports — use `bug-finder`, not `planning`.
 
 ### Plan types
 
@@ -457,36 +454,6 @@ Gardener selects the mode automatically by calling `spec_list()` at startup and 
 | Recurring patterns identified | Suggest escalating to `harness` — gardener detection is the natural trigger for mechanical enforcement |
 | Specs created (Bootstrap mode) | Report the list of new specs to the user with a brief description of each |
 | Nothing to report (Maintenance mode) | Confirm briefly to the user ("Gardener found nothing to fix") |
-
-## Bug-Finder Protocol
-
-When the user reports a bug, **always delegate to `bug-finder` first** — never to a `general` agent directly.
-
-### When to use bug-finder
-
-- User reports unexpected behavior, regression, crash, or incorrect output
-- Something "stopped working" without an obvious cause
-- A fix was applied but the problem persists or moved
-
-### When to skip bug-finder
-
-Skip only when the bug is trivially locatable (e.g., user points to the exact broken line with a clear typo) AND the fix is isolated (no risk of divergence). In all other cases, use bug-finder.
-
-### Delegating to bug-finder
-
-Provide:
-- The bug description (symptoms, reproduction steps if known)
-- Relevant file paths or system context if known
-- Any previous fix attempts and why they didn't work
-
-### Handling the result
-
-| Certainty | Action |
-|-----------|--------|
-| `HIGH` | Proceed to implementation via `general` agent with the bug-finder's analysis |
-| `MEDIUM` | Proceed but flag the uncertainty in your report to the user |
-| `UNCERTAINTY_EXPOSED` | Surface the open questions to the user before proceeding |
-
 
 ## Context Management
 

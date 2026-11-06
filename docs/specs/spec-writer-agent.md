@@ -8,7 +8,7 @@ created: 2026-09-22
 
 ## Purpose
 
-Define the contract of the `spec-writer` agent — a specialist in producing high-quality specification files that conform to the project's canonical format. The spec-writer is delegated by the team-lead or the gardener (in Bootstrap mode) with a domain or functional description to document. It writes specs; it does not plan work, modify code, or make architectural decisions.
+Define the contract of the `spec-writer` agent — a specialist in producing high-quality specification files that conform to the project's canonical format. The spec-writer is delegated by the team-lead with a domain or functional description to document. The former gardener Bootstrap caller was retired under [Retire Five Auxiliary Agents](retire-five-auxiliary-agents.md); no replacement Bootstrap workflow is assigned. It writes specs; it does not plan work, modify code, or make architectural decisions.
 
 ## Behavior
 
@@ -54,7 +54,7 @@ The team-lead delegates "document the artifact-guard module" to the spec-writer.
 
 **Scenario: domain already covered**
 
-The gardener delegates "document spec creation." The agent calls `spec_list()` and finds `lifecycle-tools` already covers `spec_create` in detail. The agent returns a recommendation to update `lifecycle-tools` rather than creating a new file, and stops without calling `spec_create`.
+The team-lead delegates "document spec creation." The agent calls `spec_list()` and finds `lifecycle-tools` already covers `spec_create` in detail. The agent returns a recommendation to update `lifecycle-tools` rather than creating a new file, and stops without calling `spec_create`.
 
 **Scenario: validator rejects, one fix sufficient**
 

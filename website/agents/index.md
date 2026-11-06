@@ -1,14 +1,18 @@
 # Agents Overview
 
-`opencode-team-lead` installs a complete multi-agent system into OpenCode. At the top sits **`team-lead`**, a pure orchestrator that never touches code directly. Everything flows through delegation: the team-lead plans, sub-agents execute, the review cluster validates.
+`opencode-team-lead` registers **12 specialized agents plus `team-lead`** in OpenCode. The team-lead delegates implementation and the review cluster validates results; `architect` is selected directly.
+
+::: warning Retirement transition
+`planning`, `brainstorm`, `harness`, `researcher`, and `gardener` are retired. The unchanged team-lead prompt still routes to them in places pending a separate redesign. Those plugin-agent paths are unavailable, and no replacement workflow or responsibility transfer is defined. Lifecycle tools and existing artifacts remain intact.
+:::
 
 <ClientOnly>
   <AgentGraph />
 </ClientOnly>
 
-<p class="agent-graph-caption">Agent hierarchy — <code>team-lead</code> orchestrates everything; <code>review-manager</code> sub-orchestrates the review cluster.</p>
+<p class="agent-graph-caption">Selected delegation paths, not the full roster. <code>explore</code> and <code>general</code> are host agents; <code>review-manager</code> coordinates the review cluster.</p>
 
-Agents are split into two modes:
+Agents use three modes:
 
 - **`mode: primary`** — visible and directly selectable by the user; not available through `task` delegation
 - **`mode: all`** — visible in the OpenCode agent list, accessible directly by the user or by the team-lead
@@ -29,27 +33,15 @@ Agents are split into two modes:
 | `plan-technical-reviewer` | `subagent` | Checks plan alignment with technical and architectural specs. Silent, invoked by `plan-reviewer` only. |
 | `plan-code-reviewer` | `subagent` | Checks plan code feasibility against the codebase (deep mode only). Silent, invoked by `plan-reviewer` only. |
 | `spec-reviewer` | `subagent` | Integrated into the review-manager pool. Returns `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` / `SPEC_VIOLATION` after each delivery. |
-| `bug-finder` | `subagent` | Structured investigation. Forces root-cause before any fix. |
-| `brainstorm` | `all` | Phase 0 discovery. Transforms vague ideas into structured product briefs. |
-| `harness` | `all` | Encodes recurring patterns as permanent enforcement artifacts. |
-| `planning` | `all` | Writes complex requests as exec-plans to disk. |
 | `architect` | `primary` | Direct-only architecture advisor. Explains boundaries, trade-offs, and incremental migration without implementing. |
-| `gardener` | `all` | Periodic maintenance. Bootstrap mode: discovers domains and delegates to spec-writer. Maintenance mode: fixes stale docs, detects code drift. |
-| `spec-writer` | `subagent` | Writes high-quality specs conforming to the canonical format. Delegated by team-lead or gardener. |
-| `researcher` | `subagent` | External knowledge retrieval. Searches docs, RFCs, APIs. |
+| `spec-writer` | `subagent` | Writes high-quality specs conforming to the canonical format. Delegated by team-lead. |
 
 ## Agent Pages
 
 - [team-lead](/agents/team-lead) — the orchestrator at the center of everything
 - [Review Cluster](/agents/review-cluster) — review-manager + requirements, code, security, and spec reviewers
-- [Brainstorm](/agents/brainstorm) — Phase 0 thinking partner for vague ideas
-- [Bug-Finder](/agents/bug-finder) — structured investigation before any fix
-- [Harness](/agents/harness) — pattern encoder that makes recurring mistakes impossible
-- [Planning](/agents/planning) — turns complex requests into reviewable exec-plans
 - [Architect](/agents/architect) — direct architecture advice without implementation access
-- [Gardener](/agents/gardener) — periodic hygiene, drift detection, and Bootstrap spec creation
-- [Spec-Writer](/agents/spec-writer) — canonical spec authoring, delegated by team-lead or gardener
-- [Researcher](/agents/researcher) — external knowledge retrieval
+- [Spec-Writer](/agents/spec-writer) — canonical spec authoring, delegated by team-lead
 
 > `spec-validator` invocation is documented in [Lifecycle Tools](/lifecycle-tools). `plan-reviewer` and its sub-reviewers are invoked via `plan_validate`. `spec-reviewer` is part of the [Review Cluster](/agents/review-cluster).
 
@@ -63,22 +55,8 @@ User
         │     ├─► requirements-reviewer
         │     ├─► code-reviewer
         │     ├─► security-reviewer
-        │             └─► spec-reviewer          (always — NO_ACTION_NEEDED / SPEC_CREATE_NEEDED / SPEC_UPDATE_NEEDED / SPEC_VIOLATION)
-        ├─► bug-finder                   (when debugging)
-        ├─► brainstorm                   (when intent is unclear at vision level)
-        ├─► planning                     (when request is ambiguous on structure)
-        ├─► spec-writer                  (when a complex spec needs authoring)
-        ├─► gardener                     (post-delivery maintenance)
-        │     └─► spec-writer            (Bootstrap mode — < 3 active specs)
-        └─► researcher                   (when external knowledge needed)
+        │     └─► spec-reviewer          (always — NO_ACTION_NEEDED / SPEC_CREATE_NEEDED / SPEC_UPDATE_NEEDED / SPEC_VIOLATION)
+        └─► spec-writer                  (when a complex spec needs authoring)
 ```
 
 `architect` is deliberately outside this delegation tree: it is a directly selected `primary` agent, never callable through `task`.
-
-::: tip Brainstorm — direct or automatic
-You can invoke `brainstorm` directly when you have a vague idea, or let the team-lead invoke it automatically when your request is unclear at the vision level. Either path produces a structured product brief at `docs/briefs/{project-name}.md` that feeds directly into `planning`.
-:::
-
-::: tip Harness runs after patterns emerge
-The `harness` agent is triggered after recurring patterns are detected — either by the user, by the team-lead post-feature, or automatically by the Gardener. It encodes the pattern as a mechanical check so it never needs to be enforced manually again.
-:::

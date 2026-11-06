@@ -1,5 +1,7 @@
 # Spec : Agent `bug-finder`
 
+> **Historical example only.** Bug-finder is retired and is not provided by the plugin. This bundled spec illustrates authoring techniques, not an available agent or current routing instructions. No replacement role is assigned.
+
 **Statut :** draft  
 **Mis à jour :** 2026-04-02
 

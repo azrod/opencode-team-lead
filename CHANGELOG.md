@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `architect` — a directly selectable architecture advisor that explains whole-system boundaries, trade-offs, and incremental migrations. It directly authors accepted specs and exec-plans without gaining code, shell, brief, or implementation access.
 - `plan-reviewer` cluster — orchestrator + three specialized sub-reviewers (`plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer`). Supports two review depths: `light` (spec coherence only) and `deep` (spec coherence + codebase feasibility). Returns APPROVED / CHANGES_REQUESTED / BLOCKED.
 - `spec_format()` and `plan_format()` lifecycle tools — return the canonical format for specs and exec-plans inline, so agents always know the expected structure before calling `spec_create` or `plan_create`
-- `spec-writer` agent — specialized in writing high-quality specs conforming to the canonical format; delegates from team-lead or gardener
+- `spec-writer` agent — specialized in writing high-quality specs conforming to the canonical format; delegated by team-lead
 - 21 lifecycle tools replace the previous 5, organized by domain: 7 spec tools (including `spec_format`), 8 plan tools (including `plan_format`), 5 brief tools, and `project_state` (returns specs + plans with unchecked blocks only, no briefs).
 - Two new agents: `spec-validator` (explicitly checks spec consistency after structural validation) and `spec-reviewer` (integrated into the review-manager pool — decides whether specs need creation or update after each delivery)
 - Artifact directories (`docs/specs/`, `docs/exec-plans/`, `docs/briefs/`) are now protected at runtime — any direct `read`, `edit`, `write`, `bash`, `glob`, or `grep` call targeting these paths is blocked by the plugin. All access goes through the 21 lifecycle tools.
@@ -32,11 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Agents inherit model variants instead of forcing provider-specific `max`/`extended` defaults, and lifecycle tools explicitly enforce their named permissions before execution.
 - The team-lead now proactively proposes creating an exec-plan when a request involves 3+ distinct non-trivial steps, multiple agents, or work likely to span several sessions — even when the intent is perfectly clear. Previously, exec-plans were only suggested for ambiguous requests.
 - `plan_create`, `plan_update`, `spec_create`, and `spec_update` now return a suggestion to run a validation review once the artifact is complete — rather than falsely claiming to auto-trigger a validator.
-- Gardener agent is now a dual-mode maintenance agent: Bootstrap mode (< 3 active specs) discovers functional domains and delegates spec drafting to `spec-writer`; Maintenance mode (≥ 3 specs) is a pure audit orchestrator — it spawns `explore` agents, compiles a structured Gardener Report, and returns findings to the team-lead without editing files or opening PRs.
-- Two recurring documentation patterns identified as harness candidates: (1) frontmatter `status` field diverging from body text in spec files, (2) lifecycle tool count hardcoded in multiple docs — both risk silent drift on future changes.
 - `plan_create`, `plan_update`, and `plan_validate` now include a reminder in their response to delegate a semantic review to the `plan-reviewer` agent before starting implementation — so the plan review step is never silently skipped.
 
 ### Removed
+- Removed the `bug-finder` agent and its team-lead investigation protocol. No replacement agent is assigned; independently configured user agents remain untouched.
+- Retired the `planning`, `brainstorm`, `harness`, `researcher`, and `gardener` agents. The team-lead prompt still contains their old routing pending a separate redesign; those plugin-agent paths are unavailable and no replacement responsibilities are assigned. Lifecycle tools, existing artifacts, and independently configured user agents remain intact.
 - Removed the blanket deny policy from specialized agents. Actions without an explicit agent rule, including external directory access, are no longer automatically blocked by the plugin.
 - `plan-validator` agent replaced by the `plan-reviewer` cluster.
 - `mark_block_done`, `complete_plan`, `register_spec`, and `check_artifacts` have been removed and replaced by the new domain-specific lifecycle tools (`plan_block_done`, `spec_create`, etc.)

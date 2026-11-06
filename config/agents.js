@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Agent } from "@opencode/plugin";
+import { LIFECYCLE_TOOLS } from "../tools/artifact-guard.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -250,83 +251,6 @@ const AGENT_POLICIES = [
     },
   },
   {
-    id: "bug-finder",
-    file: "bug-finder.md",
-    description:
-      "Structured bug investigation agent — diagnoses root cause before applying any fix. " +
-      "Prevents workarounds and code divergence by forcing rigorous analysis first.",
-    temperature: 0.2,
-    variant: "max",
-    mode: "all",
-    color: "warning",
-    permission: {
-      write: "deny",
-      read: "allow",
-      glob: "allow",
-      grep: "allow",
-      question: "allow",
-      "bash": {
-        "*": "deny",
-        "git status*": "allow",
-        "git log*": "allow",
-        "git diff*": "allow",
-        "rg*": "allow"
-      }
-    },
-  },
-  {
-    id: "harness",
-    file: "harness.md",
-    description:
-      "Encodes emerging patterns as permanent mechanical enforcement artifacts — " +
-      "lint rules, CI checks, AGENTS.md entries, guiding principles. " +
-      "Transforms recurring patterns into systematic prevention.",
-    temperature: 0.2,
-    variant: "max",
-    mode: "all",
-    color: "success",
-    permission: {
-      write: "deny",
-      task: "ask",
-      question: "allow",
-      todowrite: "allow",
-      todoread: "allow",
-      glob: "allow",
-      grep: "allow",
-      bash: "allow",
-      read: "allow",
-      edit: "allow",
-    },
-  },
-  {
-    id: "planning",
-    file: "planning.md",
-    description:
-      "Transforms complex or ambiguous requests into structured work contracts on disk. " +
-      "Produces exec-plans in docs/exec-plans/ for multi-session tasks. " +
-      "Returns plan simple inline for small, clear tasks.",
-    temperature: 0.3,
-    variant: "max",
-    mode: "all",
-    color: "info",
-    permission: {
-      write: "deny",
-      project_state: "allow",
-      plan_create: "allow",
-      plan_get: "allow",
-      plan_update: "allow",
-      plan_validate: "allow",
-      plan_list: "allow",
-      spec_list: "allow",
-      spec_get: "allow",
-      task: "ask",
-      question: "allow",
-      read: "allow",
-      glob: "allow",
-      grep: "allow",
-    },
-  },
-  {
     id: "architect",
     file: "architect.md",
     description:
@@ -358,81 +282,6 @@ const AGENT_POLICIES = [
       webfetch: "allow",
       "deepwiki*": "allow",
       "code-index*": "allow"
-    },
-  },
-  {
-    id: "gardener",
-    file: "gardener.md",
-    description:
-      "Periodic maintenance agent — Bootstrap mode: discovers functional domains and delegates spec drafting to spec-writer. " +
-      "Maintenance mode: spawns explore agents, compiles a structured Gardener Report with drifted specs, stale docs, recurring patterns, " +
-      "and recommended actions, then returns findings to the team-lead. Never edits files or opens PRs directly.",
-    temperature: 0.2,
-    variant: "max",
-    mode: "all",
-    color: "success",
-    permission: {
-      task: {
-        "*": "deny",
-        explore: "allow",
-        "spec-writer": "allow"
-      },
-      spec_list: "allow",
-      spec_get: "allow",
-      spec_format: "allow",
-      read: "allow",
-      grep: "allow",
-      glob: "allow",
-      write: "deny",
-      bash: {
-        "*": "deny",
-        "git log*": "allow",
-        "git diff*": "allow",
-        "git status*": "allow",
-      },
-    },
-  },
-  {
-    id: "brainstorm",
-    file: "brainstorm.md",
-    description:
-      "Brainstorming agent — helps you discover and articulate what you want to build " +
-      "before planning starts. Produces a product brief at docs/briefs/{project-name}.md.",
-    temperature: 0.5,
-    variant: "max",
-    mode: "all",
-    color: "info",
-    permission: {
-      write: "deny",
-      project_state: "allow",
-      brief_create: "allow",
-      brief_get: "allow",
-      brief_update: "allow",
-      brief_list: "allow",
-      task: "allow",
-      question: "allow",
-      webfetch: "allow",
-      read: "allow",
-    },
-  },
-  {
-    id: "researcher",
-    file: "researcher.md",
-    description:
-      "External knowledge agent — fetches and synthesizes information from the web, " +
-      "official docs, APIs, RFCs, and public sources. Use BEFORE planning to answer " +
-      "technical questions that require external research. Read-only (cannot edit/write code). " +
-      "Leaf node (cannot delegate).",
-    temperature: 0.3,
-    variant: "extended",
-    mode: "all",
-    color: "info",
-    permission: {
-      write: "deny",
-      read: "allow",
-      webfetch: "allow",
-      websearch: "allow",
-      grep: "allow",
     },
   },
   {
@@ -546,7 +395,7 @@ const AGENT_POLICIES = [
     file: "spec-writer.md",
     description:
       "Spec authoring agent — writes high-quality specification files conforming to the project's " +
-      "canonical format. Delegated by the team-lead or gardener with a domain to document. " +
+      "canonical format. Delegated by the team-lead with a domain to document. " +
       "Calls spec_format(), checks for duplicates, explores the codebase, writes and validates the spec.",
     temperature: 0.3,
     variant: "max",
@@ -575,15 +424,29 @@ export function mergePermissions(defaults, overrides = []) {
 const ACTIONS = { bash: "shell", task: "subagent", write: "edit" };
 const COLORS = { info: "#3b82f6", warning: "#f59e0b", error: "#ef4444", success: "#22c55e" };
 
-export const SUBAGENT_DEFS = AGENT_POLICIES.map(({ permission, temperature, variant: _variant, color, ...def }) => ({
-  ...def,
-  color: COLORS[color],
-  request: { body: { temperature } },
-  permissions: Object.entries(permission).flatMap(([action, value]) =>
-    Object.entries(typeof value === "string" ? { "*": value } : value)
-      .filter(() => action !== "todoread")
-      .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect }))),
-}));
+export const AGENT_DEFS = [
+  {
+    id: "team-lead", file: "team-lead.md", mode: "all", color: "#ef4444",
+    description: "Delegation-only team lead. Plans work, delegates implementation, and orchestrates reviews.",
+    request: { body: { temperature: 0.3 } },
+    permissions: [
+      ...["todowrite", "skill", "subagent", "question", "read", ...LIFECYCLE_TOOLS]
+        .map((action) => ({ action, resource: "*", effect: "allow" })),
+      { action: "edit", resource: "docs/*", effect: "allow" },
+      ...["git *", "ls *", "head *", "echo *"].map((resource) => ({ action: "shell", resource, effect: "allow" })),
+      { action: "shell", resource: "git push *", effect: "ask" },
+    ],
+  },
+  ...AGENT_POLICIES.map(({ permission, temperature, variant: _variant, color, ...def }) => ({
+    ...def,
+    color: COLORS[color],
+    request: { body: { temperature } },
+    permissions: Object.entries(permission).flatMap(([action, value]) =>
+      Object.entries(typeof value === "string" ? { "*": value } : value)
+        .filter(() => action !== "todoread")
+        .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect }))),
+  })),
+];
 
 /**
  * Load an agent prompt from the agents/ directory.
@@ -609,7 +472,7 @@ export async function loadAgentPrompt(agentId, fileName, silent = false) {
 }
 
 // AgentEditor.update creates missing agents; preserve configured overlays.
-export function registerSubagent(editor, def, prompt, options = {}) {
+export function registerAgent(editor, def, prompt, options = {}) {
   const { id, description, request, mode, color, hidden, permissions } = def;
   const existing = editor.get(id);
   const base = Agent.Info.default(Agent.ID.make(id));

@@ -6,6 +6,8 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 
 ## Agents implémentés
 
+The plugin currently provides 12 specialized agents plus `team-lead` (13 total). `planning`, `brainstorm`, `harness`, `researcher`, and `gardener` are retired; their specifications remain historical records under [Retire Five Auxiliary Agents](specs/retire-five-auxiliary-agents.md). `bug-finder` was subsequently removed, including its team-lead caller instructions; its [specification](specs/bug-finder-agent.md) is historical. Existing artifacts and all 21 lifecycle tools remain available. Team-lead routing still contains the first five retired agents' references pending its separate redesign; this is not a fully repaired end-to-end workflow, and no replacement ownership is assigned here.
+
 | Agent | Mode | Rôle |
 |---|---|---|
 | `team-lead` | all | Orchestrateur principal |
@@ -13,20 +15,16 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 | `requirements-reviewer` | subagent | Vérifie l'adéquation impl ↔ exigences |
 | `code-reviewer` | subagent | Correctness, logique, maintenabilité |
 | `security-reviewer` | subagent | Vulnérabilités, misconfigs, exposition de données |
-| `bug-finder` | all | Investigation de bugs avec analyse root-cause |
-| `brainstorm` | all | Phase 0 — aide l'utilisateur à découvrir ce qu'il veut construire, produit un product brief dans `docs/briefs/` |
-| `researcher` | all | External knowledge agent. Fetches and synthesizes information from the web, official docs, APIs, and public sources. Used BEFORE planning to answer technical questions requiring external research. Read-only, leaf node. |
-| `harness` | all | Encode les patterns récurrents en règles mécaniques (lint, CI, AGENTS.md) |
-| `planning` | all | Transforme les requêtes complexes en contrats de travail sur disque |
 | `architect` | primary | Direct architecture advisor: directly authors specs and plans, delegates only spec-validator and plan-reviewer reviews, never implements |
-| `gardener` | all | Maintenance périodique — docs stales et drift de code |
 | `spec-validator` | subagent | Explicit semantic review after structural validation: internal consistency and compatibility with related specs, not completeness or architecture quality |
 | `plan-reviewer` | subagent | Orchestrateur de review de plan — demande la profondeur (light/deep), spawne `plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer` en parallèle, retourne APPROVED / CHANGES_REQUESTED / BLOCKED |
 | `plan-functional-reviewer` | subagent | Vérifie l'alignement du plan avec les specs fonctionnelles. Silencieux, invoqué par `plan-reviewer` uniquement |
 | `plan-technical-reviewer` | subagent | Vérifie l'alignement du plan avec les specs techniques et architecturales. Silencieux, invoqué par `plan-reviewer` uniquement |
 | `plan-code-reviewer` | subagent | Vérifie la faisabilité des blocs contre le codebase (mode deep uniquement). Silencieux, invoqué par `plan-reviewer` uniquement |
 | `spec-reviewer` | subagent | Intégré dans le pool du review-manager — retourne `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` après chaque livraison |
-| `spec-writer` | subagent | Rédaction de specs de haute qualité conformes au format canonique — délégué par le team-lead ou le gardener (mode Bootstrap) |
+| `spec-writer` | subagent | Writes high-quality canonical specifications when delegated by team-lead |
+
+All 13 definitions live in the ordered `AGENT_DEFS` registry in [`config/agents.js`](../config/agents.js), registered through `registerAgent()`. The team-lead prompt is [`agents/team-lead.md`](../agents/team-lead.md). See [Unified Agent Registry](specs/unified-agent-registry.md) for the original relocation contract; the subsequent bug-finder removal changes only its roster and caller guidance.
 
 ## Abandonné
 

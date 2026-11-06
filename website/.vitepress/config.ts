@@ -65,13 +65,7 @@ export default defineConfig({
           { text: "Overview", link: "/agents/" },
           { text: "team-lead — Orchestrator", link: "/agents/team-lead" },
           { text: "Review Cluster", link: "/agents/review-cluster" },
-          { text: "Brainstorm", link: "/agents/brainstorm" },
-          { text: "Bug-Finder", link: "/agents/bug-finder" },
-          { text: "Harness", link: "/agents/harness" },
-          { text: "Planning", link: "/agents/planning" },
           { text: "Architect", link: "/agents/architect" },
-          { text: "Gardener", link: "/agents/gardener" },
-          { text: "Researcher", link: "/agents/researcher" },
         ],
       },
       {

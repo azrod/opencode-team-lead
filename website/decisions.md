@@ -2,6 +2,11 @@
 
 This page documents the strategic decisions and architectural choices behind `opencode-team-lead`. These are the "why we built it this way" decisions — the reasoning that shapes the plugin's design.
 
+::: warning Historical agent choices
+Bug-finder was subsequently removed as well, including its team-lead caller instructions. The current roster is 12 specialists plus team-lead; no replacement role is assigned.
+The dated decisions below preserve their original rationale, not the current agent roster. `planning`, `brainstorm`, `harness`, `researcher`, and `gardener` are now retired. In particular, D2–D4 and the planning activation constraint describe earlier persona choices; they are not invocation guidance. The team-lead's old routing remains deferred to a separate redesign, with no replacement ownership assigned. Harness engineering in D5 and ADR-001 is a general architectural approach and remains distinct from the retired `harness` persona.
+:::
+
 ## Strategic Decisions (2026-03-31)
 
 ### D1: Abandon the BMAD approach
