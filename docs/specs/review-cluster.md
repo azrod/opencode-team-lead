@@ -1,11 +1,14 @@
 ---
+title: "Review Cluster"
+id: review-cluster
+type: technical
 status: implemented
 created: 2026-04-02
 ---
 
 # Spec : Cluster `review`
 
-**Statut :** draft  
+**Statut :** implemented  
 **Mis à jour :** 2026-04-02
 
 ## Résumé
@@ -206,16 +209,18 @@ Chaque reviewer produit un verdict individuel : `APPROVED`, `CHANGES_REQUESTED`,
 
 | Agent | `task` | `question` | `read` | `glob` | `grep` | Tout le reste |
 |---|---|---|---|---|---|---|
-| `review-manager` | allow | allow | allow | allow | allow | deny |
+| `review-manager` | `{ "*": "deny", "*-reviewer": "allow" }` | allow | allow | allow | allow | deny |
 | `requirements-reviewer` | — | — | allow | allow | allow | deny |
 | `code-reviewer` | — | — | allow | allow | allow | deny |
 | `security-reviewer` | — | — | allow | allow | allow | deny |
+
+Le `review-manager` ne peut déléguer via `task` qu'aux agents dont l'id se termine par `-reviewer`. Toute délégation vers un autre agent (y compris le team-lead lui-même) est bloquée. Cette restriction est définie dans `SUBAGENT_DEFS` dans `config/agents.js` : `task: { "*": "deny", "*-reviewer": "allow" }`.
 
 ---
 
 ## Config
 
-| Agent | `mode` | `temperature` | `variant` | `color` | `silent` |
+| Agent | `mode` | `temperature` | `variant` | `color` | `hidden` |
 |---|---|---|---|---|---|
 | `review-manager` | `subagent` | 0.2 | `max` | `warning` | — |
 | `requirements-reviewer` | `subagent` | 0.1 | `max` | `info` | `true` |

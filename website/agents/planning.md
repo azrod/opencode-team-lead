@@ -60,9 +60,9 @@ updated: {date}
 
 ## Session Start
 
-Before structuring anything, Planning calls `project_state()` to check for existing briefs.
+Before structuring anything, Planning calls `brief_list()` to check for existing briefs.
 
-- **Brief path provided by the team-lead** → read it directly with `read`. No `project_state()` needed.
+- **Brief path provided by the team-lead** → read it directly with `read`. No `brief_list()` call needed.
 - **One brief found** → confirm with the user before using it as the basis for the plan.
 - **Multiple briefs found** → ask which one to use. Never guess.
 - **No brief found** → proceed normally.
@@ -118,18 +118,18 @@ draft → active → completed
 | Status | Meaning |
 |--------|---------|
 | `draft` | Created by Planning. Open questions must be resolved before the team-lead starts. |
-| `active` | The team-lead has started implementation. It updates the decision log and checks off blocks as they complete via `mark_block_done()`. |
-| `completed` | All blocks checked off, final review APPROVED. The team-lead calls `complete_plan()`. Do not delete — it's the record of what was built and why. |
+| `active` | The team-lead has started implementation. It updates the decision log and checks off blocks as they complete via `plan_block_done(plan_id, block_name)`. |
+| `completed` | All blocks are checked off (all `[x]`). Completion is implicit — no separate tool call needed. Do not delete — it's the record of what was built and why. |
 
 The exec-plan belongs to the team-lead after creation. Planning only writes at creation time.
 
 ## Traceability
 
-An exec-plan can link to a brainstorm brief via a `brief:` frontmatter field. The team-lead uses `check_artifacts()` to surface dead links between exec-plans, specs, and briefs — catching stale references before they cause confusion.
+An exec-plan can link to a brainstorm brief via a `brief:` frontmatter field. The team-lead uses `project_state()` at mission start to surface active exec-plans and specs — stale references are caught before they cause confusion.
 
 ### Brainstorm → Planning handoff
 
-When the team-lead invokes `brainstorm` and receives a completed brief, it automatically proposes transitioning to Planning — passing the brief path so Planning can read it via `project_state()`. The brief anchors the exec-plan to a validated problem statement, scope, and success criteria produced through direct user collaboration.
+When the team-lead invokes `brainstorm` and receives a completed brief, it automatically proposes transitioning to Planning — passing the brief path so Planning can read it directly. The brief anchors the exec-plan to a validated problem statement, scope, and success criteria produced through direct user collaboration.
 
 The team-lead treats the exec-plan as the single source of truth for the mission. It does not duplicate its task list in `todowrite` — it references the exec-plan file path directly.
 
