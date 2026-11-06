@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `plan_create`, `plan_update`, and `plan_validate` now include a reminder in their response to delegate a semantic review to the `plan-reviewer` agent before starting implementation — so the plan review step is never silently skipped.
 
 ### Removed
+- Removed the blanket deny policy from specialized agents. Actions without an explicit agent rule, including external directory access, are no longer automatically blocked by the plugin.
 - `plan-validator` agent replaced by the `plan-reviewer` cluster.
 - `mark_block_done`, `complete_plan`, `register_spec`, and `check_artifacts` have been removed and replaced by the new domain-specific lifecycle tools (`plan_block_done`, `spec_create`, etc.)
 

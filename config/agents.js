@@ -579,10 +579,10 @@ export const SUBAGENT_DEFS = AGENT_POLICIES.map(({ permission, temperature, vari
   ...def,
   color: COLORS[color],
   request: { body: { temperature } },
-  permissions: [{ action: "*", resource: "*", effect: "deny" }, ...Object.entries(permission).flatMap(([action, value]) =>
+  permissions: Object.entries(permission).flatMap(([action, value]) =>
     Object.entries(typeof value === "string" ? { "*": value } : value)
       .filter(() => action !== "todoread")
-      .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect })))],
+      .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect }))),
 }));
 
 /**

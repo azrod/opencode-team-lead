@@ -39,10 +39,11 @@ describe("native V2 agent policies", () => {
     }
   });
 
-  test("all specialized agents are deny-by-default with native action names", () => {
+  test("specialized agents use native action names without a blanket deny", () => {
     assert.equal(SUBAGENT_DEFS.length, 18);
     for (const agent of SUBAGENT_DEFS) {
-      assert.deepEqual(agent.permissions[0], { action: "*", resource: "*", effect: "deny" });
+      assert.ok(!agent.permissions.some((rule) => rule.action === "*" && rule.resource === "*" && rule.effect === "deny"));
+      assert.equal(effect(agent.permissions, "external_directory"), undefined);
       assert.match(agent.color, /^#[\da-f]{6}$/i);
       assert.ok(agent.permissions.every((rule) => !["bash", "task", "write", "todoread"].includes(rule.action)));
     }
@@ -65,8 +66,9 @@ describe("native V2 agent policies", () => {
       for (const id of ["unknown", "spec-validator-extra", "plan-code-reviewer", "general", "explore", "spec-writer", "planning", "brainstorm", "team-lead", "review-manager", "architect"]) {
         assert.equal(effect(architect.permissions, "subagent", id), "deny", id);
       }
-      for (const action of ["edit", "shell", "external_directory", "project_state", "plan_block_done", "spec_delete", "plan_delete", "brief_get", "brief_list", "brief_create", "brief_update", "brief_delete"]) {
-        assert.equal(effect(architect.permissions, action), "deny", action);
+      assert.equal(effect(architect.permissions, "edit"), "deny");
+      for (const action of ["shell", "external_directory", "project_state", "plan_block_done", "spec_delete", "plan_delete", "brief_get", "brief_list", "brief_create", "brief_update", "brief_delete"]) {
+        assert.equal(effect(architect.permissions, action), undefined, action);
       }
       for (const action of ["read", "list", "glob", "grep", "spec_list", "spec_get", "spec_format", "spec_create", "spec_update", "spec_validate", "plan_list", "plan_get", "plan_format", "plan_create", "plan_update", "plan_validate"]) {
         assert.equal(effect(architect.permissions, action), "allow", action);
@@ -109,7 +111,7 @@ describe("native V2 agent policies", () => {
       assert.equal(effect(registered, "subagent", "custom-reviewer"), "allow");
       assert.equal(effect(registered, "custom-tool"), "allow");
       assert.equal(effect(registered, "subagent", "plan-reviewer"), "allow");
-      assert.equal(effect(registered, "shell"), "deny");
+      assert.equal(effect(registered, "shell"), undefined);
     }
   });
 
@@ -234,6 +236,6 @@ describe("native V2 agent policies", () => {
     assert.match(prompt, /Structural result/);
     assert.match(prompt, /pending unless the caller supplied an actual APPROVED or REJECTED verdict covering the current content/);
     assert.doesNotMatch(prompt, /trigger the LLM spec-validator/);
-    assert.equal(effect(SUBAGENT_DEFS.find((agent) => agent.id === "spec-writer").permissions, "subagent", "spec-validator"), "deny");
+    assert.equal(effect(SUBAGENT_DEFS.find((agent) => agent.id === "spec-writer").permissions, "subagent", "spec-validator"), undefined);
   });
 });

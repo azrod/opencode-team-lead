@@ -68,7 +68,7 @@ Les sous-agents `requirements-reviewer`, `code-reviewer`, `security-reviewer` so
 
 ## Le modèle de permissions
 
-Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre avec `"*": "deny"` et ne reçoit que les outils strictement nécessaires à son rôle.
+Specialized agents declare explicit permission rules without a blanket deny policy. Actions not covered by these rules are left to OpenCode's permission resolution and configured policies.
 
 **team-lead** :
 
@@ -89,11 +89,11 @@ Le principe est **deny-all sauf whitelist explicite**. Chaque agent démarre ave
 
 **brainstorm** : `task`, `question`, `webfetch`, `read` (tous les fichiers du projet), lifecycle tools (`brief_create`, `brief_update`). Pas d'accès `edit` direct — les briefs sont créés et mis à jour exclusivement via les lifecycle tools. Pas de bash.
 
-**architect**: `read`, `list`, `glob`, `grep`, plus `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. Native delegation rules allow only the exact `spec-validator` and `plan-reviewer` targets. `edit`, `shell`, `external_directory`, `project_state`, `plan_block_done`, deletion and all `brief_*` tools remain denied. Architect writes artifacts and corrections itself. Current specification approval precedes plan creation; explicit user acceptance is required for formalized architectural decisions. Closed questions and structural validation precede explicitly requested deep plan review. Incomplete reviews block handoff; nested review requires `experimental.subagent_depth: 2`.
+**architect**: `read`, `list`, `glob`, `grep`, plus `spec_list`, `spec_get`, `spec_format`, `spec_create`, `spec_update`, `spec_validate`, `plan_list`, `plan_get`, `plan_format`, `plan_create`, `plan_update`, `plan_validate`. Native delegation rules allow only the exact `spec-validator` and `plan-reviewer` targets. `edit` is explicitly denied; other undeclared actions, including `external_directory`, are no longer denied by a blanket plugin rule. Prompt-level operating boundaries remain unchanged. Architect writes artifacts and corrections itself. Current specification approval precedes plan creation; explicit user acceptance is required for formalized architectural decisions. Closed questions and structural validation precede explicitly requested deep plan review. Incomplete reviews block handoff; nested review requires `experimental.subagent_depth: 2`.
 
 **gardener** : `task` (filtré sur `explore` + `spec-writer` uniquement), `bash` (`git log*`, `git diff*`, `git status*`), `read`, `grep`, `glob`, `spec_list`, `spec_get`, `spec_format`.
 
-La restriction est intentionnelle : un orchestrateur qui peut lire des fichiers tend à le faire plutôt que de déléguer. Le deny-all force la délégation.
+Explicit permission restrictions are enforced by OpenCode; prompt-level delegation instructions alone are not a technical access restriction.
 
 ## Chargement des prompts
 
