@@ -12,6 +12,8 @@ import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path
 export const LIFECYCLE_TOOLS = new Set([
   "project_state",
   "spec_get",
+  "spec_search",
+  "spec_read_section",
   "spec_create",
   "spec_update",
   "spec_validate",

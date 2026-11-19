@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Agents can find relevant spec passages with `spec_search` and expand them with `spec_read_section`, using exact file/line citations and source hashes. Search reflects current files without reindexing; section reads detect changed sources and remain bounded for large documents.
 - `architect` — a directly selectable architecture advisor that explains whole-system boundaries, trade-offs, and incremental migrations. It directly authors accepted specs and exec-plans without gaining code, shell, brief, or implementation access.
 - `plan-reviewer` cluster — orchestrator + three specialized sub-reviewers (`plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer`). Supports two review depths: `light` (spec coherence only) and `deep` (spec coherence + codebase feasibility). Returns APPROVED / CHANGES_REQUESTED / BLOCKED.
 - `spec_format()` and `plan_format()` lifecycle tools — return the canonical format for specs and exec-plans inline, so agents always know the expected structure before calling `spec_create` or `plan_create`
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The team-lead now follows a Spec Protocol: specs are created before implementation (`spec_create` → `spec_validate`), and the `spec-reviewer` runs automatically in the review phase after every delivery.
 
 ### Fixed
+- Large specs and exec-plans are read in bounded pages instead of oversized responses; agents follow continuation cursors to read the complete document and restart if it changes mid-read.
 - SOUL now applies to all agents, including architect and subagents, regardless of their mode. Global and per-agent `soul: false` overrides remain supported.
 - Architect now presents remaining decisions after creating or updating an exec-plan, with options, consequences, and a recommendation, instead of leaving them in the plan. It does not repeat the plan or ask you to reconfirm accepted decisions without new evidence.
 - Review-manager launches specialists directly instead of routing through plan-reviewer and exceeding the nested-agent depth limit. Review orchestrators stop immediately on infrastructure restrictions rather than retrying blocked spawns.
@@ -26,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Architect can no longer mark exec-plan delivery blocks complete; it retains only the narrowly accepted plan creation and update exception.
 
 ### Changed
+- All review agents, including plan reviewers and spec validation, can now run `git status` and `git diff` with options without an approval prompt.
 - Architect now obtains independent spec approval before creating a plan, closes open questions before deep plan review, and applies review corrections itself. Only current, fully approved artifacts are ready for handoff; your acceptance of architecture decisions remains required.
 - Architect now evaluates your proposals independently, challenges unsupported or disproportionate choices with concrete reasons, and supports sound ideas without inventing objections. It distinguishes your final decision from its own recommendation.
 - Migrated to OpenCode V2. V1 plugin loading is no longer supported; configure the plugin under `plugins`, agent overrides under native `agents`, and plugin-specific `soul`/artifact paths under plugin `options`. Nested reviews require `experimental.subagent_depth: 2`; todos are optional.

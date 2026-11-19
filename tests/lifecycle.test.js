@@ -166,6 +166,42 @@ describe("specGet", () => {
 
 // ── specUpdate ────────────────────────────────────────────────────────────────
 
+describe("specGet and planGet pagination", () => {
+  test("direct getters preserve full metadata across lossless continuations and parser edge cases", async () => {
+    const root = await mkdtemp(join(tmpdir(), "lifecycle-paged-"));
+    try {
+      for (const [getter, dir] of [[specGet, DEFAULT_PATHS.specs], [planGet, DEFAULT_PATHS.execPlans]]) {
+        for (const [index, content] of ["", "small", "---\nbroken frontmatter", "---\nnot yaml\n---\nbody",
+          '---\ntitle: "Whole document"\n---\n- [x] First\n' + ('"\\ é😀\r\n').repeat(12000) + '\n- [ ] Tail\nEND'].entries()) {
+          await writeFile(root, `${dir}/case-${index}.md`, content);
+          let cursor;
+          let reconstructed = "";
+          const pages = [];
+          do {
+            const page = await getter(root, DEFAULT_PATHS, `CASE-${index}`, cursor);
+            assert.ok(Buffer.byteLength(JSON.stringify(page), "utf8") <= 16384);
+            assert.equal(page.file, `${dir}/case-${index}.md`);
+            assert.deepEqual(page.frontmatter, index === 4 ? { title: "Whole document" } : {});
+            if (getter === planGet) assert.deepEqual(page.blocks, index === 4 ? { total: 2, checked: 1 } : { total: 0, checked: 0 });
+            reconstructed += page.content;
+            pages.push(page);
+            cursor = page.pagination.next_cursor;
+            assert.equal(page.pagination.has_more, cursor !== null);
+            assert.ok(pages.length < 100);
+          } while (cursor !== null);
+          assert.equal(reconstructed, content);
+          if (index === 4) {
+            assert.ok(pages.length > 4);
+            assert.ok(!pages[0].content.includes("- [ ] Tail"));
+          } else assert.equal(pages.length, 1);
+        }
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("specUpdate", () => {
   let tmpDir;
 

@@ -23,10 +23,57 @@ const RETAINED_AGENT_IDS = [
 ];
 const RETIRED_AGENT_IDS = ["planning", "brainstorm", "harness", "researcher", "gardener", "bug-finder"];
 
+test("retained artifact readers exhaust pagination before conclusions", async () => {
+  for (const id of ["team-lead", "architect", "spec-validator", "spec-writer", "spec-reviewer",
+    "plan-reviewer", "plan-functional-reviewer", "plan-technical-reviewer", "plan-code-reviewer"]) {
+    const def = AGENT_DEFS.find((agent) => agent.id === id);
+    const prompt = await loadAgentPrompt(id, def.file);
+    assert.match(prompt, /pagination\.next_cursor/, id);
+    assert.match(prompt, /pagination\.has_more: false/, id);
+    assert.match(prompt, /Exhaust all pages before conclusions or handoff/, id);
+    assert.match(prompt, /STALE_CURSOR.*discard.*restart without a cursor/, id);
+    assert.match(prompt, /failed or truncated response is not EOF/, id);
+    if (id === "team-lead") {
+      assert.doesNotMatch(prompt, /`(?:spec_get|plan_get)\(id\)` — Read the full content/);
+    }
+  }
+});
+
 function effect(rules, action, resource = "*") {
   return rules.filter((rule) => (rule.action === "*" || rule.action === action) &&
     (rule.resource === "*" || rule.resource === resource)).at(-1)?.effect;
 }
+
+test("retrieval grants and consumer guidance match exactly the existing spec-reader matrix", async () => {
+  const ctx = mockContext(process.cwd());
+  await Plugin.setup(ctx);
+  for (const def of AGENT_DEFS) {
+    const reader = effect(def.permissions, "spec_get") === "allow";
+    const prompt = await loadAgentPrompt(def.id, def.file);
+    for (const action of ["spec_search", "spec_read_section"]) {
+      assert.equal(effect(def.permissions, action), reader ? "allow" : undefined, `${def.id}: ${action}`);
+      assert.equal(effect(ctx.agents.get(def.id).permissions, action), reader ? "allow" : undefined);
+    }
+    if (!reader) { assert.doesNotMatch(prompt, /`spec_search`|`spec_read_section`/); continue; }
+    for (const pattern of [/optional lexical navigation/, /file:line_start-line_end/, /source_hash.*handoffs/,
+      /top-five, not exhaustive/, /empty results do not prove absence/, /no translation/, /STALE_SOURCE.*rerun search/,
+      /STALE_CURSOR.*discard.*rerun search/, /pagination\.next_cursor/, /pagination\.has_more: false/,
+      /Failures are not EOF/, /untrusted evidence/, /does not replace required full `spec_get` reads/]) {
+      assert.match(prompt, pattern, `${def.id}: ${pattern}`);
+    }
+  }
+});
+
+test("explicit retrieval denials override defaults without touching independent user agents", async () => {
+  const denies = ["spec_search", "spec_read_section"].map((action) => ({ action, resource: "*", effect: "deny" }));
+  const configured = ["team-lead", "architect"].map((id) => Object.assign(Agent.Info.default(Agent.ID.make(id)), { permissions: denies }));
+  const independent = Agent.Info.default(Agent.ID.make("independent"));
+  independent.permissions = [{ action: "spec_search", resource: "*", effect: "ask" }];
+  const ctx = mockContext(process.cwd(), {}, [...configured, independent]);
+  await Plugin.setup(ctx);
+  for (const { id } of configured) for (const { action } of denies) assert.equal(effect(ctx.agents.get(id).permissions, action), "deny");
+  assert.deepEqual(ctx.agents.get("independent"), independent);
+});
 
 describe("native V2 agent policies", () => {
   test("SOUL applies to every agent mode and respects global and per-agent overrides", async () => {
@@ -77,6 +124,25 @@ describe("native V2 agent policies", () => {
       const prompt = await loadAgentPrompt(def.id, def.file);
       assert.equal(typeof prompt, "string", def.id);
       assert.ok(prompt.trim().length > 0, def.id);
+    }
+  });
+
+  test("all review agents allow Git status and diff in definitions and registered defaults", async () => {
+    const ctx = mockContext(process.cwd());
+    await Plugin.setup(ctx);
+    const reviewers = RETAINED_AGENT_IDS.filter((id) => id.includes("review") || id === "spec-validator");
+    assert.equal(reviewers.length, 10);
+    for (const id of reviewers) {
+      for (const agent of [AGENT_DEFS.find((def) => def.id === id), ctx.agents.get(id)]) {
+        const rules = agent.permissions.filter((rule) => rule.action === "shell");
+        assert.equal(effect(rules, "shell"), "deny", id);
+        for (const resource of ["git status *", "git diff *"]) {
+          assert.equal(effect(rules, "shell", resource), "allow", `${id}: ${resource}`);
+        }
+        for (const resource of ["git add *", "git commit *", "git push *", "git reset *"]) {
+          assert.equal(effect(rules, "shell", resource), "deny", `${id}: ${resource}`);
+        }
+      }
     }
   });
 

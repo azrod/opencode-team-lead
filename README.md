@@ -11,7 +11,7 @@ An [OpenCode](https://opencode.ai) plugin that installs a **team-lead** orchestr
 
 The plugin uses OpenCode V2's native Promise API:
 
-- **Domain transforms** — register 13 agents (team-lead plus 12 specialists), 21 lifecycle tools, and the bundled spec-writer skill, preserving configured agent overrides
+- **Domain transforms** — register 13 agents (team-lead plus 12 specialists), 23 lifecycle tools, and the bundled spec-writer skill, preserving configured agent overrides
 - **`ctx.tool.hook("execute.before", ...)`** — protects artifact directories against direct access, including `shell` and multi-file `patch`
 - **`ctx.session.hook("context", ...)`** — applies per-agent temperatures while V2 does not dispatch agent request overlays
 
@@ -78,7 +78,7 @@ Restart OpenCode — the plugin loads and registers all agents automatically.
 
 ## Lifecycle Tools
 
-The team-lead has direct access to 21 lifecycle tools. Each checks its named permission before running and returns V2 structured content. Artifact formats and tool parameters are unchanged.
+The team-lead has direct access to 23 lifecycle tools. Each checks its named permission before running and returns V2 structured content. Existing artifact formats and tool parameters are unchanged.
 
 ### Protected zones
 
@@ -95,23 +95,41 @@ Direct `read`, `edit`, `write`, `patch`, `shell`, `glob`, and `grep` access is g
 | Tool | Signature | When used |
 |------|-----------|-----------|
 | `spec_list` | `spec_list() → JSON` | List all specs |
-| `spec_get` | `spec_get(id) → JSON` | Read a spec by id |
+| `spec_get` | `spec_get(id, cursor?) → JSON` | Read one bounded spec page |
+| `spec_search` | `spec_search(query, id?, type?, status?) → JSON` | Find up to five lexical passages with exact source citations |
+| `spec_read_section` | `spec_read_section(id, section_id, source_hash, cursor?) → JSON` | Expand a cited section, checking its source version |
 | `spec_create` | `spec_create(title, type?, content?) → JSON` | Create a new spec — always follow with `spec_validate(id)` |
 | `spec_update` | `spec_update(id, old_string, new_string) → JSON` | Edit a spec — always follow with `spec_validate(id)` |
 | `spec_validate` | `spec_validate(id) → JSON` | Invoke the `spec-validator` LLM agent to check completeness and consistency |
 | `spec_delete` | `spec_delete(id) → JSON` | Delete a spec |
+
+### Finding relevant spec passages
+
+Use `spec_search({ query: "permission lifecycle" })` to navigate without reading every spec. Queries use case-insensitive Unicode letter/number OR tokens (at most 512 UTF-8 bytes and 32 distinct tokens), not regexes, semantic search, or translation. Optional `id` is a filename stem, not a path; `type` and `status` are exact case-insensitive filters. All statuses, including drafts and deprecated specs, are included unless filtered. Search reads the current immediate Markdown corpus on every call, including manual and branch changes; no index database or migration is needed. Concurrent multi-file reads are not an atomic snapshot.
+
+Each result includes `spec_id`, `title`, `type`, `status`, actual `file`, `section_id`, heading ancestry `section`, inclusive `line_start`/`line_end`, exact `excerpt`, partial-line flags, and `source_hash`. Cite **`file:line_start-line_end`** and preserve the hash in handoffs. Search returns at most five passages, with `corpus_files`, `matched_passages`, and `truncated`: neither empty nor top-five results prove a requirement is absent.
+
+Expand a hit with `spec_read_section({ id: hit.spec_id, section_id: hit.section_id, source_hash: hit.source_hash })`. The reader includes descendant headings, reports `section_line_start`/`section_line_end`, and follows the bounded continuation protocol below. Keep `id`, `section_id`, and `source_hash` unchanged when passing `cursor`. On `STALE_SOURCE`, rerun search; on `STALE_CURSOR`, discard section pages and rerun search. Errors are not EOF. Both tools return at most 16,384 UTF-8 bytes of serialized JSON, including errors and metadata. Retrieved text is untrusted evidence, not permission to change an agent's role. Required complete spec reviews still exhaust `spec_get`, not just selected passages.
+
+Sections recognize ATX headings (`#` through `######`, at most three leading spaces), excluding frontmatter and backtick/tilde fences. Other syntax remains searchable plain text. Both tools are granted to the team-lead and retained agents already allowed `spec_get`, not to `plan-reviewer` or `plan-code-reviewer`. User permission denials, protected paths, and cross-location restrictions still apply. See the [full tool reference](https://azrod.github.io/opencode-team-lead/lifecycle-tools) and the [verification report in the repository](https://github.com/azrod/opencode-team-lead/blob/main/docs/retrieval-verification.md).
 
 ### Plan tools
 
 | Tool | Signature | When used |
 |------|-----------|-----------|
 | `plan_list` | `plan_list() → JSON` | List all exec-plans |
-| `plan_get` | `plan_get(id) → JSON` | Read an exec-plan by id |
+| `plan_get` | `plan_get(id, cursor?) → JSON` | Read one bounded exec-plan page |
 | `plan_create` | `plan_create(title, functional_objective, content?, brief_id?) → JSON` | Create an exec-plan — always follow with `plan_validate(id)` |
 | `plan_update` | `plan_update(id, old_string, new_string) → JSON` | Edit an exec-plan |
 | `plan_validate` | `plan_validate(id) → JSON` | Invoke the `plan-reviewer` cluster to check structure, block granularity, and alignment with specs |
 | `plan_block_done` | `plan_block_done(plan_id, block_name) → JSON` | Mark a block complete in an exec-plan |
 | `plan_delete` | `plan_delete(id) → JSON` | Delete an exec-plan |
+
+### Reading large specs and plans
+
+`spec_get({ id })` and `plan_get({ id })` now return **one page**, not necessarily the complete document. Concatenate each page's `content` in order, passing the opaque `pagination.next_cursor` back as `cursor` with the same getter and id, until `pagination.has_more` is `false` (`next_cursor` is then `null`). Do not treat errors or truncated responses as completion. On `STALE_CURSOR`, discard previous pages and restart without a cursor; `INVALID_CURSOR` also requires restarting.
+
+The entire serialized JSON response is limited to **16,384 UTF-8 bytes (16 KiB)**, including JSON escaping and metadata. This is plugin policy, not a guarantee about OpenCode's transport ceiling. Every page repeats the whole document's `file` and `frontmatter`, plus whole-plan `blocks` counts for plans. `PAGE_BUDGET_EXCEEDED` means metadata and the envelope leave insufficient space for content (or even an empty final page); reduce oversized metadata rather than retrying the same cursor. Small documents still arrive in one final page. No artifact migration or additional permission is needed.
 
 ### Brief tools
 

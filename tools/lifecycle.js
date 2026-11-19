@@ -5,6 +5,7 @@
 
 import { readFile, writeFile, mkdir, readdir, unlink } from "node:fs/promises";
 import { join, dirname, isAbsolute, resolve, sep, basename } from "node:path";
+import { paginateArtifact } from "./artifact-pagination.js";
 
 // ── YAML frontmatter helpers ─────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ import { join, dirname, isAbsolute, resolve, sep, basename } from "node:path";
  * @param {string} content
  * @returns {Record<string, string>}
  */
-function parseFrontmatter(content) {
+export function parseFrontmatter(content) {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return {};
   const result = {};
@@ -146,14 +147,15 @@ async function resolveById(projectRoot, dir, id) {
 // ── SPECS ────────────────────────────────────────────────────────────────────
 
 /**
- * Get a spec by id (filename without extension).
+ * Get one bounded page of a spec by id (filename without extension).
  *
  * @param {string} projectRoot
  * @param {{ specs: string }} paths
  * @param {string} id
- * @returns {Promise<{ file: string, content: string, frontmatter: Record<string, string> }>}
+ * @param {string} [cursor] Opaque continuation marker from the preceding page
+ * @returns {Promise<{ file: string, content: string, frontmatter: Record<string, string>, pagination: { has_more: boolean, next_cursor: string|null } }>}
  */
-export async function specGet(projectRoot, paths, id) {
+export async function specGet(projectRoot, paths, id, cursor) {
   const absPath = await resolveById(projectRoot, paths.specs, id);
   let content;
   try {
@@ -162,7 +164,10 @@ export async function specGet(projectRoot, paths, id) {
     throw new Error(`Spec file not found: ${absPath}`);
   }
   const relPath = absPath.slice(resolve(projectRoot).length + 1);
-  return { file: relPath, content, frontmatter: parseFrontmatter(content) };
+  return paginateArtifact({
+    tool: "spec_get", projectRoot, artifactPath: absPath, content, cursor,
+    metadata: { file: relPath, frontmatter: parseFrontmatter(content) },
+  });
 }
 
 /**
@@ -341,9 +346,10 @@ export async function specDelete(projectRoot, paths, id) {
  * @param {string} projectRoot
  * @param {{ execPlans: string }} paths
  * @param {string} id
- * @returns {Promise<{ file: string, content: string, frontmatter: Record<string, string>, blocks: { total: number, checked: number } }>}
+ * @param {string} [cursor] Opaque continuation marker from the preceding page
+ * @returns {Promise<{ file: string, content: string, frontmatter: Record<string, string>, blocks: { total: number, checked: number }, pagination: { has_more: boolean, next_cursor: string|null } }>}
  */
-export async function planGet(projectRoot, paths, id) {
+export async function planGet(projectRoot, paths, id, cursor) {
   const absPath = await resolveById(projectRoot, paths.execPlans, id);
   let content;
   try {
@@ -353,12 +359,10 @@ export async function planGet(projectRoot, paths, id) {
   }
   const relPath = absPath.slice(resolve(projectRoot).length + 1);
   const { total, checked } = countBlocks(content);
-  return {
-    file: relPath,
-    content,
-    frontmatter: parseFrontmatter(content),
-    blocks: { total, checked },
-  };
+  return paginateArtifact({
+    tool: "plan_get", projectRoot, artifactPath: absPath, content, cursor,
+    metadata: { file: relPath, frontmatter: parseFrontmatter(content), blocks: { total, checked } },
+  });
 }
 
 /**

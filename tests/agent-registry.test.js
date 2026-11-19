@@ -25,6 +25,22 @@ function digest(value) {
   return createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(canonical(value))).digest("hex");
 }
 
+// Compare against the original refactor oracle while accounting for the later
+// Git inspection and spec retrieval grants, covered by permissions.test.js.
+function beforeReviewGitGrants(agent, id) {
+  const existingGitReviewers = ["review-manager", "requirements-reviewer", "code-reviewer", "security-reviewer"];
+  const newGitReviewers = ["spec-validator", "plan-reviewer", "plan-functional-reviewer", "plan-technical-reviewer", "plan-code-reviewer", "spec-reviewer"];
+  return {
+    ...agent,
+    permissions: agent.permissions
+      .filter((rule) => !["spec_search", "spec_read_section"].includes(rule.action))
+      .filter((rule) => !newGitReviewers.includes(id) || rule.action !== "shell")
+      .map((rule) => existingGitReviewers.includes(id) && rule.action === "shell" && ["git status *", "git diff *"].includes(rule.resource)
+        ? { ...rule, resource: rule.resource.replace(" *", "*") }
+        : rule),
+  };
+}
+
 test("retained agents preserve frozen defaults and registration order", async () => {
   const ctx = mockContext(process.cwd(), { soul: false });
   await Plugin.setup(ctx);
@@ -33,10 +49,10 @@ test("retained agents preserve frozen defaults and registration order", async ()
   assert.equal(new Set(AGENT_DEFS.map(({ id }) => id)).size, 13);
   for (const [id, definitionHash, registeredHash] of retainedBaseline) {
     const def = AGENT_DEFS.find((def) => def.id === id);
-    // The filename is the only intentional definition change.
-    assert.equal(digest(id === "team-lead" ? { ...def, file: "prompt.md" } : def), definitionHash, `${id} defaults`);
+    const originalDef = beforeReviewGitGrants(def, id);
+    assert.equal(digest(id === "team-lead" ? { ...originalDef, file: "prompt.md" } : originalDef), definitionHash, `${id} defaults`);
     const { system: _system, ...registered } = ctx.agents.get(id);
-    assert.equal(digest(registered), registeredHash, `${id} registration`);
+    assert.equal(digest(beforeReviewGitGrants(registered, id)), registeredHash, `${id} registration`);
   }
   assert.equal(AGENT_DEFS[0].file, "team-lead.md");
   assert.doesNotMatch(await readFile(new URL("../agents/team-lead.md", import.meta.url), "utf8"), /bug[- ]finder/i);
@@ -48,7 +64,7 @@ test("team-lead overlays preserve ordered rules and plugin prompt ownership", as
   await Plugin.setup(clean);
   const defaults = clean.agents.get("team-lead");
   assert.deepEqual(defaults.permissions.at(-1), { action: "shell", resource: "git push *", effect: "ask" });
-  const lifecycle = ["project_state", "spec_get", "spec_create", "spec_update", "spec_validate", "spec_list", "spec_delete", "plan_get", "plan_create", "plan_validate", "plan_block_done", "plan_update", "plan_delete", "plan_list", "brief_get", "brief_create", "brief_update", "brief_delete", "brief_list", "spec_format", "plan_format"];
+  const lifecycle = ["project_state", "spec_get", "spec_search", "spec_read_section", "spec_create", "spec_update", "spec_validate", "spec_list", "spec_delete", "plan_get", "plan_create", "plan_validate", "plan_block_done", "plan_update", "plan_delete", "plan_list", "brief_get", "brief_create", "brief_update", "brief_delete", "brief_list", "spec_format", "plan_format"];
   for (const action of lifecycle) assert.ok(defaults.permissions.some((rule) => rule.action === action && rule.resource === "*" && rule.effect === "allow"), action);
   for (const withHostPrefix of [false, true]) {
     const configured = Agent.Info.default(Agent.ID.make("team-lead"));

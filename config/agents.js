@@ -162,9 +162,9 @@ const AGENT_POLICIES = [
       spec_get: "allow",
       "bash": {
         "*": "deny",
-        "git status*": "allow",
+        "git status *": "allow",
         "git log*": "allow",
-        "git diff*": "allow",
+        "git diff *": "allow",
         "rg*": "allow"
       }
     },
@@ -189,9 +189,9 @@ const AGENT_POLICIES = [
       spec_get: "allow",
       "bash": {
         "*": "deny",
-        "git status*": "allow",
+        "git status *": "allow",
         "git log*": "allow",
-        "git diff*": "allow",
+        "git diff *": "allow",
         "rg*": "allow"
       }
     },
@@ -216,9 +216,9 @@ const AGENT_POLICIES = [
       spec_get: "allow",
       "bash": {
         "*": "deny",
-        "git status*": "allow",
+        "git status *": "allow",
         "git log*": "allow",
-        "git diff*": "allow",
+        "git diff *": "allow",
         "rg*": "allow"
       }
     },
@@ -243,9 +243,9 @@ const AGENT_POLICIES = [
       spec_get: "allow",
       "bash": {
         "*": "deny",
-        "git status*": "allow",
+        "git status *": "allow",
         "git log*": "allow",
-        "git diff*": "allow",
+        "git diff *": "allow",
         "rg*": "allow"
       }
     },
@@ -303,6 +303,11 @@ const AGENT_POLICIES = [
       read: "allow",
       glob: "allow",
       grep: "allow",
+      bash: {
+        "*": "deny",
+        "git status *": "allow",
+        "git diff *": "allow",
+      },
     },
   },
   {
@@ -318,6 +323,11 @@ const AGENT_POLICIES = [
       task: { "*": "deny", "plan-*-reviewer": "allow" },
       question: "allow",
       plan_get: "allow",
+      bash: {
+        "*": "deny",
+        "git status *": "allow",
+        "git diff *": "allow",
+      },
     },
   },
   {
@@ -334,6 +344,11 @@ const AGENT_POLICIES = [
       plan_get: "allow",
       spec_list: "allow",
       spec_get: "allow",
+      bash: {
+        "*": "deny",
+        "git status *": "allow",
+        "git diff *": "allow",
+      },
     },
   },
   {
@@ -350,6 +365,11 @@ const AGENT_POLICIES = [
       plan_get: "allow",
       spec_list: "allow",
       spec_get: "allow",
+      bash: {
+        "*": "deny",
+        "git status *": "allow",
+        "git diff *": "allow",
+      },
     },
   },
   {
@@ -367,6 +387,11 @@ const AGENT_POLICIES = [
       read: "allow",
       glob: "allow",
       grep: "allow",
+      bash: {
+        "*": "deny",
+        "git status *": "allow",
+        "git diff *": "allow",
+      },
     },
   },
   {
@@ -388,6 +413,11 @@ const AGENT_POLICIES = [
       read: "allow",
       glob: "allow",
       grep: "allow",
+      bash: {
+        "*": "deny",
+        "git status *": "allow",
+        "git diff *": "allow",
+      },
     },
   },
   {
@@ -441,7 +471,8 @@ export const AGENT_DEFS = [
     ...def,
     color: COLORS[color],
     request: { body: { temperature } },
-    permissions: Object.entries(permission).flatMap(([action, value]) =>
+    permissions: Object.entries({ ...permission, ...(permission.spec_get === "allow"
+      ? { spec_search: "allow", spec_read_section: "allow" } : {}) }).flatMap(([action, value]) =>
       Object.entries(typeof value === "string" ? { "*": value } : value)
         .filter(() => action !== "todoread")
         .map(([resource, effect]) => ({ action: ACTIONS[action] ?? action, resource, effect }))),
