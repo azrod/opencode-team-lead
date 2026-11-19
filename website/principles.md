@@ -110,7 +110,7 @@ Agent system prompts must stay in `agents/*.md` files loaded at runtime via `rea
 ::: code-group
 ```js [Good]
 // index.js — load from file
-const prompt = await readFile(join(__dirname, "agents", "prompt.md"), "utf-8");
+const prompt = await readFile(join(__dirname, "agents", "team-lead.md"), "utf-8");
 ```
 
 ```js [Bad]
@@ -153,7 +153,7 @@ You are a specialist agent that...
 
 ## 7. Product briefs follow a verifiable schema
 
-Briefs produced by the brainstorm agent are consumed by downstream agents — Planning uses them to generate exec-plans, and the team-lead uses them to scope delegated work. A brief missing required fields is not machine-actionable.
+Product briefs remain stored artifacts with lifecycle support. Historically, the brainstorm persona produced them and the planning persona consumed them; both agents are now retired, and replacement routing is deferred. The schema principle remains applicable to existing and new briefs: a brief missing required fields is not machine-actionable.
 
 **Required frontmatter fields:** `project:`, `type:`, `status:`, `created:`, `updated:`
 
@@ -203,7 +203,7 @@ created: 2026-04-03
 
 **Threshold — blocker:** A brief file missing any of the 6 required sections or any of the 5 required frontmatter fields. Caught by the `brief-schema` CI check.
 
-**Threshold — warning:** A brief with an empty `## Open Questions` or `## Rejected Ideas` section — may indicate a rushed brainstorm session.
+**Threshold — warning:** A brief with an empty `## Open Questions` or `## Rejected Ideas` section — may indicate incomplete discovery.
 
 ---
 

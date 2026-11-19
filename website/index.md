@@ -20,15 +20,9 @@ features:
   - icon: 🔍
     title: Multi-agent Reviews
     details: The review-manager spawns specialized reviewers in parallel — code quality, security, requirements. Verdicts are synthesized automatically.
-  - icon: 🐛
-    title: Structured Investigation
-    details: The bug-finder forces root-cause analysis before any fix. No more workarounds that mask symptoms and create code divergence.
-  - icon: 🔒
-    title: Pattern Enforcement
-    details: Harness encodes recurring patterns as lint rules, CI checks, and AGENTS.md entries. Prevention beats repetition.
   - icon: 📋
-    title: Context-aware Planning
-    details: The planning agent writes exec-plans to disk. Multi-session work survives context resets — the team-lead resumes exactly where it left off.
+    title: Persistent Project Artifacts
+    details: Lifecycle tools preserve specs, exec-plans, and product briefs on disk for continuity across sessions.
   - icon: ⚡
     title: Zero Dependencies
     details: Pure ESM, only Node.js builtins. Installs in seconds, no supply chain risk. Ships with provenance attestation.
@@ -40,7 +34,11 @@ features:
 opencode plugin opencode-team-lead --global
 ```
 
-OpenCode will automatically download and load the plugin on next startup. All 11 agents are registered automatically.
+OpenCode will automatically download and load the plugin on next startup. The plugin registers 12 specialized agents plus team-lead.
+
+::: warning Agent retirement transition
+`planning`, `brainstorm`, `harness`, `researcher`, and `gardener` are retired. The team-lead's old routing to them remains in its unchanged prompt pending a separate redesign; those plugin-agent paths are unavailable. No replacement workflow is defined. Existing artifacts and lifecycle tools remain available.
+:::
 
 ::: tip Set team-lead as your default agent
 ```json

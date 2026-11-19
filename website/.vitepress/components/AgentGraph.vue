@@ -75,37 +75,26 @@ import { VueFlow } from '@vue-flow/core'
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
-// Layout constants — compact 2-row design fits ~800px wide
-const TL_X = 270
+// Layout constants — compact retained delegation paths
+const TL_X = 240
 const TL_Y = 20
 
-// Row 1a — first 4 leaf agents
-const ROW1A_Y = 160
-const SPACING = 175
-const START_X = 20
+// Leaf agents — existing host agents
+const ROW1_Y = 160
+const SPACING = 220
+const START_X = 130
 
-const ROW1A_NODES = [
+const LEAF_NODES = [
   { id: 'explore',    label: 'explore',    icon: '🔍', sub: 'read-only exploration'   },
   { id: 'general',   label: 'general',    icon: '⚙️', sub: 'implementation'          },
-  { id: 'researcher',label: 'researcher', icon: '🌐', sub: 'external knowledge'      },
-  { id: 'planning',  label: 'planning',   icon: '📋', sub: 'exec-plans'              },
-]
-
-// Row 1b — next 4 leaf agents
-const ROW1B_Y = 290
-const ROW1B_NODES = [
-  { id: 'brainstorm',label: 'brainstorm', icon: '💡', sub: 'product brief'           },
-  { id: 'harness',   label: 'harness',   icon: '🔒', sub: 'pattern enforcement'     },
-  { id: 'gardener',  label: 'gardener',  icon: '🌱', sub: 'maintenance & drift'     },
-  { id: 'bug-finder',label: 'bug-finder',icon: '🐛', sub: 'root-cause investigation'},
 ]
 
 // Review-manager
 const RM_X = 240
-const RM_Y = 430
+const RM_Y = 290
 
 // Reviewers row
-const ROW3_Y = 560
+const ROW3_Y = 420
 const REVIEWERS = [
   { id: 'code-reviewer',         label: 'code-reviewer',         icon: '📝', sub: 'code quality'   },
   { id: 'security-reviewer',     label: 'security-reviewer',     icon: '🛡️', sub: 'security audit' },
@@ -119,16 +108,10 @@ const nodes = [
     position: { x: TL_X, y: TL_Y },
     data: { label: 'team-lead', icon: '🎯', sub: 'pure orchestrator' },
   },
-  ...ROW1A_NODES.map((n, i) => ({
+  ...LEAF_NODES.map((n, i) => ({
     id: n.id,
     type: 'leaf',
-    position: { x: START_X + i * SPACING, y: ROW1A_Y },
-    data: { label: n.label, icon: n.icon, sub: n.sub },
-  })),
-  ...ROW1B_NODES.map((n, i) => ({
-    id: n.id,
-    type: 'leaf',
-    position: { x: START_X + i * SPACING, y: ROW1B_Y },
+    position: { x: START_X + i * SPACING, y: ROW1_Y },
     data: { label: n.label, icon: n.icon, sub: n.sub },
   })),
   {
@@ -145,7 +128,7 @@ const nodes = [
   })),
 ]
 
-const delegationEdges = [...ROW1A_NODES, ...ROW1B_NODES].map(n => ({
+const delegationEdges = LEAF_NODES.map(n => ({
   id: `tl-${n.id}`,
   source: 'team-lead',
   target: n.id,
@@ -191,7 +174,7 @@ const edges = [...delegationEdges, rmDelegationEdge, ...reviewEdges]
 
 .agent-flow {
   width: 100%;
-  height: 750px;
+  height: 580px;
   background: var(--vp-c-bg-soft);
 }
 

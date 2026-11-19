@@ -1,16 +1,21 @@
 ---
-status: implemented
+title: "Bug Finder Agent"
+id: bug-finder-agent
+type: technical
+status: deprecated
 created: 2026-04-02
 ---
 
 # Spec : Agent `bug-finder`
 
-**Statut :** draft  
+> **Retired — 2026-11-06.** The user requested removal of `bug-finder`. Its plugin definition, shipped prompt, website page, and team-lead caller instructions are removed. No replacement role or investigation workflow is assigned. Independently configured user agents and lifecycle artifacts are unchanged. Everything below is a historical description of the former agent, not current availability or executable routing guidance. The earlier harness retirement remains historical as documented in [Retire Five Auxiliary Agents](retire-five-auxiliary-agents.md).
+
+**Statut :** implemented  
 **Mis à jour :** 2026-04-02
 
 ## Résumé
 
-Orchestrateur d'investigation de bugs structuré. Force une analyse de cause racine complète avant tout correctif — délègue l'investigation et le fix, ne touche jamais le code directement.
+Structured bug investigator. Performs root-cause investigation directly before any correction, then returns the diagnosis to the caller for fix delegation. It neither delegates the investigation nor edits code.
 
 ## Rôle
 

@@ -6,6 +6,8 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 
 ## Agents implémentés
 
+The plugin currently provides 12 specialized agents plus `team-lead` (13 total). `planning`, `brainstorm`, `harness`, `researcher`, and `gardener` are retired; their specifications remain historical records under [Retire Five Auxiliary Agents](specs/retire-five-auxiliary-agents.md). `bug-finder` was subsequently removed, including its team-lead caller instructions; its [specification](specs/bug-finder-agent.md) is historical. Existing artifacts and all 21 lifecycle tools remain available. Team-lead routing still contains the first five retired agents' references pending its separate redesign; this is not a fully repaired end-to-end workflow, and no replacement ownership is assigned here.
+
 | Agent | Mode | Rôle |
 |---|---|---|
 | `team-lead` | all | Orchestrateur principal |
@@ -13,12 +15,16 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 | `requirements-reviewer` | subagent | Vérifie l'adéquation impl ↔ exigences |
 | `code-reviewer` | subagent | Correctness, logique, maintenabilité |
 | `security-reviewer` | subagent | Vulnérabilités, misconfigs, exposition de données |
-| `bug-finder` | all | Investigation de bugs avec analyse root-cause |
-| `brainstorm` | all | Phase 0 — aide l'utilisateur à découvrir ce qu'il veut construire, produit un product brief dans `docs/briefs/` |
-| `researcher` | all | External knowledge agent. Fetches and synthesizes information from the web, official docs, APIs, and public sources. Used BEFORE planning to answer technical questions requiring external research. Read-only, leaf node. |
-| `harness` | all | Encode les patterns récurrents en règles mécaniques (lint, CI, AGENTS.md) |
-| `planning` | all | Transforme les requêtes complexes en contrats de travail sur disque |
-| `gardener` | all | Maintenance périodique — docs stales et drift de code |
+| `architect` | primary | Direct architecture advisor: directly authors specs and plans, delegates only spec-validator and plan-reviewer reviews, never implements |
+| `spec-validator` | subagent | Explicit semantic review after structural validation: internal consistency and compatibility with related specs, not completeness or architecture quality |
+| `plan-reviewer` | subagent | Orchestrateur de review de plan — demande la profondeur (light/deep), spawne `plan-functional-reviewer`, `plan-technical-reviewer`, `plan-code-reviewer` en parallèle, retourne APPROVED / CHANGES_REQUESTED / BLOCKED |
+| `plan-functional-reviewer` | subagent | Vérifie l'alignement du plan avec les specs fonctionnelles. Silencieux, invoqué par `plan-reviewer` uniquement |
+| `plan-technical-reviewer` | subagent | Vérifie l'alignement du plan avec les specs techniques et architecturales. Silencieux, invoqué par `plan-reviewer` uniquement |
+| `plan-code-reviewer` | subagent | Vérifie la faisabilité des blocs contre le codebase (mode deep uniquement). Silencieux, invoqué par `plan-reviewer` uniquement |
+| `spec-reviewer` | subagent | Intégré dans le pool du review-manager — retourne `NO_ACTION_NEEDED` / `SPEC_CREATE_NEEDED` / `SPEC_UPDATE_NEEDED` après chaque livraison |
+| `spec-writer` | subagent | Writes high-quality canonical specifications when delegated by team-lead |
+
+All 13 definitions live in the ordered `AGENT_DEFS` registry in [`config/agents.js`](../config/agents.js), registered through `registerAgent()`. The team-lead prompt is [`agents/team-lead.md`](../agents/team-lead.md). See [Unified Agent Registry](specs/unified-agent-registry.md) for the original relocation contract; the subsequent bug-finder removal changes only its roster and caller guidance.
 
 ## Abandonné
 
@@ -32,15 +38,48 @@ Plugin OpenCode qui injecte un orchestrateur team-lead qui planifie, délègue, 
 
 ## Custom Tools (Lifecycle)
 
-Cinq tools de bookkeeping injectés directement dans OpenCode — accessibles par le team-lead sans délégation :
+Vingt-et-un outils de bookkeeping injectés directement dans OpenCode — accessibles par le team-lead sans délégation :
+
+### Global
 
 | Tool | Rôle |
 |---|---|
-| `project_state()` | Vue complète des exec-plans, specs et briefs courants |
-| `mark_block_done(plan_file, block_name)` | Coche un bloc dans un exec-plan |
-| `complete_plan(plan_file)` | Passe un exec-plan à `status: completed` |
-| `register_spec(specFile, title)` | Crée un nouveau fichier de spec avec frontmatter minimal |
-| `check_artifacts()` | Scan de consistance transversal — refs mortes, statuts stales |
+| `project_state()` | Vue complète des specs actives et exec-plans en cours |
+| `spec_format()` | Retourne le format canonique attendu pour un fichier spec |
+| `plan_format()` | Retourne le format canonique attendu pour un exec-plan |
+
+### Spec
+
+| Tool | Rôle |
+|---|---|
+| `spec_get(id)` | Récupère une spec par id — retourne chemin, contenu, frontmatter |
+| `spec_create(title, type?, content?)` | Crée un nouveau fichier spec |
+| `spec_update(id, old_string, new_string)` | Mise à jour chirurgicale d'une spec |
+| `spec_validate(id)` | Valide la structure d'une spec (frontmatter + corps non vide) |
+| `spec_list()` | Liste toutes les specs avec leurs métadonnées |
+| `spec_delete(id)` | Supprime une spec par id |
+
+### Plan
+
+| Tool | Rôle |
+|---|---|
+| `plan_get(id)` | Récupère un exec-plan par id |
+| `plan_create(title, functional_objective, brief?, content?)` | Crée un nouvel exec-plan |
+| `plan_update(id, old_string, new_string)` | Mise à jour chirurgicale d'un exec-plan |
+| `plan_validate(id)` | Valide la structure d'un exec-plan |
+| `plan_block_done(plan_id, block_name)` | Coche un bloc dans un exec-plan (`[ ]` → `[x]`) |
+| `plan_list()` | Liste tous les exec-plans avec leur avancement |
+| `plan_delete(id)` | Supprime un exec-plan par id |
+
+### Brief
+
+| Tool | Rôle |
+|---|---|
+| `brief_get(id)` | Récupère un product brief par id |
+| `brief_create(title, content?, exec_plan?)` | Crée un nouveau product brief |
+| `brief_update(id, old_string, new_string)` | Mise à jour chirurgicale d'un brief |
+| `brief_list()` | Liste tous les briefs avec leurs métadonnées |
+| `brief_delete(id)` | Supprime un brief par id |
 
 → Voir [specs/lifecycle-tools.md](specs/lifecycle-tools.md)
 

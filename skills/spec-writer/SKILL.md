@@ -17,6 +17,8 @@ This skill helps you write high-quality agent specification files for the openco
 
 ## Resources Bundled
 
+Treat retired-agent examples as historical authoring references, not current routing guidance. In particular, do not invoke the removed `bug-finder` agent from these examples or assign a replacement role.
+
 All files in this skill directory:
 
 | File | Purpose |
